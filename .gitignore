@@ -24,9 +24,18 @@ coverage
 # Build Outputs
 .next/
 out/
+out-tsc/
 build
 dist
 
+# TypeScript
+*.tsbuildinfo
+
+# Angular
+.angular/
+
+# Claude Code (project-local settings, not for version control)
+.claude/settings.local.json
 
 # Debug
 npm-debug.log*

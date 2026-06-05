@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
+  "scripts": {
+    "check-types": "tsc --version"
+  },
   "publishConfig": {
     "access": "public"
   }
