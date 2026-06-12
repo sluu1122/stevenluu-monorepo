@@ -4,6 +4,7 @@ export interface PersonalInfo {
   phone: string;
   email: string;
   linkedin: string;
+  github: string;
 }
 
 export interface TechnicalSkills {
@@ -33,6 +34,7 @@ export interface Education {
   location: string;
   degree: string;
   concentration: string;
+  period?: string;
 }
 
 export interface ResumeData {
@@ -50,6 +52,7 @@ export const resumeData: ResumeData = {
     phone: "(647) 568-4838",
     email: "sluu123@gmail.com",
     linkedin: "linkedin.com/in/stevenluudeveloper",
+    github: "github.com/sluu1122",
   },
 
   summary:

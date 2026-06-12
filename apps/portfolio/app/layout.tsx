@@ -15,6 +15,20 @@ export const metadata: Metadata = {
   title: "Steven Luu | Software Engineer",
   description:
     "Portfolio of Steven Luu — Frontend-focused Software Engineer with 19 years of experience building responsive, scalable web applications.",
+  openGraph: {
+    type: "website",
+    url: "https://stevenluu.com",
+    siteName: "Steven Luu",
+    title: "Steven Luu | Software Engineer",
+    description:
+      "Portfolio of Steven Luu — Frontend-focused Software Engineer with 19 years of experience building responsive, scalable web applications.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Steven Luu | Software Engineer",
+    description:
+      "Portfolio of Steven Luu — Frontend-focused Software Engineer with 19 years of experience building responsive, scalable web applications.",
+  },
 };
 
 export default function RootLayout({

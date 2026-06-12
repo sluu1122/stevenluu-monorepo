@@ -1,25 +1,124 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+@theme {
+  /* ── Colors ── */
+  --color-page-bg:         #F7F8FA;
+  --color-ink-darkest:     #0B1220;
+  --color-ink-body:        #0F172A;
+  --color-ink-prose:       #3F4A5A;
+  --color-ink-secondary:   #475569;
+  --color-ink-company:     #5B6472;
+  --color-ink-tertiary:    #64748B;
+  --color-ink-mono:        #8A93A1;
+  --color-ink-faint:       #94A3B8;
+  --color-ink-faintest:    #AEB6C2;
+  --color-ink-bold:        #1E2632;
+  --color-pill-text:       #334155;
+  --color-border-default:  #E6E9F0;
+  --color-border-timeline: #DDE1EA;
+  --color-border-divider:  #E8EBF1;
+  --color-border-arrow:    #EDEFF3;
+  --color-tag-bg:          #F4F5F8;
+  --color-accent:          #5B5BD6;
+  --color-accent-light:    #C7CBFF;
+  --color-accent-bg:       #EEF0FB;
+  --color-ai-border:       #DCDCFB;
+  --color-ai-text:         #4F4FB8;
+  --color-status-green:    #16A34A;
+  --color-angular-red:          #DD0031;
+  --color-react-blue:           #1499C0;
+  --color-angular-hover-border: #F2C9CE;
+  --color-react-hover-border:   #BEE6F2;
+  --color-dot-inactive:         #C7CBD6;
+  --color-dot-bullet:           #CBD2DD;
+  --color-border-section-rule:  #E2E6EE;
+
+  /* ── Text sizes (companion --line-height bundles line-height into the utility) ── */
+  --text-label:        0.71875rem; --text-label--line-height:      1.5;
+  --text-mono-sm:      0.75rem;    --text-mono-sm--line-height:    1.6;
+  --text-date:         0.78125rem; --text-date--line-height:       1.5;
+  --text-section:      0.8125rem;  --text-section--line-height:    1.5;
+  --text-pill:         0.84375rem; --text-pill--line-height:       1.5;
+  --text-card:         0.875rem;   --text-card--line-height:       1.6;
+  --text-meta:         0.90625rem; --text-meta--line-height:       1.55;
+  --text-body:         0.9375rem;  --text-body--line-height:       1.62;
+  --text-subtext:      0.96875rem; --text-subtext--line-height:    1.55;
+  --text-prose:        1.03125rem; --text-prose--line-height:      1.72;
+  --text-tagline:      1.125rem;   --text-tagline--line-height:    1.55;
+  --text-contact-h2:   1.5rem;     --text-contact-h2--line-height: 1.3;
+  --text-sandbox-h2:   1.875rem;   --text-sandbox-h2--line-height: 1.2;
+  --text-profile:      2.875rem;   --text-profile--line-height:    1.04;
+
+  /* ── Border radii ── */
+  --radius-pill:      9px;
+  --radius-social:    11px;
+  --radius-monogram:  13px;
+  --radius-card:      18px;
+
+  /* ── Shadows ── */
+  --shadow-social:        0 1px 2px rgba(15,23,42,0.04);
+  --shadow-card:          0 1px 2px rgba(15,23,42,0.04);
+  --shadow-contact:       0 8px 20px -8px rgba(11,18,32,0.5);
+  --shadow-card-hover:    0 22px 40px -22px rgba(15,23,42,0.28);
+  --shadow-contact-hover: 0 14px 28px -10px rgba(11,18,32,0.55);
 }
 
-html,
+html {
+  scroll-behavior: smooth;
+}
+
 body {
+  background: var(--color-page-bg);
+  color: var(--color-ink-body);
+  font-family: var(--font-geist-sans), 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   max-width: 100vw;
   overflow-x: hidden;
-  background: var(--background);
-  color: var(--foreground);
 }
 
-* {
+*, *::before, *::after {
   box-sizing: border-box;
-  padding: 0;
-  margin: 0;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+a { text-decoration: none; }
+::selection { background: rgba(91, 91, 214, 0.16); }
+
+@media (scripting: none) {
+  .reveal-hidden {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
+/* Geist Mono shorthand — kept as plain CSS; --font-mono would conflict with Tailwind's built-in */
+.font-mono {
+  font-family: var(--font-geist-mono), 'Geist Mono', ui-monospace, monospace;
+}
+
+/* ── Dot-grid ambient background ── */
+.dot-grid {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 680px;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 1px 1px, rgba(15, 23, 42, 0.055) 1px, transparent 0);
+  background-size: 26px 26px;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 78%);
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent 78%);
+}
+
+/* ── Top indigo glow ── */
+.top-glow {
+  position: absolute;
+  top: -180px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 760px;
+  height: 420px;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, rgba(91, 91, 214, 0.10), rgba(91, 91, 214, 0) 65%);
 }
