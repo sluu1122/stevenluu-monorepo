@@ -1,9 +1,7 @@
-import { useMemo } from 'react';
-
 export function DashboardHeader() {
-  const dateStr = useMemo(() =>
-    new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
-  []);
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
+  });
 
   return (
     <header

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { executeTrade, getPortfolioBalance } from '../lib/mockMarketDB';
 import type {
@@ -54,6 +54,8 @@ export function useExecuteTrade(): UseExecuteTradeResult {
     mutationFn: executeTrade,
 
     onMutate: async (variables) => {
+      // Pause the live market feed during the ~1.25s execution window to avoid mid-mutation renders
+      await queryClient.cancelQueries({ queryKey: ['market-prices'] });
       // Prevent in-flight background sync from overwriting our speculative update
       await queryClient.cancelQueries({ queryKey: ['portfolio-balance'] });
 
@@ -84,6 +86,10 @@ export function useExecuteTrade(): UseExecuteTradeResult {
       return { snapshot };
     },
 
+    onSuccess: () => {
+      setAmount('');
+    },
+
     onError: (_err, _vars, context) => {
       // Simulated network drop — restore exact pre-trade snapshot
       if (context?.snapshot) {
@@ -103,14 +109,13 @@ export function useExecuteTrade(): UseExecuteTradeResult {
   // Ref-wrapped so the dismiss effect doesn't re-run (and restart the timer)
   // every time TQ reconstructs the mutation result object between price ticks.
   const resetRef = useRef(mutation.reset);
-  resetRef.current = mutation.reset;
+  useLayoutEffect(() => { resetRef.current = mutation.reset; });
 
   // Schedule banner dismiss 5.2 s after a successful trade.
   // mutation.reset is read via ref — omitting it from deps is intentional so that
   // TQ's per-render mutation object reconstruction doesn't restart the timer on every tick.
   useEffect(() => {
     if (!mutation.isSuccess) return;
-    setAmount('');
     const id = setTimeout(() => {
       resetRef.current();
       resetTimer.current = null;

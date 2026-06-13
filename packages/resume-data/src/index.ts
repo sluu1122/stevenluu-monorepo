@@ -1,3 +1,9 @@
+export interface ProjectGateway {
+  name: string;
+  subdomain: string;
+  stackTags: string[];
+}
+
 export interface PersonalInfo {
   name: string;
   location: string;

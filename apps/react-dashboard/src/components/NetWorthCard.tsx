@@ -22,7 +22,7 @@ export function NetWorthCard() {
   );
 
   const sessionChange = nw - (nwHistory[0] ?? nw);
-  const sessionPct = nwHistory[0] ? ((sessionChange / nwHistory[0]) * 100).toFixed(2) : '0.00';
+  const sessionPct = nwHistory[0] > 0 ? ((sessionChange / nwHistory[0]) * 100).toFixed(2) : '0.00';
   const isUp = sessionChange >= 0;
 
   return (

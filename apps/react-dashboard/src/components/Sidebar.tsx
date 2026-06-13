@@ -1,3 +1,5 @@
+import { resumeData } from '@repo/resume-data';
+
 const NAV_LINKS = [
   { label: 'Overview', active: true },
   { label: 'Sandbox Portfolio', active: false },
@@ -56,7 +58,7 @@ export function Sidebar() {
             SL
           </div>
           <div>
-            <p className="text-[13px] font-semibold text-ink tracking-[-0.01em] m-0">Steven Luu</p>
+            <p className="text-[13px] font-semibold text-ink tracking-[-0.01em] m-0">{resumeData.personalInfo.name}</p>
             <p className="text-[11px] text-dim m-0">Portfolio Mode</p>
           </div>
         </div>
