@@ -9,6 +9,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@repo/resume-data': path.resolve(__dirname, '../../packages/resume-data/src/index.ts'),
+      '@repo/ui': path.resolve(__dirname, '../../packages/ui/src'),
     },
   },
   server: {

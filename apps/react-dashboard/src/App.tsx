@@ -1,17 +1,31 @@
-import { resumeData } from '@repo/resume-data'
+import { Sidebar } from './components/Sidebar';
+import { DashboardHeader } from './components/DashboardHeader';
+import { NetWorthCard } from './components/NetWorthCard';
+import { WatchlistCard } from './components/WatchlistCard';
+import { AllocationCard } from './components/AllocationCard';
+import { TradeSandboxCard } from './components/TradeSandboxCard';
 
-function App() {
-  const { personalInfo, summary } = resumeData
-
+export default function App() {
   return (
-    <main className="min-h-dvh flex flex-col items-center justify-center p-8">
-      <h1 className="text-4xl font-bold tracking-tight">{personalInfo.name}</h1>
-      <p className="mt-2 text-lg text-gray-400">{personalInfo.location}</p>
-      <p className="mt-6 max-w-2xl text-center text-gray-300 leading-relaxed">
-        {summary}
-      </p>
-    </main>
-  )
-}
+    <div className="flex min-h-dvh">
+      <Sidebar />
 
-export default App
+      <div className="flex-1 min-w-0 flex flex-col">
+        <DashboardHeader />
+
+        <main className="flex-1 pt-[26px] px-8 pb-10 max-w-[1240px] w-full">
+          <div className="grid grid-cols-[minmax(0,1.58fr)_minmax(0,1fr)] gap-5 items-start">
+            <div className="flex flex-col gap-5 min-w-0">
+              <NetWorthCard />
+              <WatchlistCard />
+            </div>
+            <div className="flex flex-col gap-5 min-w-0">
+              <AllocationCard />
+              <TradeSandboxCard />
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

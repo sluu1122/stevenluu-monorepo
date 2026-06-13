@@ -3,19 +3,13 @@
   "style": "default",
   "rsc": false,
   "tsx": true,
-  "tailwind": {
-    "config": "",
-    "css": "src/index.css",
-    "baseColor": "slate",
-    "cssVariables": true,
-    "prefix": ""
-  },
+  "tailwind": {},
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@/components",
+    "components": "@repo/ui/components",
     "utils": "@repo/ui/lib/utils",
     "ui": "@repo/ui/components",
-    "lib": "@/lib",
-    "hooks": "@/hooks"
+    "lib": "@repo/ui/lib",
+    "hooks": "@repo/ui/hooks"
   }
 }
