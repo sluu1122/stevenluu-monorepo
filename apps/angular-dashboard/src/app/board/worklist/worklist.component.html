@@ -1,0 +1,154 @@
+<!-- Tab row + New Intake button -->
+<div class="wl__toolbar">
+  <div class="wl__tabs">
+    @for (tab of TABS; track tab) {
+      <button
+        class="wl__tab"
+        [class.wl__tab--active]="board.worklistTab() === tab"
+        (click)="board.setTab(tab)"
+      >
+        <span>{{ tab }}</span>
+        <span class="wl__tab-count">
+          {{ tab === 'In Progress' ? board.inProgressPatients().length : board.completedPatients().length }}
+        </span>
+      </button>
+    }
+  </div>
+  <button class="wl__new-btn" (click)="openWizard()">
+    <span class="icon">add</span>New Intake
+  </button>
+</div>
+
+<!-- KPI tiles (only in In Progress tab) -->
+@if (board.worklistTab() === 'In Progress') {
+  <div class="wl__kpis">
+    @for (k of kpiTiles(); track k.label) {
+      <button
+        class="wl__kpi-tile"
+        [class.wl__kpi-tile--active]="board.statusFilter() === k.status"
+        (click)="filterByKpi(k.status)"
+      >
+        <div class="wl__kpi-header">
+          <span class="wl__kpi-dot" [style.background]="k.dot"></span>
+          <span class="wl__kpi-label">{{ k.label }}</span>
+        </div>
+        <div class="wl__kpi-count">{{ k.count }}</div>
+      </button>
+    }
+  </div>
+}
+
+<!-- Operations table card -->
+<section class="wl__card">
+  <!-- Card header -->
+  <div class="wl__card-head">
+    <div class="wl__card-head-left">
+      <h2 class="wl__card-title">
+        {{ board.worklistTab() === 'In Progress' ? 'Active Operations Queue' : 'Completed Cases' }}
+      </h2>
+      <span class="wl__card-count">
+        Showing {{ board.filteredPatients().length }} of {{ board.worklistTab() === 'In Progress' ? board.inProgressPatients().length : board.completedPatients().length }}
+      </span>
+      @if (board.worklistTab() === 'In Progress') {
+        <span class="wl__live-badge">
+          <span class="wl__live-dot"></span>LIVE
+        </span>
+      }
+    </div>
+    <div class="wl__card-head-right">
+      @if (board.worklistTab() === 'In Progress') {
+        <div class="wl__select-wrap">
+          <select
+            class="wl__select"
+            [ngModel]="board.statusFilter()"
+            (ngModelChange)="board.setStatusFilter($event)"
+          >
+            @for (opt of STATUS_OPTIONS; track opt) {
+              <option [value]="opt">{{ opt }}</option>
+            }
+          </select>
+          <span class="icon wl__select-icon">expand_more</span>
+        </div>
+      }
+      <div class="wl__search-wrap">
+        <span class="icon wl__search-icon">search</span>
+        <input
+          class="wl__search"
+          placeholder="Search ID or patient…"
+          [ngModel]="board.search()"
+          (ngModelChange)="board.setSearch($event)"
+        />
+      </div>
+    </div>
+  </div>
+
+  <!-- p-table -->
+  <p-table
+    [value]="board.filteredPatients()"
+    dataKey="id"
+    styleClass="wl__table"
+  >
+    <ng-template pTemplate="header">
+      <tr class="wl__thead-row">
+        <th class="wl__th wl__th--check"><input type="checkbox" class="wl__check" aria-label="Select all patients"></th>
+        <th class="wl__th">Patient Identifier</th>
+        <th class="wl__th">Intake Status</th>
+        <th class="wl__th">Provider</th>
+        <th class="wl__th">Insurance</th>
+        <th class="wl__th">Facility</th>
+        <th class="wl__th wl__th--right">Actions</th>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="body" let-p>
+      <tr class="wl__row">
+        <td class="wl__td wl__td--check"><input type="checkbox" class="wl__check" [attr.aria-label]="'Select patient ' + p.name"></td>
+        <!-- Patient -->
+        <td class="wl__td">
+          <span class="wl__patient-name">{{ p.name }}</span>
+          <span class="wl__patient-meta mono">{{ p.id }} · {{ p.age }}</span>
+        </td>
+        <!-- Status badge -->
+        <td class="wl__td">
+          <app-status-badge [status]="p.status" />
+        </td>
+        <!-- Provider -->
+        <td class="wl__td">
+          @if (p.assignee !== 'Unassigned') {
+            <div class="wl__assignee">
+              <app-avatar [name]="p.assignee" cssClass="wl__assignee-avatar" />
+              <span class="wl__assignee-name">{{ p.assignee }}</span>
+            </div>
+          } @else {
+            <button class="wl__assign-btn">
+              <span class="icon">person_add</span>Assign
+            </button>
+          }
+        </td>
+        <td class="wl__td wl__td--text">{{ p.payer }}</td>
+        <td class="wl__td wl__td--text wl__td--dim">{{ p.facility }}</td>
+        <!-- Actions -->
+        <td class="wl__td wl__td--actions">
+          <button class="wl__action-btn" title="View"><span class="icon">visibility</span></button>
+          <button class="wl__action-btn" title="More"><span class="icon">more_horiz</span></button>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template pTemplate="emptymessage">
+      <tr>
+        <td colspan="7">
+          <div class="wl__empty">
+            <span class="icon wl__empty-icon">search_off</span>
+            <div class="wl__empty-title">No matching records</div>
+            <div class="wl__empty-sub">No patients match the current filters.</div>
+            <button class="wl__clear-btn" (click)="board.clearFilters()">Clear filters</button>
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+</section>
+
+<!-- Wizard modal -->
+@if (wizard.wizardOpen()) {
+  <app-wizard-modal />
+}

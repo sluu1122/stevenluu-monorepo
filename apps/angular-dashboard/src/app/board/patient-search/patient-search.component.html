@@ -1,0 +1,114 @@
+<div class="ps">
+
+  <!-- Search bar card -->
+  <div class="ps__search-card">
+    <div class="ps__search-wrap">
+      <span class="icon ps__search-icon">search</span>
+      <input
+        class="ps__search-input"
+        placeholder="Search by name, MRN, date of birth, or phone…"
+        [ngModel]="query()"
+        (ngModelChange)="query.set($event)"
+      >
+    </div>
+    <div class="ps__filters">
+      <span class="ps__filter-label">Filter</span>
+
+      <div class="ps__select-wrap">
+        <select
+          class="ps__select"
+          [ngModel]="status()"
+          (ngModelChange)="status.set($event)"
+        >
+          @for (opt of STATUS_OPTIONS; track opt) {
+            <option [value]="opt">{{ opt }}</option>
+          }
+        </select>
+        <span class="icon ps__select-caret">expand_more</span>
+      </div>
+
+      <div class="ps__select-wrap">
+        <select
+          class="ps__select"
+          [ngModel]="payer()"
+          (ngModelChange)="payer.set($event)"
+        >
+          @for (opt of PAYER_OPTIONS; track opt) {
+            <option [value]="opt">{{ opt }}</option>
+          }
+        </select>
+        <span class="icon ps__select-caret">expand_more</span>
+      </div>
+
+      @if (hasFilters()) {
+        <button class="ps__clear-btn" (click)="clearFilters()">
+          <span class="icon">close</span>Clear
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Results card -->
+  <div class="ps__results-card">
+    <div class="ps__results-head">
+      <div class="ps__results-head-left">
+        <h3 class="ps__results-title">Results</h3>
+        <span class="ps__results-count">{{ results().length }} of {{ total }} patients</span>
+      </div>
+      <span class="ps__results-tag mono">Directory · all units</span>
+    </div>
+
+    @if (results().length > 0) {
+      <p-table
+        [value]="results()"
+        dataKey="mrn"
+        styleClass="ps__table"
+      >
+        <ng-template pTemplate="header">
+          <tr class="ps__thead-row">
+            <th class="ps__th">Patient</th>
+            <th class="ps__th">MRN</th>
+            <th class="ps__th">Date of Birth</th>
+            <th class="ps__th">Payer</th>
+            <th class="ps__th">Status</th>
+            <th class="ps__th ps__th--right">Open</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-r>
+          <tr class="ps__row">
+            <td class="ps__td">
+              <div class="ps__patient-cell">
+                <app-avatar [name]="r.name" [tintName]="r.payer" tintBy="payer" cssClass="ps__avatar" />
+                <div>
+                  <div class="ps__patient-name">{{ r.name }}</div>
+                  <div class="ps__patient-meta">{{ r.sex }} · {{ r.unit }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="ps__td ps__td--mono">{{ r.mrn }}</td>
+            <td class="ps__td ps__td--mono">{{ r.dob }}</td>
+            <td class="ps__td ps__td--text">{{ r.payer }}</td>
+            <td class="ps__td">
+              <app-status-badge [status]="r.status" />
+            </td>
+            <td class="ps__td ps__td--actions">
+              <button class="ps__open-btn" title="Open patient">
+                <span class="icon">arrow_forward</span>
+              </button>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    } @else {
+      <div class="ps__empty">
+        <span class="icon ps__empty-icon">person_search</span>
+        <div class="ps__empty-title">No patients found</div>
+        <div class="ps__empty-sub">No directory records match your search and filters. Try a different name, MRN, or clear the filters.</div>
+        @if (hasFilters()) {
+          <button class="ps__empty-clear" (click)="clearFilters()">Clear search</button>
+        }
+      </div>
+    }
+  </div>
+
+</div>
