@@ -13,8 +13,13 @@
         Legal Full Name <span class="wz__label-req" aria-hidden="true">*</span>
       </label>
       @let nameCtrl = form.get('name');
-      <input id="wz-name" class="wz__input" formControlName="name" placeholder="Full legal name"
-        [class.wz__input--error]="nameCtrl?.invalid && nameCtrl?.touched">
+      <input
+        id="wz-name"
+        pInputText
+        formControlName="name"
+        placeholder="Full legal name"
+        [attr.aria-invalid]="nameCtrl?.invalid && nameCtrl?.touched"
+      >
       @if (nameCtrl?.invalid && nameCtrl?.touched) {
         <div class="wz__inline-error" role="alert">
           <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
@@ -29,8 +34,17 @@
           Date of Birth <span class="wz__label-req" aria-hidden="true">*</span>
         </label>
         @let dobCtrl = form.get('dob');
-        <input id="wz-dob" type="date" class="wz__input mono" formControlName="dob"
-          [class.wz__input--error]="dobCtrl?.invalid && dobCtrl?.touched">
+        <p-datepicker
+          inputId="wz-dob"
+          formControlName="dob"
+          dateFormat="mm/dd/yy"
+          placeholder="MM/DD/YYYY"
+          [maxDate]="today"
+          [fluid]="true"
+          appendTo="body"
+          [invalid]="!!(dobCtrl?.invalid && dobCtrl?.touched)"
+          inputStyleClass="mono"
+        />
         @if (dobCtrl?.errors?.['required'] && dobCtrl?.touched) {
           <div class="wz__inline-error" role="alert">
             <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
@@ -50,18 +64,23 @@
       </div>
       <div class="wz__field">
         <label class="wz__label" for="wz-sex">Sex</label>
-        <div class="wz__select-wrap">
-          <select id="wz-sex" class="wz__select" formControlName="sex">
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-          </select>
-          <span class="icon wz__select-caret" aria-hidden="true">expand_more</span>
-        </div>
+        <p-select
+          inputId="wz-sex"
+          formControlName="sex"
+          [options]="SEX_OPTIONS"
+          [fluid]="true"
+          appendTo="body"
+        />
       </div>
       <div class="wz__field">
         <label class="wz__label" for="wz-mrn">MRN</label>
-        <input id="wz-mrn" class="wz__input mono" formControlName="mrn" placeholder="MRN-000000">
+        <input
+          id="wz-mrn"
+          pInputText
+          class="mono"
+          formControlName="mrn"
+          placeholder="MRN-000000"
+        >
       </div>
     </div>
 
@@ -70,8 +89,13 @@
         Contact Number <span class="wz__label-req" aria-hidden="true">*</span>
       </label>
       @let phoneCtrl = form.get('phone');
-      <input id="wz-phone" class="wz__input" formControlName="phone" placeholder="+1 (555) 000-0000"
-        [class.wz__input--error]="phoneCtrl?.invalid && phoneCtrl?.touched">
+      <p-inputmask
+        inputId="wz-phone"
+        formControlName="phone"
+        mask="+1 (999) 999-9999"
+        [fluid]="true"
+        [invalid]="!!(phoneCtrl?.invalid && phoneCtrl?.touched)"
+      />
       @if (phoneCtrl?.errors?.['required'] && phoneCtrl?.touched) {
         <div class="wz__inline-error" role="alert">
           <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
@@ -80,7 +104,7 @@
       } @else if (phoneCtrl?.errors?.['pattern'] && phoneCtrl?.touched) {
         <div class="wz__inline-error" role="alert">
           <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
-          Enter a valid phone number (e.g. +1 555 000-0000).
+          Enter a valid phone number.
         </div>
       }
     </div>
@@ -90,8 +114,14 @@
         Email <span class="wz__label-req" aria-hidden="true">*</span>
       </label>
       @let emailCtrl = form.get('email');
-      <input id="wz-email" class="wz__input" type="email" formControlName="email" placeholder="patient@example.com"
-        [class.wz__input--error]="emailCtrl?.invalid && emailCtrl?.touched">
+      <input
+        id="wz-email"
+        pInputText
+        type="email"
+        formControlName="email"
+        placeholder="patient@example.com"
+        [attr.aria-invalid]="emailCtrl?.invalid && emailCtrl?.touched"
+      >
       @if (emailCtrl?.errors?.['required'] && emailCtrl?.touched) {
         <div class="wz__inline-error" role="alert">
           <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>

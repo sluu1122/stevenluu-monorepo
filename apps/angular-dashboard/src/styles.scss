@@ -122,6 +122,91 @@ input, select, button, textarea { font-family: inherit; margin: 0; }
 .p-datatable-thead > tr > th,
 .p-datatable-tbody > tr > td { border: none; padding: 0; }
 
+// ─── PrimeNG p-select / p-datepicker inside .wz: match wz__input ─────
+// Design token overrides (cascade into PrimeNG Aura component vars)
+.wz {
+  --p-select-background:           #fbfcfd;
+  --p-select-border-color:         #e2e8f0;
+  --p-select-hover-border-color:   #2a6fdb;
+  --p-select-focus-border-color:   #2a6fdb;
+  --p-select-focus-ring-color:     rgba(42, 111, 219, 0.10);
+  --p-select-focus-ring-width:     3px;
+  --p-select-border-radius:        9px;
+  --p-select-color:                #0f172a;
+  --p-select-placeholder-color:    #cbd5e1;
+  --p-select-invalid-border-color: #dc4438;
+
+  --p-inputtext-background:           #fbfcfd;
+  --p-inputtext-border-color:         #e2e8f0;
+  --p-inputtext-hover-border-color:   #2a6fdb;
+  --p-inputtext-focus-border-color:   #2a6fdb;
+  --p-inputtext-focus-ring-color:     rgba(42, 111, 219, 0.10);
+  --p-inputtext-focus-ring-width:     3px;
+  --p-inputtext-border-radius:        9px;
+  --p-inputtext-color:                #0f172a;
+  --p-inputtext-placeholder-color:    #cbd5e1;
+  --p-inputtext-invalid-border-color: #dc4438;
+}
+
+// Direct class overrides for padding / font-size (no standard tokens)
+.wz .p-select .p-select-label {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+.wz .p-datepicker { width: 100%; }
+.wz .p-datepicker .p-datepicker-input {
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+// pInputText directive — wire it to match wz__input dimensions
+.wz input.p-inputtext {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  box-sizing: border-box;
+}
+// Aura provides border-color via token; background needs an explicit override
+.wz input.p-inputtext.ng-invalid.ng-touched {
+  background: #fdf3f2;
+}
+.wz input.p-inputtext.ng-invalid.ng-touched:focus {
+  box-shadow: 0 0 0 3px rgba(220, 68, 56, 0.12);
+}
+
+// p-inputmask — component wraps an input, so sizing goes on the wrapper
+.wz .p-inputmask { width: 100%; }
+.wz .p-inputmask .p-inputmask-input {
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+.wz .p-inputmask.p-invalid .p-inputmask-input { background: #fdf3f2; }
+
+// Calendar overlay panel (rendered outside .wz via appendTo="body")
+.p-datepicker-panel {
+  font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+// Select overlay panel (rendered outside .wz via appendTo="body")
+.p-select-overlay {
+  font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+.p-select-overlay .p-select-option {
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
 // ─── Screen-reader only ──────────────────────────────────────────
 .sr-only {
   position: absolute;
