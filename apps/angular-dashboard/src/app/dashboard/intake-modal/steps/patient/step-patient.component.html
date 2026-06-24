@@ -1,0 +1,108 @@
+<div>
+  <div class="wz__step-header">
+    <h3 class="wz__step-title">Patient Information</h3>
+    <span class="wz__verified-badge">
+      <span class="icon wz__verified-icon" aria-hidden="true">check</span>Verified
+    </span>
+  </div>
+  <p class="wz__step-sub">Captured identity record. Confirmed against the master patient index.</p>
+
+  <form [formGroup]="form" autocomplete="off">
+    <div class="wz__field">
+      <label class="wz__label" for="wz-name">
+        Legal Full Name <span class="wz__label-req" aria-hidden="true">*</span>
+      </label>
+      @let nameCtrl = form.get('name');
+      <input id="wz-name" class="wz__input" formControlName="name" placeholder="Full legal name"
+        [class.wz__input--error]="nameCtrl?.invalid && nameCtrl?.touched">
+      @if (nameCtrl?.invalid && nameCtrl?.touched) {
+        <div class="wz__inline-error" role="alert">
+          <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+          Full name is required.
+        </div>
+      }
+    </div>
+
+    <div class="wz__grid-3">
+      <div class="wz__field">
+        <label class="wz__label" for="wz-dob">
+          Date of Birth <span class="wz__label-req" aria-hidden="true">*</span>
+        </label>
+        @let dobCtrl = form.get('dob');
+        <input id="wz-dob" type="date" class="wz__input mono" formControlName="dob"
+          [class.wz__input--error]="dobCtrl?.invalid && dobCtrl?.touched">
+        @if (dobCtrl?.errors?.['required'] && dobCtrl?.touched) {
+          <div class="wz__inline-error" role="alert">
+            <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+            Date of birth is required.
+          </div>
+        } @else if (dobCtrl?.errors?.['dobFuture'] && dobCtrl?.touched) {
+          <div class="wz__inline-error" role="alert">
+            <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+            Date of birth cannot be in the future.
+          </div>
+        } @else if (dobCtrl?.invalid && dobCtrl?.touched) {
+          <div class="wz__inline-error" role="alert">
+            <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+            Enter a valid date of birth.
+          </div>
+        }
+      </div>
+      <div class="wz__field">
+        <label class="wz__label" for="wz-sex">Sex</label>
+        <div class="wz__select-wrap">
+          <select id="wz-sex" class="wz__select" formControlName="sex">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+          <span class="icon wz__select-caret" aria-hidden="true">expand_more</span>
+        </div>
+      </div>
+      <div class="wz__field">
+        <label class="wz__label" for="wz-mrn">MRN</label>
+        <input id="wz-mrn" class="wz__input mono" formControlName="mrn" placeholder="MRN-000000">
+      </div>
+    </div>
+
+    <div class="wz__field">
+      <label class="wz__label" for="wz-phone">
+        Contact Number <span class="wz__label-req" aria-hidden="true">*</span>
+      </label>
+      @let phoneCtrl = form.get('phone');
+      <input id="wz-phone" class="wz__input" formControlName="phone" placeholder="+1 (555) 000-0000"
+        [class.wz__input--error]="phoneCtrl?.invalid && phoneCtrl?.touched">
+      @if (phoneCtrl?.errors?.['required'] && phoneCtrl?.touched) {
+        <div class="wz__inline-error" role="alert">
+          <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+          Contact number is required.
+        </div>
+      } @else if (phoneCtrl?.errors?.['pattern'] && phoneCtrl?.touched) {
+        <div class="wz__inline-error" role="alert">
+          <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+          Enter a valid phone number (e.g. +1 555 000-0000).
+        </div>
+      }
+    </div>
+
+    <div class="wz__field">
+      <label class="wz__label" for="wz-email">
+        Email <span class="wz__label-req" aria-hidden="true">*</span>
+      </label>
+      @let emailCtrl = form.get('email');
+      <input id="wz-email" class="wz__input" type="email" formControlName="email" placeholder="patient@example.com"
+        [class.wz__input--error]="emailCtrl?.invalid && emailCtrl?.touched">
+      @if (emailCtrl?.errors?.['required'] && emailCtrl?.touched) {
+        <div class="wz__inline-error" role="alert">
+          <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+          Email is required.
+        </div>
+      } @else if (emailCtrl?.errors?.['email'] && emailCtrl?.touched) {
+        <div class="wz__inline-error" role="alert">
+          <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+          Enter a valid email address.
+        </div>
+      }
+    </div>
+  </form>
+</div>

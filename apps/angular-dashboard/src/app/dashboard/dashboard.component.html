@@ -1,0 +1,86 @@
+<div class="dashboard">
+
+  <!-- ── Left nav rail ── -->
+  <aside class="dashboard__nav">
+    <div class="dashboard__logo">
+      <span class="icon">vital_signs</span>
+    </div>
+
+    <nav class="dashboard__nav-items">
+      @for (item of navDefs; track item.label) {
+        <button
+          class="dashboard__nav-btn"
+          [class.dashboard__nav-btn--active]="store.activeNav() === item.label"
+          (click)="store.setNav(item.label)"
+          [attr.aria-label]="item.label"
+          [attr.aria-current]="store.activeNav() === item.label ? 'page' : null"
+        >
+          <span
+            class="dashboard__nav-indicator"
+            [class.dashboard__nav-indicator--active]="store.activeNav() === item.label"
+          ></span>
+          <span class="icon dashboard__nav-icon">{{ item.icon }}</span>
+          <span class="dashboard__nav-label" aria-hidden="true">{{ item.label }}</span>
+        </button>
+      }
+    </nav>
+
+    <div class="dashboard__nav-footer">
+      <span class="icon dashboard__nav-settings">settings</span>
+      <div class="dashboard__avatar dashboard__avatar--small">AC</div>
+    </div>
+  </aside>
+
+  <!-- ── Main column ── -->
+  <main class="dashboard__main">
+
+    <!-- Top header -->
+    <header class="dashboard__header">
+      <div class="dashboard__header-left">
+        @let nav = store.activeNav();
+        <div class="dashboard__header-title-row">
+          <h1 class="dashboard__header-title">
+            @if (nav === 'Worklist') { Patient Worklist }
+            @else if (nav === 'Patient Intake') { Patient Intake }
+            @else { Patient Search }
+          </h1>
+          @if (nav === 'Worklist') {
+            <span class="dashboard__active-badge">{{ store.totalActive() }} ACTIVE</span>
+          }
+        </div>
+        <p class="dashboard__header-sub">
+          @if (nav === 'Worklist') { Clinical Operations &amp; Revenue Cycle Queue }
+          @else if (nav === 'Patient Intake') { New patient registration &amp; authorization workflow }
+          @else { Facility-wide patient directory }
+        </p>
+      </div>
+
+      <div class="dashboard__header-right">
+        <button class="dashboard__icon-btn" aria-label="Notifications">
+          <span class="icon" aria-hidden="true">notifications</span>
+          <span class="dashboard__notif-dot"></span>
+        </button>
+
+        <div class="dashboard__user">
+          <div class="dashboard__avatar" aria-hidden="true">AC</div>
+          <div class="dashboard__user-info">
+            <span class="dashboard__user-name">Avery Chen</span>
+            <span class="dashboard__user-role">Charge Coordinator</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Scrollable body -->
+    <div class="dashboard__body">
+      @if (store.activeNav() === 'Worklist') {
+        <app-worklist />
+      } @else if (store.activeNav() === 'Patient Intake') {
+        <app-patient-intake />
+      } @else {
+        <app-patient-search />
+      }
+    </div>
+
+  </main>
+</div>

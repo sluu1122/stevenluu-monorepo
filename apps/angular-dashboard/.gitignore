@@ -40,3 +40,6 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+# Local environment overrides (may contain API keys)
+src/environments/environment.local.ts

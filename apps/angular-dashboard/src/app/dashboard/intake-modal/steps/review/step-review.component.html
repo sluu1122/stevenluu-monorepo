@@ -1,0 +1,70 @@
+<div>
+  <h3 class="wz__step-title">Review &amp; Submit</h3>
+  <p class="wz__step-sub">Confirm the intake details below before submitting.</p>
+
+  <div class="wz__review-card">
+    <div class="wz__review-section">
+      Patient
+      <button type="button" class="wz__review-edit" (click)="store.goToStep(1)" aria-label="Edit patient information">
+        <span class="icon" aria-hidden="true">edit</span>Edit
+      </button>
+    </div>
+    <div class="wz__review-row"><span class="wz__review-key">Name</span><span class="wz__review-val">{{ store.name() || '—' }}</span></div>
+    <div class="wz__review-row"><span class="wz__review-key">DOB</span><span class="wz__review-val mono">{{ store.dob() || '—' }}</span></div>
+    <div class="wz__review-row"><span class="wz__review-key">MRN</span><span class="wz__review-val mono">{{ store.mrn() || '—' }}</span></div>
+  </div>
+
+  <div class="wz__review-card">
+    <div class="wz__review-section">
+      Diagnoses
+      <button type="button" class="wz__review-edit" (click)="store.goToStep(2)" aria-label="Edit diagnosis">
+        <span class="icon" aria-hidden="true">edit</span>Edit
+      </button>
+    </div>
+    <div class="wz__review-row">
+      <span class="wz__review-val">{{ reviewDx().text }}</span>
+      <span class="wz__review-codes mono">{{ reviewDx().codes }}</span>
+    </div>
+  </div>
+
+  <div class="wz__review-card">
+    <div class="wz__review-section">
+      Procedures
+      <button type="button" class="wz__review-edit" (click)="store.goToStep(3)" aria-label="Edit procedures">
+        <span class="icon" aria-hidden="true">edit</span>Edit
+      </button>
+    </div>
+    @for (rx of reviewPx(); track rx.id) {
+      <div class="wz__review-row">
+        <span class="wz__review-val">{{ rx.text }}</span>
+        <span class="wz__review-codes mono">{{ rx.codes }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="wz__review-card">
+    <div class="wz__review-section">
+      Insurance
+      <button type="button" class="wz__review-edit" (click)="store.goToStep(4)" aria-label="Edit insurance">
+        <span class="icon" aria-hidden="true">edit</span>Edit
+      </button>
+    </div>
+    @for (ri of reviewIns(); track ri.id) {
+      <div class="wz__review-row">
+        <span class="wz__review-val">{{ ri.rank }} · {{ ri.payer }}</span>
+        <span class="wz__review-scope">{{ ri.scope }}</span>
+      </div>
+    }
+  </div>
+
+  <div class="wz__mn-banner"
+    [class.wz__mn-banner--skipped]="mnSummary().variant === 'skipped'"
+    [class.wz__mn-banner--warning]="mnSummary().variant === 'warning'"
+    [class.wz__mn-banner--success]="mnSummary().variant === 'success'">
+    <span class="icon icon--filled wz__mn-banner-icon" aria-hidden="true">{{ mnSummary().icon }}</span>
+    <div>
+      <div class="wz__mn-banner-title">{{ mnSummary().title }}</div>
+      <div class="wz__mn-banner-sub">{{ mnSummary().sub }}</div>
+    </div>
+  </div>
+</div>

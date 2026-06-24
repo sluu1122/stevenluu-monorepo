@@ -1,51 +1,215 @@
-import { computed } from '@angular/core';
+import { computed, inject } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
-import type { AuthType, Determination, ModalKind } from '../models/patient.model';
+import { Subscription, TimeoutError } from 'rxjs';
+import {
+  ClinicalDecisionSupportService,
+  MnResult,
+  MnRequest,
+} from '../services/clinical-decision-support.service';
 
-interface WizardState {
-  wizardOpen: boolean;
-  activeStep: 1 | 2 | 3;
-  authType: AuthType;
-  determination: Determination;
-  modalKind: ModalKind;
+export interface IntakeProcedure {
+  id: string;
+  text: string;
+  cpts: string[];
 }
 
-const initialState: WizardState = {
-  wizardOpen: false,
+export interface IntakeInsurance {
+  id: string;
+  payer: string;
+  scopeAll: boolean;
+  procIds: string[];
+}
+
+interface IntakeState {
+  isOpen: boolean;
+  activeStep: number;
+  provisionalId: string;
+  // Step 1 — Patient
+  name: string;
+  dob: string;
+  sex: string;
+  mrn: string;
+  phone: string;
+  email: string;
+  // Step 2 — Diagnosis
+  dxIcds: string[];
+  dxText: string;
+  // Step 3 — Procedures
+  procedures: IntakeProcedure[];
+  // Step 4 — Insurance & MN
+  insurances: IntakeInsurance[];
+  mnRun: boolean;
+  mnPending: boolean;
+  mnResults: MnResult[];
+  mnError: string;
+}
+
+const initialState: IntakeState = {
+  isOpen: false,
   activeStep: 1,
-  authType: 'Inpatient',
-  determination: 'Pending',
-  modalKind: undefined,
+  provisionalId: '',
+  name: '', dob: '', sex: 'Male', mrn: '', phone: '', email: '',
+  dxIcds: [], dxText: '',
+  procedures: [{ id: 'p1', text: '', cpts: [] }],
+  insurances: [{ id: 'w1', payer: 'Aetna', scopeAll: true, procIds: [] }],
+  mnRun: false,
+  mnPending: false,
+  mnResults: [],
+  mnError: '',
 };
+
+let _seq     = 1;
+let _intakeN = 0;
+function uid(prefix: string): string { return prefix + (++_seq); }
+function nextIntakeId(): string { return `INT-${String(++_intakeN).padStart(5, '0')}`; }
+
+export const RANK_NAMES = ['Primary Insurance', 'Secondary Insurance', 'Tertiary Insurance'];
+
+export function procLabel(p: IntakeProcedure, i: number): string {
+  return p.text.trim() || p.cpts[0] || `Procedure ${i + 1}`;
+}
 
 export const IntakeWizardStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
 
   withComputed((store) => ({
-    progressWidth: computed(() => {
-      const map: Record<number, string> = { 1: '0%', 2: '50%', 3: '100%' };
-      return map[store.activeStep()] ?? '0%';
-    }),
-    continueLabel: computed(() => store.activeStep() === 3 ? 'Submit' : 'Continue'),
-    backDisabled:  computed(() => store.activeStep() === 1),
+    progressWidth:    computed(() => ((store.activeStep() - 1) / 4 * 80) + '%'),
+    isMnChoice:       computed(() => store.activeStep() === 4 && !store.mnRun()),
+    isReviewStep:     computed(() => store.activeStep() === 5),
+    isNormalContinue: computed(() => store.activeStep() !== 5 && !(store.activeStep() === 4 && !store.mnRun())),
+    continueLabel:    computed(() => store.activeStep() === 4 ? 'Continue to Review' : 'Save & Continue'),
+    stepLabel:        computed(() => `Step ${store.activeStep()} of 5`),
+    backDisabled:     computed(() => store.activeStep() === 1),
+    canRunMn:         computed(() =>
+      store.dxIcds().length > 0 &&
+      store.procedures().some(p => p.cpts.length > 0)
+    ),
   })),
 
-  withMethods((store) => ({
-    openWizard()  { patchState(store, { wizardOpen: true, activeStep: 1 }); },
-    closeWizard() { patchState(store, { wizardOpen: false }); },
-    nextStep() {
-      const cur = store.activeStep();
-      if (cur < 3) patchState(store, { activeStep: (cur + 1) as 1 | 2 | 3 });
-    },
-    prevStep() {
-      const cur = store.activeStep();
-      if (cur > 1) patchState(store, { activeStep: (cur - 1) as 1 | 2 | 3 });
-    },
-    goToStep(step: number) { patchState(store, { activeStep: step as 1 | 2 | 3 }); },
-    setAuthType(authType: AuthType) { patchState(store, { authType }); },
-    setDetermination(determination: Determination) { patchState(store, { determination }); },
-    openModal(kind: ModalKind)  { patchState(store, { modalKind: kind }); },
-    closeModal()                { patchState(store, { modalKind: undefined }); },
-  })),
+  withMethods((store) => {
+    const cds = inject(ClinicalDecisionSupportService);
+    let mnSub: Subscription | null = null;
+
+    return {
+      open() {
+        mnSub?.unsubscribe();
+        mnSub = null;
+        patchState(store, {
+          isOpen: true, activeStep: 1,
+          provisionalId: nextIntakeId(),
+          mnRun: false, mnPending: false, mnResults: [], mnError: '',
+          name: '', dob: '', sex: 'Male', mrn: '', phone: '', email: '',
+          dxText: '', dxIcds: [],
+          procedures: [{ id: 'p1', text: '', cpts: [] }],
+          insurances: [{ id: 'w1', payer: 'Aetna', scopeAll: true, procIds: [] }],
+        });
+      },
+      close()                { patchState(store, { isOpen: false }); },
+      goToStep(step: number) { patchState(store, { activeStep: step }); },
+      nextStep()             { patchState(store, { activeStep: Math.min(5, store.activeStep() + 1) }); },
+      prevStep()             { patchState(store, { activeStep: Math.max(1, store.activeStep() - 1) }); },
+
+      // Step 1
+      setPatientField(field: 'name' | 'dob' | 'sex' | 'mrn' | 'phone' | 'email', value: string) {
+        patchState(store, { [field]: value });
+      },
+
+      // Step 2
+      setDxText(dxText: string)   { patchState(store, { dxText }); },
+      setDxIcds(dxIcds: string[]) { patchState(store, { dxIcds }); },
+
+      // Step 3
+      addProcedure() {
+        patchState(store, { procedures: [...store.procedures(), { id: uid('p'), text: '', cpts: [] }] });
+      },
+      removeProcedure(id: string) {
+        patchState(store, {
+          procedures: store.procedures().filter(p => p.id !== id),
+          insurances: store.insurances().map(w => ({ ...w, procIds: w.procIds.filter(x => x !== id) })),
+        });
+      },
+      setProcedureText(id: string, text: string) {
+        patchState(store, { procedures: store.procedures().map(p => p.id === id ? { ...p, text } : p) });
+      },
+      setProcCpts(id: string, cpts: string[]) {
+        patchState(store, {
+          procedures: store.procedures().map(p => p.id === id ? { ...p, cpts } : p),
+        });
+      },
+
+      // Step 4
+      addInsurance() {
+        patchState(store, {
+          insurances: [...store.insurances(), { id: uid('w'), payer: 'Aetna', scopeAll: true, procIds: [] }],
+          mnRun: false,
+        });
+      },
+      removeInsurance(id: string) {
+        patchState(store, { insurances: store.insurances().filter(w => w.id !== id) });
+      },
+      setInsurancePayer(id: string, payer: string) {
+        patchState(store, {
+          insurances: store.insurances().map(w => w.id === id ? { ...w, payer } : w),
+          mnRun: false, mnResults: [],
+        });
+      },
+      setInsuranceScope(id: string, scopeAll: boolean) {
+        patchState(store, {
+          insurances: store.insurances().map(w => w.id === id ? { ...w, scopeAll } : w),
+          mnRun: false, mnResults: [],
+        });
+      },
+      toggleInsuranceProcedure(id: string, procId: string) {
+        patchState(store, {
+          insurances: store.insurances().map(w => {
+            if (w.id !== id) return w;
+            const procIds = w.procIds.includes(procId)
+              ? w.procIds.filter(x => x !== procId)
+              : [...w.procIds, procId];
+            return { ...w, procIds };
+          }),
+          mnRun: false, mnResults: [],
+        });
+      },
+
+      runMedicalNecessity() {
+        if (!store.dxIcds().length || !store.procedures().some(p => p.cpts.length > 0)) {
+          patchState(store, { mnError: 'Add at least one ICD-10 code and one CPT code before running the check.' });
+          return;
+        }
+        mnSub?.unsubscribe();
+        patchState(store, { mnPending: true, mnError: '' });
+
+        const req: MnRequest = {
+          procedures: store.procedures().map(p => ({
+            id:   p.id,
+            cpts: p.cpts,
+            ...(p.text.trim() && { text: p.text.trim() }),
+          })),
+          diagnosis: {
+            icds: store.dxIcds(),
+            ...(store.dxText().trim() && { text: store.dxText().trim() }),
+          },
+          insurances: store.insurances().map(w => ({
+            id:    w.id,
+            payer: w.payer,
+            scope: w.scopeAll ? 'all' : w.procIds.length ? w.procIds.join(',') : 'none',
+          })),
+        };
+
+        mnSub = cds.checkMedicalNecessity(req).subscribe({
+          next:  results => patchState(store, { mnResults: results, mnPending: false, mnRun: true }),
+          error: (err: Error) => patchState(store, {
+            mnError: err instanceof TimeoutError
+              ? 'Medical necessity check timed out (30 s) — try again'
+              : err.message || 'Medical necessity check failed',
+            mnPending: false,
+          }),
+        });
+      },
+
+      skipMedicalNecessity() { patchState(store, { mnRun: false, activeStep: 5 }); },
+    };
+  }),
 );

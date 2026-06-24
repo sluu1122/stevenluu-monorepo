@@ -1,0 +1,60 @@
+<div>
+  <h3 class="wz__step-title">Procedure &amp; CPT Coding</h3>
+  <p class="wz__step-sub">Add the procedures to be performed. Each requires at least one CPT code.</p>
+
+  @for (vm of procVm(); track vm.proc.id) {
+    <div class="wz__card wz__card--gap" [formGroup]="vm.form">
+      <div class="wz__card-head-row">
+        <span class="wz__card-eyebrow">Procedure {{ $index + 1 }}</span>
+        @if (procVm().length > 1) {
+          <button class="wz__delete-btn" type="button"
+            (click)="removeProcedure(vm.proc.id)" aria-label="Remove procedure">
+            <span class="icon" aria-hidden="true">delete</span>
+          </button>
+        }
+      </div>
+
+      <div class="wz__field">
+        <label class="wz__label" [for]="'wz-cpts-' + $index">
+          CPT Codes <span class="wz__label-req" aria-hidden="true">*</span>
+        </label>
+        <app-code-input
+          formControlName="cpts"
+          [inputId]="'wz-cpts-' + $index"
+          placeholder="Type CPT code, press Enter…"
+          [suggestions]="cptSuggestions(vm.proc.id)"
+          (queryChange)="onCptQuery(vm.proc.id, $event)"
+        />
+        @if (searching()) {
+          <div class="wz__search-hint" aria-live="polite">
+            <span class="icon wz__spin" aria-hidden="true">progress_activity</span>Searching…
+          </div>
+        }
+        @if (vm.form.get('cpts')!.invalid && vm.form.get('cpts')!.touched) {
+          <div class="wz__inline-error" role="alert">
+            <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+            At least one CPT code is required.
+          </div>
+        }
+        @if (searchError()) {
+          <div class="wz__inline-error" role="alert">
+            <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+            {{ searchError() }}
+          </div>
+        }
+      </div>
+
+      <div class="wz__field wz__field--last">
+        <label class="wz__label" [for]="'wz-proc-text-' + $index">
+          Procedure Description <span class="wz__label-opt">(optional)</span>
+        </label>
+        <input [id]="'wz-proc-text-' + $index" class="wz__input" formControlName="text"
+          placeholder="e.g. Diagnostic colonoscopy">
+      </div>
+    </div>
+  }
+
+  <button class="wz__add-btn" type="button" (click)="addProcedure()">
+    <span class="icon" aria-hidden="true">add</span>Add another procedure
+  </button>
+</div>

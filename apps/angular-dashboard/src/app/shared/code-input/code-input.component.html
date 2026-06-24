@@ -1,0 +1,46 @@
+<div class="wz__code-wrap">
+  <div class="wz__token-box"
+    [class.wz__token-box--error]="hasError || (ngControl?.invalid && ngControl!.touched)"
+    [class.wz__token-box--disabled]="disabled()">
+    @for (code of codes(); track code) {
+      <span class="wz__chip">
+        <span class="mono">{{ code }}</span>
+        <button class="wz__chip-remove" type="button"
+          [disabled]="disabled()"
+          (click)="removeCode(code)"
+          [attr.aria-label]="'Remove ' + code">
+          <span class="icon" aria-hidden="true">close</span>
+        </button>
+      </span>
+    }
+    <input
+      #inputEl
+      class="wz__token-input mono"
+      [id]="inputId"
+      [placeholder]="placeholder"
+      [disabled]="disabled()"
+      (input)="onInput($event)"
+      (keydown)="onKey($event)"
+      (blur)="onBlur($event)"
+      autocomplete="off"
+      role="combobox"
+      [attr.aria-expanded]="showDropdown()"
+      aria-haspopup="listbox"
+    >
+  </div>
+  @if (showDropdown()) {
+    <div class="wz__suggest-dropdown" role="listbox">
+      @for (s of suggestions(); track s.code; let i = $index) {
+        <div class="wz__suggest-item"
+          [class.wz__suggest-item--active]="activeIdx() === i"
+          role="option"
+          [attr.aria-label]="s.code + ' – ' + s.description"
+          [attr.aria-selected]="activeIdx() === i"
+          (mousedown)="$event.preventDefault(); selectSuggestion(s)">
+          <span class="wz__suggest-code">{{ s.code }}</span>
+          <span class="wz__suggest-desc">{{ s.description }}</span>
+        </div>
+      }
+    </div>
+  }
+</div>

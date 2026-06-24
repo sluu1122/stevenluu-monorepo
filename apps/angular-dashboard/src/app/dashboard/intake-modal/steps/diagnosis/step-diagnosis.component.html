@@ -1,0 +1,48 @@
+<div>
+  <h3 class="wz__step-title">Diagnosis &amp; ICD Coding</h3>
+  <p class="wz__step-sub">Capture the diagnosis. Type an ICD-10 code and press Enter to add it.</p>
+
+  <form [formGroup]="form">
+    <div class="wz__card">
+      <div class="wz__field">
+        <label class="wz__label" for="wz-icds">
+          ICD-10 Codes <span class="wz__label-req" aria-hidden="true">*</span>
+        </label>
+        <app-code-input
+          formControlName="icds"
+          inputId="wz-icds"
+          placeholder="Type ICD-10 code, press Enter…"
+          [hasError]="showError"
+          [suggestions]="icdSuggestions()"
+          (queryChange)="onIcdQuery($event)"
+        />
+        @if (searching()) {
+          <div class="wz__search-hint" aria-live="polite">
+            <span class="icon wz__spin" aria-hidden="true">progress_activity</span>Searching…
+          </div>
+        }
+        @if (searchError()) {
+          <div class="wz__inline-error" role="alert">
+            <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+            {{ searchError() }}
+          </div>
+        }
+      </div>
+
+      <div class="wz__field wz__field--last">
+        <label class="wz__label" for="wz-dx-text">
+          Text Diagnosis <span class="wz__label-opt">(optional)</span>
+        </label>
+        <input id="wz-dx-text" class="wz__input" formControlName="text"
+          placeholder="e.g. Essential hypertension">
+      </div>
+
+      @if (showError) {
+        <div class="wz__inline-error" role="alert">
+          <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+          Add an ICD-10 code or a text diagnosis.
+        </div>
+      }
+    </div>
+  </form>
+</div>

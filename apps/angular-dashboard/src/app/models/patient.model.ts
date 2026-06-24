@@ -25,6 +25,4 @@ export interface DirectoryRecord {
 
 export type NavView = 'Worklist' | 'Patient Intake' | 'Patient Search';
 export type WorklistTab = 'In Progress' | 'Completed';
-export type ModalKind = 'demographics' | 'insurance' | 'note' | undefined;
 export type AuthType = 'Inpatient' | 'Outpatient' | 'Telehealth';
-export type Determination = 'Approved' | 'Pending' | 'Denied';

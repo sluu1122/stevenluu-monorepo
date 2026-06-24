@@ -1,0 +1,105 @@
+<div class="wz-overlay" tabindex="-1" role="dialog" aria-modal="true" aria-label="New Patient Intake">
+  <div class="wz" cdkTrapFocus cdkTrapFocusAutoCapture>
+
+    <!-- Head -->
+    <div class="wz__head">
+      <div class="wz__head-top">
+        <div>
+          <div class="wz__head-title-row">
+            <span class="icon wz__head-icon" aria-hidden="true">note_add</span>
+            <h2 class="wz__head-title">New Patient Intake</h2>
+          </div>
+          <p class="wz__head-sub">Provisional ID · <span class="mono">{{ store.provisionalId() }}</span></p>
+        </div>
+        <button type="button" class="wz__close" (click)="store.close()" aria-label="Close">
+          <span class="icon" aria-hidden="true">close</span>
+        </button>
+      </div>
+
+      <!-- Stepper -->
+      <div class="wz__stepper" role="list">
+        <div class="wz__stepper-track" aria-hidden="true"></div>
+        <div class="wz__stepper-progress" [style.width]="store.progressWidth()" aria-hidden="true"></div>
+
+        @for (step of stepVm(); track step.n) {
+          <button
+            type="button"
+            class="wz__step"
+            role="listitem"
+            (click)="goToStep(step.n)"
+            [attr.aria-label]="'Step ' + step.n + ': ' + step.label"
+            [attr.aria-current]="step.active ? 'step' : null"
+          >
+            <span
+              class="wz__step-circle"
+              [class.wz__step-circle--done]="step.done"
+              [class.wz__step-circle--active]="step.active"
+              aria-hidden="true"
+            >
+              @if (step.done) {
+                <span class="icon">check</span>
+              } @else {
+                {{ step.n }}
+              }
+            </span>
+            <span
+              class="wz__step-label"
+              [class.wz__step-label--active]="step.active"
+              [class.wz__step-label--done]="step.done"
+              aria-hidden="true"
+            >{{ step.label }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="wz__body">
+      @switch (store.activeStep()) {
+        @case (1) { <app-intake-step-patient /> }
+        @case (2) { <app-intake-step-diagnosis /> }
+        @case (3) { <app-intake-step-procedure /> }
+        @case (4) { <app-intake-step-insurance /> }
+        @case (5) { <app-intake-step-review /> }
+      }
+    </div>
+
+    <!-- Footer -->
+    <div class="wz__footer">
+      <button type="button" class="wz__back-btn" [disabled]="store.backDisabled()" (click)="store.prevStep()">
+        <span class="icon" aria-hidden="true">arrow_back</span>Back
+      </button>
+      <div class="wz__footer-right">
+        <span class="wz__step-count" aria-live="polite">{{ store.stepLabel() }}</span>
+
+        @if (store.isMnChoice()) {
+          @if (store.mnPending()) {
+            <button type="button" class="wz__mn-btn" disabled>
+              <span class="icon" aria-hidden="true">hourglass_empty</span>Checking necessity…
+            </button>
+          } @else {
+            <button type="button" class="wz__skip-btn" (click)="store.skipMedicalNecessity()">Skip</button>
+            <button type="button" class="wz__mn-btn" [disabled]="!store.canRunMn()"
+              [title]="store.canRunMn() ? '' : 'Add an ICD-10 code and at least one CPT code first'"
+              (click)="store.runMedicalNecessity()">
+              <span class="icon" aria-hidden="true">fact_check</span>Run Medical Necessity Check
+            </button>
+          }
+        }
+
+        @if (store.isReviewStep()) {
+          <button type="button" class="wz__submit-btn" (click)="store.close()">
+            <span class="icon" aria-hidden="true">check_circle</span>Submit Intake
+          </button>
+        }
+
+        @if (store.isNormalContinue()) {
+          <button type="button" class="wz__next-btn" (click)="onContinue()">
+            {{ store.continueLabel() }}<span class="icon" aria-hidden="true">arrow_forward</span>
+          </button>
+        }
+      </div>
+    </div>
+
+  </div>
+</div>

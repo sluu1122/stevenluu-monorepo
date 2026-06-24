@@ -1,0 +1,109 @@
+<div>
+  <h3 class="wz__step-title">Insurance &amp; Medical Necessity</h3>
+  <p class="wz__step-sub">Select insurers and choose which procedures each applies to. Run a medical necessity check, or skip to review.</p>
+
+  @for (w of insVm(); track w.id) {
+    <div class="wz__card wz__card--gap" [formGroup]="w.form">
+      <div class="wz__card-head-row">
+        <span class="wz__card-eyebrow">{{ w.rank }}</span>
+        @if (w.canRemove) {
+          <button class="wz__delete-btn" type="button"
+            (click)="removeInsurance(w.id)" aria-label="Remove insurance">
+            <span class="icon" aria-hidden="true">delete</span>
+          </button>
+        }
+      </div>
+
+      <div class="wz__field">
+        <label class="wz__label">Insurance Payer</label>
+        <div class="wz__select-wrap">
+          <select class="wz__select" formControlName="payer">
+            @for (p of PAYERS; track p) { <option>{{ p }}</option> }
+          </select>
+          <span class="icon wz__select-caret" aria-hidden="true">expand_more</span>
+        </div>
+      </div>
+
+      <div class="wz__field wz__field--last">
+        <span class="wz__label" [attr.id]="'wz-scope-' + w.id">Applies to procedures</span>
+        <div class="wz__seg" [attr.aria-labelledby]="'wz-scope-' + w.id" role="group">
+          <button type="button" class="wz__seg-btn"
+            [class.wz__seg-btn--active]="w.scopeAll"
+            [attr.aria-pressed]="w.scopeAll"
+            (click)="store.setInsuranceScope(w.id, true)">All procedures</button>
+          <button type="button" class="wz__seg-btn"
+            [class.wz__seg-btn--active]="!w.scopeAll"
+            [attr.aria-pressed]="!w.scopeAll"
+            (click)="store.setInsuranceScope(w.id, false)">Selected only</button>
+        </div>
+
+        @if (!w.scopeAll) {
+          <div class="wz__proc-chips">
+            @for (chip of w.procChips; track chip.id) {
+              <button type="button" class="wz__proc-chip"
+                [class.wz__proc-chip--on]="chip.on"
+                [attr.aria-pressed]="chip.on"
+                (click)="store.toggleInsuranceProcedure(w.id, chip.id)">
+                @if (chip.on) {
+                  <span class="icon wz__proc-chip-check" aria-hidden="true">check</span>
+                }
+                {{ chip.label }}
+              </button>
+            }
+          </div>
+          @if (w.scopeError) {
+            <div class="wz__inline-error" role="alert" style="margin-top: 8px">
+              <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+              Select at least one procedure for this insurance.
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+
+  <button class="wz__add-btn" type="button" style="margin-bottom: 16px" (click)="addInsurance()">
+    <span class="icon" aria-hidden="true">add</span>Add another insurance
+  </button>
+
+  @if (store.mnPending()) {
+    <div class="wz__mn-results">
+      <div class="wz__mn-results-head">
+        <span class="icon wz__mn-results-icon" aria-hidden="true">hourglass_empty</span>
+        <span class="wz__mn-results-title">Running medical necessity check…</span>
+      </div>
+    </div>
+  }
+
+  @if (store.mnError()) {
+    <div class="wz__inline-error" role="alert">
+      <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+      {{ store.mnError() }}
+    </div>
+  }
+
+  @if (store.mnRun() && mnResultRows().length > 0) {
+    <div class="wz__mn-results">
+      <div class="wz__mn-results-head">
+        <span class="icon icon--filled wz__mn-results-icon" aria-hidden="true">verified</span>
+        <span class="wz__mn-results-title">Medical Necessity Results</span>
+      </div>
+      @for (r of mnResultRows(); track r.proc + r.payer) {
+        <div class="wz__mn-row">
+          <div style="flex: 1; min-width: 0;">
+            <div class="wz__mn-proc">{{ r.proc }}</div>
+            <div class="wz__mn-payer">{{ r.payer }}</div>
+            @if (r.rationale) {
+              <div class="wz__mn-rationale">{{ r.rationale }}</div>
+            }
+          </div>
+          <span class="wz__mn-badge"
+            [class.wz__mn-badge--pass]="r.pass"
+            [class.wz__mn-badge--review]="!r.pass">
+            {{ r.pass ? 'Meets criteria' : 'Needs review' }}
+          </span>
+        </div>
+      }
+    </div>
+  }
+</div>

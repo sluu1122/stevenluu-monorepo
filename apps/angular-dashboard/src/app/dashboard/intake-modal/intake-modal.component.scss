@@ -1,0 +1,844 @@
+.wz-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.40);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.wz {
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.30);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+
+  // ── Head ──────────────────────────────────────────────
+  &__head {
+    flex-shrink: 0;
+    padding: 22px 24px 20px;
+    border-bottom: 1px solid #eef1f5;
+  }
+
+  &__head-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+
+  &__head-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__head-icon {
+    font-size: 19px;
+    color: #2a6fdb;
+  }
+
+  &__head-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  &__head-sub {
+    margin: 5px 0 0;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  &__close {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    border: 1px solid #eef1f5;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+
+    &:hover { background: #f3f6fb; }
+    .icon { font-size: 18px; color: #64748b; }
+  }
+
+  // ── Stepper ───────────────────────────────────────────
+  &__stepper {
+    position: relative;
+    display: flex;
+    margin-top: 24px;
+  }
+
+  &__stepper-track {
+    position: absolute;
+    top: 14px;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: #e9edf2;
+  }
+
+  &__stepper-progress {
+    position: absolute;
+    top: 14px;
+    left: 10%;
+    height: 2px;
+    background: #2a6fdb;
+    transition: width 0.3s;
+  }
+
+  &__step {
+    flex: 1;
+    position: relative;
+    z-index: 1;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 0;
+  }
+
+  &__step-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    color: #94a3b8;
+    transition: all 0.2s;
+
+    &--active {
+      border: 2px solid #2a6fdb;
+      color: #2a6fdb;
+      box-shadow: 0 0 0 4px rgba(42, 111, 219, 0.10);
+    }
+
+    &--done {
+      background: #2a6fdb;
+      border-color: #2a6fdb;
+      color: #fff;
+
+      .icon { font-variation-settings: 'wght' 500; font-size: 17px; }
+    }
+  }
+
+  &__step-label {
+    font-size: 10.5px;
+    letter-spacing: 0.01em;
+    text-align: center;
+    line-height: 1.2;
+    color: #94a3b8;
+    font-weight: 500;
+
+    &--active { color: #0f172a; font-weight: 600; }
+    &--done   { color: #0f172a; font-weight: 500; }
+  }
+
+  // ── Body ──────────────────────────────────────────────
+  &__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 24px;
+  }
+
+  &__step-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  &__step-title {
+    margin: 0 0 4px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #0f172a;
+  }
+
+  &__step-sub {
+    margin: 0 0 18px;
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.5;
+  }
+
+  &__verified-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #0f7a4f;
+    background: #eafaf1;
+    border: 1px solid #cdeedd;
+    padding: 2px 7px;
+    border-radius: 20px;
+  }
+
+  &__verified-icon {
+    font-variation-settings: 'wght' 300;
+    font-size: 13px;
+    color: #0f7a4f;
+  }
+
+  // ── Cards (procedure / insurance / review) ────────────
+  &__card {
+    border: 1px solid #eef1f5;
+    border-radius: 12px;
+    padding: 15px;
+    background: #fcfdfe;
+
+    &--gap { margin-bottom: 12px; }
+  }
+
+  &__card-head-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  &__card-eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #475569;
+  }
+
+  &__delete-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid #eef1f5;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.12s, border-color 0.12s;
+
+    &:hover { background: #fdf3f2; border-color: #f1d9d6; }
+    .icon { font-size: 16px; color: #94a3b8; }
+  }
+
+  // ── Form elements ──────────────────────────────────────
+  &__field {
+    margin-bottom: 13px;
+
+    &--last { margin-bottom: 0; }
+  }
+
+  &__grid-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+
+  &__label {
+    display: block;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    font-weight: 600;
+    margin-bottom: 7px;
+  }
+
+  &__label-opt {
+    text-transform: none;
+    letter-spacing: 0;
+    color: #cbd5e1;
+    font-weight: 400;
+  }
+
+  &__label-req { color: #c0362c; }
+
+  &__input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    font-size: 13px;
+    color: #0f172a;
+    background: #fbfcfd;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:focus {
+      border-color: #2a6fdb;
+      box-shadow: 0 0 0 3px rgba(42, 111, 219, 0.10);
+      background: #fff;
+    }
+
+    &::placeholder { color: #cbd5e1; }
+
+    &--error {
+      border-color: #dc4438;
+      background: #fdf3f2;
+      &:focus { border-color: #dc4438; box-shadow: 0 0 0 3px rgba(220, 68, 56, 0.12); }
+    }
+  }
+
+  &__select-wrap { position: relative; }
+
+  &__select {
+    width: 100%;
+    appearance: none;
+    padding: 10px 32px 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    font-size: 13px;
+    color: #0f172a;
+    background: #fbfcfd;
+    outline: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:focus {
+      border-color: #2a6fdb;
+      box-shadow: 0 0 0 3px rgba(42, 111, 219, 0.10);
+      background: #fff;
+    }
+  }
+
+  &__select-caret {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 17px;
+    color: #94a3b8;
+    pointer-events: none;
+  }
+
+  // ── Autocomplete wrapper + dropdown ───────────────────
+  &__code-wrap {
+    position: relative;
+  }
+
+  &__suggest-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: #fff;
+    border: 1px solid #d6e0f0;
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    max-height: 216px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  &__suggest-item {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.1s;
+
+    &:hover,
+    &--active { background: #f0f6ff; }
+  }
+
+  &__suggest-code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2a5fd0;
+    flex-shrink: 0;
+  }
+
+  &__suggest-desc {
+    font-size: 12px;
+    color: #64748b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // ── Token chip input ───────────────────────────────────
+  &__token-box {
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #fbfcfd;
+    padding: 7px 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    min-height: 42px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:focus-within {
+      border-color: #2a6fdb;
+      box-shadow: 0 0 0 3px rgba(42, 111, 219, 0.10);
+      background: #fff;
+    }
+
+    &--error    { border-color: #dc4438; background: #fdf3f2; }
+    &--disabled { background: #f1f5f9; opacity: 0.6; pointer-events: none; }
+  }
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 6px 4px 10px;
+    background: #eef3fe;
+    border: 1px solid #d6e2fb;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #2a5fd0;
+  }
+
+  &__chip-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    color: #7aa2e0;
+
+    .icon { font-size: 14px; }
+  }
+
+  &__token-input {
+    flex: 1;
+    min-width: 150px;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    color: #0f172a;
+    padding: 4px 2px;
+    font-family: 'IBM Plex Mono', monospace;
+
+    &::placeholder { color: #cbd5e1; font-family: 'IBM Plex Mono', monospace; }
+  }
+
+  // ── Inline error ───────────────────────────────────────
+  &__inline-error {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    padding: 8px 11px;
+    background: #fdf3f2;
+    border: 1px solid #f1d9d6;
+    border-radius: 9px;
+    font-size: 11.5px;
+    color: #c0362c;
+    font-weight: 500;
+  }
+
+  &__error-icon { font-size: 14px; color: #dc4438; }
+
+  &__search-hint {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    font-size: 11.5px;
+    color: #64748b;
+  }
+
+  &__spin {
+    font-size: 14px;
+    animation: wz-spin 0.8s linear infinite;
+  }
+
+  // ── Segmented control ──────────────────────────────────
+  &__seg {
+    display: flex;
+    gap: 4px;
+    background: #f1f4f8;
+    border-radius: 11px;
+    padding: 4px;
+  }
+
+  &__seg-btn {
+    flex: 1;
+    border: none;
+    cursor: pointer;
+    padding: 8px 6px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    font-family: inherit;
+    background: transparent;
+    color: #64748b;
+    font-weight: 500;
+    transition: all 0.15s;
+
+    &--active {
+      background: #fff;
+      color: #0f172a;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.10);
+    }
+  }
+
+  // ── Procedure toggle chips (insurance scope) ───────────
+  &__proc-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  &__proc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    background: #fbfcfd;
+    border: 1px solid #e2e8f0;
+    color: #64748b;
+
+    &--on {
+      background: #eef3fe;
+      border: 1.5px solid #2a6fdb;
+      color: #2a5fd0;
+    }
+  }
+
+  &__proc-chip-check { font-size: 14px; color: #2a5fd0; }
+
+  // ── Add button (procedures / insurance) ───────────────
+  &__add-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 11px;
+    border: 1px dashed #cdd5df;
+    border-radius: 11px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #2a5fd0;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s;
+
+    &:hover { border-color: #2a6fdb; background: #f7faff; }
+    .icon { font-size: 16px; color: #2a5fd0; }
+  }
+
+  // ── Medical Necessity results ──────────────────────────
+  &__mn-results {
+    border: 1px solid #eef1f5;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  &__mn-results-head {
+    padding: 12px 14px;
+    background: #f6fdf9;
+    border-bottom: 1px solid #eef1f5;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__mn-results-icon { font-size: 18px; color: #0f7a4f; }
+  &__mn-results-title { font-size: 13px; font-weight: 600; color: #0f172a; }
+
+  &__mn-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 14px;
+    border-bottom: 1px solid #f3f5f8;
+
+    &:last-child { border-bottom: none; }
+  }
+
+  &__mn-proc  { font-size: 12.5px; font-weight: 600; color: #0f172a; }
+  &__mn-payer { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+  &__mn-rationale {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 3px;
+    line-height: 1.4;
+  }
+
+  &__mn-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+
+    &--pass   { background: #eafaf1; border-color: #cdeedd; color: #0f7a4f; }
+    &--review { background: #fdf5e9; border-color: #f3e2c4; color: #9a6212; }
+  }
+
+  // ── Review cards ──────────────────────────────────────
+  &__review-card {
+    border: 1px solid #eef1f5;
+    border-radius: 12px;
+    padding: 15px;
+    background: #fcfdfe;
+    margin-bottom: 12px;
+  }
+
+  &__review-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    padding-bottom: 9px;
+  }
+
+  &__review-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    letter-spacing: 0;
+    text-transform: none;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { background: #f1f5f9; color: #2a6fdb; border-color: #c3d4f0; }
+    .icon { font-size: 13px; }
+  }
+
+  &__review-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 7px 0;
+    border-top: 1px solid #f3f5f8;
+  }
+
+  &__review-key   { font-size: 12px; color: #94a3b8; flex-shrink: 0; }
+  &__review-val   { font-size: 13px; font-weight: 500; color: #0f172a; min-width: 0; }
+  &__review-codes { font-size: 12.5px; font-weight: 500; color: #2a5fd0; white-space: nowrap; }
+  &__review-scope { font-size: 12px; color: #64748b; text-align: right; }
+
+  // ── MN summary banner ──────────────────────────────────
+  &__mn-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    padding: 13px 15px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+
+    &--skipped {
+      background: #f4f6f9;
+      border-color: #e6eaf0;
+      .wz__mn-banner-icon  { color: #94a3b8; }
+      .wz__mn-banner-title { color: #475569; }
+      .wz__mn-banner-sub   { color: #94a3b8; }
+    }
+
+    &--warning {
+      background: #fdf5e9;
+      border-color: #f3e2c4;
+      .wz__mn-banner-icon  { color: #d68a2c; }
+      .wz__mn-banner-title { color: #9a6212; }
+      .wz__mn-banner-sub   { color: #b5701d; }
+    }
+
+    &--success {
+      background: #f6fdf9;
+      border-color: #cdeedd;
+      .wz__mn-banner-icon  { color: #0f7a4f; }
+      .wz__mn-banner-title { color: #0f7a4f; }
+      .wz__mn-banner-sub   { color: #15894f; }
+    }
+  }
+
+  &__mn-banner-icon  { font-size: 19px; flex-shrink: 0; }
+  &__mn-banner-title { font-size: 12.5px; font-weight: 600; }
+  &__mn-banner-sub   { font-size: 11.5px; margin-top: 2px; line-height: 1.5; }
+
+  // ── Footer ────────────────────────────────────────────
+  &__footer {
+    flex-shrink: 0;
+    padding: 16px 24px;
+    border-top: 1px solid #eef1f5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: #fcfdfe;
+  }
+
+  &__back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+
+    &:hover:not(:disabled) { background: #f3f6fb; }
+    &:disabled { color: #cbd5e1; cursor: not-allowed; opacity: 0.6; }
+    .icon { font-size: 17px; }
+  }
+
+  &__footer-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__step-count {
+    font-size: 11.5px;
+    color: #94a3b8;
+    font-weight: 500;
+  }
+
+  &__skip-btn {
+    padding: 10px 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    background: #fff;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+
+    &:hover { background: #f3f6fb; }
+  }
+
+  &__mn-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: #2a6fdb;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 2px 6px rgba(42, 111, 219, 0.28);
+    transition: background 0.15s;
+
+    &:hover { background: #2356b0; }
+    .icon { font-size: 17px; }
+  }
+
+  &__submit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: #1aa564;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 2px 6px rgba(26, 165, 100, 0.28);
+    transition: background 0.15s;
+
+    &:hover { background: #15894f; }
+    .icon { font-size: 17px; }
+  }
+
+  &__next-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: #2a6fdb;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 2px 6px rgba(42, 111, 219, 0.28);
+    transition: background 0.15s;
+
+    &:hover:not(.wz__next-btn--disabled) { background: #2356b0; }
+
+    &--disabled {
+      background: #9bbcec;
+      cursor: not-allowed;
+      opacity: 0.85;
+      box-shadow: none;
+    }
+
+    .icon { font-size: 17px; }
+  }
+}
+
+.mono { font-family: 'IBM Plex Mono', monospace; }
+
+@keyframes wz-spin { to { transform: rotate(360deg); } }
