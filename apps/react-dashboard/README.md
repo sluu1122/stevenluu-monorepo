@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+# react-dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Finance sandbox dashboard — a personal investment portfolio tracker with a live-updating watchlist and trade simulator.
 
-Currently, two official plugins are available:
+**URL:** http://localhost:5173
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Net worth** — Total portfolio value with a 30-day history chart
+- **Watchlist** — Simulated real-time market feed with price ticks
+- **Asset allocation** — Breakdown by asset class with a donut chart
+- **Trade sandbox** — Buy/sell simulator with order confirmation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Stack
 
-## Expanding the ESLint configuration
+- React 19, TypeScript
+- Vite
+- TanStack Query v5 (data fetching and caching)
+- Recharts (charting)
+- Tailwind CSS
+- `@repo/ui` (shared shadcn/ui component library)
+- `@repo/resume-data` (portfolio content)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Adding shadcn components
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+UI components live in `packages/ui` and are shared across apps. To add a new shadcn component to the shared library:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+cd packages/ui
+npx shadcn@latest add <component-name>
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The component is then importable from `@repo/ui/components/<component-name>` in any app that depends on `@repo/ui`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+To add a component only to this app (not shared):
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```sh
+cd apps/react-dashboard
+npx shadcn@latest add <component-name>
+```
+
+This places the component in `src/components/ui/` using the local aliases defined in `components.json`.
+
+## Dev
+
+```sh
+# From the monorepo root:
+npm run dev -- --filter=react-dashboard
 ```

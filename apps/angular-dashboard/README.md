@@ -1,59 +1,39 @@
-# AngularDashboard
+# angular-dashboard
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.27.
+Clinical operations dashboard built with Angular 22 and PrimeNG. Covers the core healthcare revenue-cycle workflow: patient intake, insurance authorization, and case management.
 
-## Development server
+**URL:** http://localhost:4200
 
-To start a local development server, run:
+## Features
 
-```bash
-ng serve
+- **Worklist** — Active operations queue with KPI tiles, status filtering, AI-powered case summaries streamed from `ai-api`, and a PrimeNG row action menu
+- **Patient Intake** — Multi-step wizard (patient info → procedure → insurance → review) with CPT/ICD typeahead, payer ID assistant, and medical necessity CDS check
+- **Patient Search** — Facility-wide directory with search by name, MRN, DOB, or phone, plus payer and status filters
+
+## Stack
+
+- Angular 22 (standalone components, control flow syntax)
+- NgRx Signals (`signalStore`, `withHooks`, `withMethods`)
+- PrimeNG 21 (Table, Menu, Popover, AutoComplete, form controls)
+- RxJS
+
+## API dependencies
+
+| API | Port | Used for |
+|-----|------|----------|
+| `patients-api` | 3004 | Worklist patient data (loaded on init) |
+| `cpt-api` | 3002 | CPT code typeahead in the intake wizard |
+| `icd-api` | 3003 | ICD-10 typeahead in the intake wizard |
+| `ai-api` | 3001 | Payer ID assistant, medical necessity CDS, case summaries |
+
+`ai-api` requires [Ollama](https://ollama.com). Without it, the three AI features degrade gracefully — all other functionality remains available.
+
+## Dev
+
+```sh
+# From the monorepo root (starts all services):
+npm run dev
+
+# Angular only:
+npm run dev -- --filter=angular-dashboard
 ```
-
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
