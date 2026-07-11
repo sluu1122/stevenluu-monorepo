@@ -723,26 +723,6 @@
     background: #fcfdfe;
   }
 
-  &__back-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 10px 15px;
-    border: 1px solid #e2e8f0;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #334155;
-    background: #fff;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background 0.15s;
-
-    &:hover:not(:disabled) { background: #f3f6fb; }
-    &:disabled { color: #cbd5e1; cursor: not-allowed; opacity: 0.6; }
-    .icon { font-size: 17px; }
-  }
-
   &__footer-right {
     display: flex;
     align-items: center;
@@ -754,88 +734,63 @@
     color: #94a3b8;
     font-weight: 500;
   }
+}
 
-  &__skip-btn {
-    padding: 10px 15px;
-    border: 1px solid #e2e8f0;
-    border-radius: 9px;
+// ── PrimeNG p-button overrides (ViewEncapsulation.None) ──────────────────────
+.wz {
+  // Design tokens
+  --p-button-border-radius:             9px;
+  --p-button-success-background:        #1aa564;
+  --p-button-success-hover-background:  #15894f;
+  --p-button-success-active-background: #0f7a4f;
+  --p-button-success-border-color:      #1aa564;
+  --p-button-success-hover-border-color:#15894f;
+  --p-button-success-color:             #fff;
+
+  // Direct overrides for font / spacing / icon
+  .p-button {
     font-size: 13px;
     font-weight: 600;
-    color: #334155;
+    font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+    padding: 10px 16px;
+    gap: 6px;
+
+    .icon { font-size: 17px; }
+  }
+
+  // Review edit: compact size (2px 8px pad, 11px text, 6px radius)
+  &__review-edit.p-button {
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+    gap: 3px;
+    text-transform: none;
+    letter-spacing: 0;
+    .icon { font-size: 13px; }
+  }
+
+  // Delete icon button: 28×28 square, danger-text style
+  &__delete-btn.p-button {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 8px;
+    .icon { font-size: 16px; }
+  }
+
+  // Close button: preserve custom 32×32 sizing over PrimeNG text-button defaults
+  &__close.p-button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 9px;
+    border: 1px solid #eef1f5;
     background: #fff;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background 0.15s;
+    color: #64748b;
+    flex-shrink: 0;
 
     &:hover { background: #f3f6fb; }
-  }
-
-  &__mn-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 18px;
-    border: none;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #fff;
-    background: #2a6fdb;
-    cursor: pointer;
-    font-family: inherit;
-    box-shadow: 0 2px 6px rgba(42, 111, 219, 0.28);
-    transition: background 0.15s;
-
-    &:hover { background: #2356b0; }
-    .icon { font-size: 17px; }
-  }
-
-  &__submit-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #fff;
-    background: #1aa564;
-    cursor: pointer;
-    font-family: inherit;
-    box-shadow: 0 2px 6px rgba(26, 165, 100, 0.28);
-    transition: background 0.15s;
-
-    &:hover { background: #15894f; }
-    .icon { font-size: 17px; }
-  }
-
-  &__next-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 18px;
-    border: none;
-    border-radius: 9px;
-    font-size: 13px;
-    font-weight: 600;
-    color: #fff;
-    background: #2a6fdb;
-    cursor: pointer;
-    font-family: inherit;
-    box-shadow: 0 2px 6px rgba(42, 111, 219, 0.28);
-    transition: background 0.15s;
-
-    &:hover:not(.wz__next-btn--disabled) { background: #2356b0; }
-
-    &--disabled {
-      background: #9bbcec;
-      cursor: not-allowed;
-      opacity: 0.85;
-      box-shadow: none;
-    }
-
-    .icon { font-size: 17px; }
+    .icon { font-size: 18px; }
   }
 }
 

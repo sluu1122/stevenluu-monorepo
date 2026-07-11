@@ -1,6 +1,7 @@
 import { Component, computed, signal, HostListener } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
 import { A11yModule } from '@angular/cdk/a11y';
+import { ButtonModule } from 'primeng/button';
 import { DEMO_PATIENT, DEMO_DIR_RECORD } from '../../data/seed';
 import type { AuthType } from '../../models/patient.model';
 
@@ -33,7 +34,7 @@ const HISTORY: HistoryItem[] = [
 @Component({
   selector: 'app-patient-intake',
   standalone: true,
-  imports: [ReactiveFormsModule, A11yModule],
+  imports: [ReactiveFormsModule, A11yModule, ButtonModule],
   templateUrl: './patient-intake.component.html',
   styleUrl: './patient-intake.component.scss',
 })

@@ -41,7 +41,7 @@
       </div>
 
       @if (hasFilters()) {
-        <button class="ps__clear-btn" (click)="clearFilters()">
+        <button pButton [text]="true" type="button" class="ps__clear-btn" (click)="clearFilters()">
           <span class="icon">close</span>Clear
         </button>
       }
@@ -92,7 +92,7 @@
               <app-status-badge [status]="r.status" />
             </td>
             <td class="ps__td ps__td--actions">
-              <button class="ps__open-btn" title="Open patient">
+              <button pButton [text]="true" type="button" class="ps__open-btn" title="Open patient">
                 <span class="icon">arrow_forward</span>
               </button>
             </td>
@@ -105,7 +105,7 @@
         <div class="ps__empty-title">No patients found</div>
         <div class="ps__empty-sub">No directory records match your search and filters. Try a different name, MRN, or clear the filters.</div>
         @if (hasFilters()) {
-          <button class="ps__empty-clear" (click)="clearFilters()">Clear search</button>
+          <button pButton type="button" severity="secondary" [outlined]="true" class="ps__empty-clear" (click)="clearFilters()">Clear search</button>
         }
       </div>
     }

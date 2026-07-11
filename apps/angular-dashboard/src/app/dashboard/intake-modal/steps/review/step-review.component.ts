@@ -1,9 +1,11 @@
 import { Component, inject, computed } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
 import { IntakeWizardStore, RANK_NAMES, procLabel } from '../../../../stores/intake-wizard.store';
 
 @Component({
   selector: 'app-intake-step-review',
   standalone: true,
+  imports: [ButtonModule],
   templateUrl: './step-review.component.html',
 })
 export class StepReviewComponent {

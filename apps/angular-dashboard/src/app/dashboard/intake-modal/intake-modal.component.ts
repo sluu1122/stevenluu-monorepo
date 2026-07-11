@@ -2,6 +2,7 @@ import {
   Component, HostListener, ViewEncapsulation, computed, inject, viewChild,
 } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
+import { ButtonModule } from 'primeng/button';
 import { IntakeWizardStore } from '../../stores/intake-wizard.store';
 import { StepPatientComponent } from './steps/patient/step-patient.component';
 import { StepDiagnosisComponent } from './steps/diagnosis/step-diagnosis.component';
@@ -17,6 +18,7 @@ const STEPS = ['Patient', 'Diagnosis', 'Procedure', 'Insurance', 'Review'];
   encapsulation: ViewEncapsulation.None,
   imports: [
     A11yModule,
+    ButtonModule,
     StepPatientComponent,
     StepDiagnosisComponent,
     StepProcedureComponent,

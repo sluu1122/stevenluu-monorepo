@@ -7,7 +7,7 @@
       <div class="wz__card-head-row">
         <span class="wz__card-eyebrow">Procedure {{ $index + 1 }}</span>
         @if (procVm().length > 1) {
-          <button class="wz__delete-btn" type="button"
+          <button pButton [text]="true" type="button" severity="danger" class="wz__delete-btn"
             (click)="removeProcedure(vm.proc.id)" aria-label="Remove procedure">
             <span class="icon" aria-hidden="true">delete</span>
           </button>

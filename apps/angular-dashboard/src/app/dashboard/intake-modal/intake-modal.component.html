@@ -11,7 +11,7 @@
           </div>
           <p class="wz__head-sub">Provisional ID · <span class="mono">{{ store.provisionalId() }}</span></p>
         </div>
-        <button type="button" class="wz__close" (click)="store.close()" aria-label="Close">
+        <button pButton [text]="true" type="button" class="wz__close" (click)="store.close()" aria-label="Close">
           <span class="icon" aria-hidden="true">close</span>
         </button>
       </div>
@@ -66,7 +66,8 @@
 
     <!-- Footer -->
     <div class="wz__footer">
-      <button type="button" class="wz__back-btn" [disabled]="store.backDisabled()" (click)="store.prevStep()">
+      <button pButton type="button" severity="secondary" [outlined]="true"
+        [disabled]="store.backDisabled()" (click)="store.prevStep()">
         <span class="icon" aria-hidden="true">arrow_back</span>Back
       </button>
       <div class="wz__footer-right">
@@ -74,12 +75,13 @@
 
         @if (store.isMnChoice()) {
           @if (store.mnPending()) {
-            <button type="button" class="wz__mn-btn" disabled>
+            <button pButton type="button" [disabled]="true">
               <span class="icon" aria-hidden="true">hourglass_empty</span>Checking necessity…
             </button>
           } @else {
-            <button type="button" class="wz__skip-btn" (click)="store.skipMedicalNecessity()">Skip</button>
-            <button type="button" class="wz__mn-btn" [disabled]="!store.canRunMn()"
+            <button pButton type="button" severity="secondary" [outlined]="true"
+              (click)="store.skipMedicalNecessity()">Skip</button>
+            <button pButton type="button" [disabled]="!store.canRunMn()"
               [title]="store.canRunMn() ? '' : 'Add an ICD-10 code and at least one CPT code first'"
               (click)="store.runMedicalNecessity()">
               <span class="icon" aria-hidden="true">fact_check</span>Run Medical Necessity Check
@@ -88,13 +90,13 @@
         }
 
         @if (store.isReviewStep()) {
-          <button type="button" class="wz__submit-btn" (click)="store.close()">
+          <button pButton type="button" severity="success" (click)="store.close()">
             <span class="icon" aria-hidden="true">check_circle</span>Submit Intake
           </button>
         }
 
         @if (store.isNormalContinue()) {
-          <button type="button" class="wz__next-btn" (click)="onContinue()">
+          <button pButton type="button" (click)="onContinue()">
             {{ store.continueLabel() }}<span class="icon" aria-hidden="true">arrow_forward</span>
           </button>
         }

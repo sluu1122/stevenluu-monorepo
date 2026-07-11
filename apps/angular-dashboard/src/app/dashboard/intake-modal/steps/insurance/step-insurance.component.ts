@@ -1,5 +1,6 @@
 import { Component, DestroyRef, inject, signal, computed } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { IntakeInsurance, IntakeWizardStore, RANK_NAMES, procLabel } from '../../../../stores/intake-wizard.store';
 
@@ -8,7 +9,7 @@ const PAYERS = ['Aetna', 'United Health', 'Cigna', 'Blue Cross', 'Medicare'];
 @Component({
   selector: 'app-intake-step-insurance',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ButtonModule],
   templateUrl: './step-insurance.component.html',
 })
 export class StepInsuranceComponent {

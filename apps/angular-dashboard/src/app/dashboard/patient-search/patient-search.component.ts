@@ -1,6 +1,7 @@
 import { Component, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { DIRECTORY } from '../../data/seed';
@@ -11,7 +12,7 @@ const PAYERS = ['All', ...Array.from(new Set(DIRECTORY.map(r => r.payer))).sort(
 @Component({
   selector: 'app-patient-search',
   standalone: true,
-  imports: [FormsModule, TableModule, StatusBadgeComponent, AvatarComponent],
+  imports: [FormsModule, TableModule, ButtonModule, StatusBadgeComponent, AvatarComponent],
   templateUrl: './patient-search.component.html',
   styleUrl: './patient-search.component.scss',
 })

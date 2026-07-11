@@ -10,10 +10,10 @@
       </span>
     </div>
     <div class="pi-view__action-right">
-      <button class="pi-view__draft-btn">
+      <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view__draft-btn">
         <span class="icon" aria-hidden="true">save</span>Save Draft
       </button>
-      <button class="pi-view__discard-btn">Discard</button>
+      <button pButton type="button" severity="danger" [outlined]="true" class="pi-view__discard-btn">Discard</button>
     </div>
   </div>
 
@@ -30,7 +30,7 @@
             <h3 class="pi-view__card-title">Patient Details</h3>
             <span class="pi-view__verified-badge"><span class="icon pi-view__verified-icon" aria-hidden="true">check</span>Verified</span>
           </div>
-          <button class="pi-view__edit-btn" (click)="openModal('demographics')">
+          <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view__edit-btn" (click)="openModal('demographics')">
             <span class="icon" aria-hidden="true">edit</span>Edit
           </button>
         </div>
@@ -70,7 +70,7 @@
       <div class="pi-view__card pi-view__card--insurance">
         <div class="pi-view__card-head">
           <h3 class="pi-view__card-title">Patient Insurance</h3>
-          <button class="pi-view__edit-btn" (click)="openModal('insurance')">
+          <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view__edit-btn" (click)="openModal('insurance')">
             <span class="icon" aria-hidden="true">add</span>Add
           </button>
         </div>
@@ -86,7 +86,7 @@
                 <div class="pi-view__ins-name">{{ patient.payer }}</div>
                 <div class="pi-view__ins-meta">PPO — Preferred · <span class="mono">GRP-44120</span></div>
               </div>
-              <button class="pi-view__ins-edit" (click)="openModal('insurance')" aria-label="Edit primary insurance">
+              <button pButton [text]="true" type="button" class="pi-view__ins-edit" (click)="openModal('insurance')" aria-label="Edit primary insurance">
                 <span class="icon" aria-hidden="true">edit</span>
               </button>
             </div>
@@ -166,7 +166,7 @@
         <div class="pi-view__card pi-view__card--notes">
           <div class="pi-view__card-head">
             <h3 class="pi-view__card-title">Notes &amp; Documents</h3>
-            <button class="pi-view__edit-btn" (click)="openModal('note')">
+            <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view__edit-btn" (click)="openModal('note')">
               <span class="icon" aria-hidden="true">add</span>Add Note
             </button>
           </div>
@@ -196,7 +196,7 @@
                   <div class="pi-view__doc-name">Insurance_Card_Front.jpg</div>
                   <div class="pi-view__doc-size mono">1.2 MB</div>
                 </div>
-                <button class="pi-view__doc-dl-btn" aria-label="Download Insurance_Card_Front.jpg">
+                <button pButton [text]="true" type="button" class="pi-view__doc-dl-btn" aria-label="Download Insurance_Card_Front.jpg">
                   <span class="icon" aria-hidden="true">download</span>
                 </button>
               </div>
@@ -206,7 +206,7 @@
                   <div class="pi-view__doc-name">Referral_Letter.pdf</div>
                   <div class="pi-view__doc-size mono">84 KB</div>
                 </div>
-                <button class="pi-view__doc-dl-btn" aria-label="Download Referral_Letter.pdf">
+                <button pButton [text]="true" type="button" class="pi-view__doc-dl-btn" aria-label="Download Referral_Letter.pdf">
                   <span class="icon" aria-hidden="true">download</span>
                 </button>
               </div>
@@ -248,7 +248,7 @@
       <div class="pi-view-modal" cdkTrapFocus cdkTrapFocusAutoCapture>
         <div class="pi-view-modal__head">
           <h3 class="pi-view-modal__title">{{ modalTitle() }}</h3>
-          <button class="pi-view-modal__close" (click)="closeModal()" aria-label="Close dialog"><span class="icon" aria-hidden="true">close</span></button>
+          <button pButton [text]="true" type="button" class="pi-view-modal__close" (click)="closeModal()" aria-label="Close dialog"><span class="icon" aria-hidden="true">close</span></button>
         </div>
 
         <div class="pi-view-modal__body">
@@ -394,8 +394,8 @@
         </div>
 
         <div class="pi-view-modal__footer">
-          <button class="pi-view-modal__cancel" (click)="closeModal()">Cancel</button>
-          <button class="pi-view-modal__save" (click)="closeModal()">Save Changes</button>
+          <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view-modal__cancel" (click)="closeModal()">Cancel</button>
+          <button pButton type="button" class="pi-view-modal__save" (click)="closeModal()">Save Changes</button>
         </div>
       </div>
     </div>

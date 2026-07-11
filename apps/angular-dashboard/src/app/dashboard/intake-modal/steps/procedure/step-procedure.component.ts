@@ -1,5 +1,6 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
+import { ButtonModule } from 'primeng/button';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, TimeoutError, of } from 'rxjs';
 import { debounceTime, switchMap, catchError, map, timeout } from 'rxjs/operators';
@@ -18,7 +19,7 @@ function cptsRequired(ctrl: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-intake-step-procedure',
   standalone: true,
-  imports: [ReactiveFormsModule, CodeInputComponent],
+  imports: [ReactiveFormsModule, ButtonModule, CodeInputComponent],
   templateUrl: './step-procedure.component.html',
 })
 export class StepProcedureComponent {

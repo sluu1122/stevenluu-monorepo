@@ -7,7 +7,7 @@
       <div class="wz__card-head-row">
         <span class="wz__card-eyebrow">{{ w.rank }}</span>
         @if (w.canRemove) {
-          <button class="wz__delete-btn" type="button"
+          <button pButton [text]="true" type="button" severity="danger" class="wz__delete-btn"
             (click)="removeInsurance(w.id)" aria-label="Remove insurance">
             <span class="icon" aria-hidden="true">delete</span>
           </button>

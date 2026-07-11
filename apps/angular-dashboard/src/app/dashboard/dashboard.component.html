@@ -49,14 +49,14 @@
           }
         </div>
         <p class="dashboard__header-sub">
-          @if (nav === 'Worklist') { Clinical Operations &amp; Revenue Cycle Queue }
+          @if (nav === 'Worklist') { Clinical Operations Queue }
           @else if (nav === 'Patient Intake') { New patient registration &amp; authorization workflow }
           @else { Facility-wide patient directory }
         </p>
       </div>
 
       <div class="dashboard__header-right">
-        <button class="dashboard__icon-btn" aria-label="Notifications">
+        <button pButton [text]="true" type="button" class="dashboard__icon-btn" aria-label="Notifications">
           <span class="icon" aria-hidden="true">notifications</span>
           <span class="dashboard__notif-dot"></span>
         </button>

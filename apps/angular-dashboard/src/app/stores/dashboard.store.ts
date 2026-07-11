@@ -1,16 +1,18 @@
-import { computed } from '@angular/core';
-import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
-import { ALL_PATIENTS } from '../data/seed';
-import type { NavView, WorklistTab, PatientStatus } from '../models/patient.model';
+import { computed, inject } from '@angular/core';
+import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
+import { TimeoutError } from 'rxjs';
+import { PatientService } from '../services/patient.service';
+import type { Patient, NavView, WorklistTab, PatientStatus } from '../models/patient.model';
 
 interface DashboardState {
   activeNav: NavView;
   worklistTab: WorklistTab;
   search: string;
   statusFilter: PatientStatus | 'All';
-  // Pre-split at initialization — ALL_PATIENTS is static seed data, not a signal
-  inProgressPatients: typeof ALL_PATIENTS;
-  completedPatients: typeof ALL_PATIENTS;
+  inProgressPatients: Patient[];
+  completedPatients: Patient[];
+  loading: boolean;
+  error: string;
 }
 
 const initialState: DashboardState = {
@@ -18,8 +20,10 @@ const initialState: DashboardState = {
   worklistTab: 'In Progress',
   search: '',
   statusFilter: 'All',
-  inProgressPatients: ALL_PATIENTS.filter(p => p.status !== 'Completed'),
-  completedPatients:  ALL_PATIENTS.filter(p => p.status === 'Completed'),
+  inProgressPatients: [],
+  completedPatients:  [],
+  loading: false,
+  error: '',
 };
 
 export const DashboardStore = signalStore(
@@ -55,11 +59,33 @@ export const DashboardStore = signalStore(
     totalActive: computed(() => store.inProgressPatients().length),
   })),
 
-  withMethods((store) => ({
+  withMethods((store, patientService = inject(PatientService)) => ({
+    loadPatients(): void {
+      patchState(store, { loading: true, error: '' });
+      patientService.getPatients().subscribe({
+        next: (patients) => {
+          patchState(store, {
+            inProgressPatients: patients.filter(p => p.status !== 'Completed'),
+            completedPatients:  patients.filter(p => p.status === 'Completed'),
+            loading: false,
+          });
+        },
+        error: (err) => {
+          const msg = err instanceof TimeoutError
+            ? 'Request timed out. Check that patients-api is running.'
+            : 'Failed to load patients. Please retry.';
+          patchState(store, { loading: false, error: msg });
+        },
+      });
+    },
     setNav(nav: NavView) { patchState(store, { activeNav: nav }); },
     setTab(tab: WorklistTab) { patchState(store, { worklistTab: tab, search: '', statusFilter: 'All' }); },
     setSearch(search: string) { patchState(store, { search }); },
     setStatusFilter(statusFilter: PatientStatus | 'All') { patchState(store, { statusFilter }); },
     clearFilters() { patchState(store, { search: '', statusFilter: 'All' }); },
   })),
+
+  withHooks({
+    onInit(store) { store.loadPatients(); },
+  }),
 );

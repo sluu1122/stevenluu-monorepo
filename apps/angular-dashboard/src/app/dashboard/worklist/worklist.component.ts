@@ -1,6 +1,9 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
+import { ButtonModule } from 'primeng/button';
+import { Menu, MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
 import { DashboardStore } from '../../stores/dashboard.store';
 import { IntakeWizardStore } from '../../stores/intake-wizard.store';
 import { AiAssistantService, createAiField } from '../../services/ai-assistant.service';
@@ -22,7 +25,7 @@ const CASE_SUMMARY_SYSTEM =
 @Component({
   selector: 'app-worklist',
   standalone: true,
-  imports: [FormsModule, TableModule, IntakeModalComponent, StatusBadgeComponent],
+  imports: [FormsModule, TableModule, ButtonModule, MenuModule, IntakeModalComponent, StatusBadgeComponent],
   templateUrl: './worklist.component.html',
   styleUrl: './worklist.component.scss',
 })
@@ -30,6 +33,9 @@ export class WorklistComponent {
   protected readonly store  = inject(DashboardStore);
   protected readonly intake = inject(IntakeWizardStore);
   protected readonly ai     = inject(AiAssistantService);
+
+  @ViewChild('rowMenu') rowMenu!: Menu;
+  protected menuItems = signal<MenuItem[]>([]);
 
   protected readonly STATUS_OPTIONS: (PatientStatus | 'All')[] = [
     'All', 'Registered', 'Pending', 'Authorized', 'Payment Posted',
@@ -46,6 +52,16 @@ export class WorklistComponent {
       { label: 'Payment Posted',count: counts.payment,    dot: '#10a08a', status: 'Payment Posted' },
     ];
   });
+
+  // ── Row context menu ─────────────────────────────────────────────────────
+  protected openRowMenu(event: Event, p: Patient): void {
+    this.menuItems.set([{
+      label: 'AI Case Summary',
+      icon: 'pi pi-sparkles',
+      command: () => this.summarizeCase(p),
+    }]);
+    this.rowMenu.toggle(event);
+  }
 
   // ── Case Summary ──────────────────────────────────────────────────────────
   protected readonly summaryAi          = createAiField();

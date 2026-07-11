@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { ButtonModule } from 'primeng/button';
 import { DashboardStore } from '../stores/dashboard.store';
 import { WorklistComponent } from './worklist/worklist.component';
 import { PatientIntakeComponent } from './patient-intake/patient-intake.component';
@@ -16,7 +17,7 @@ const NAV_DEFS: NavDef[] = [
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [WorklistComponent, PatientIntakeComponent, PatientSearchComponent],
+  imports: [ButtonModule, WorklistComponent, PatientIntakeComponent, PatientSearchComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })

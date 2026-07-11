@@ -14,7 +14,7 @@
       </button>
     }
   </div>
-  <button class="wl__new-btn" (click)="intake.open()">
+  <button pButton type="button" class="wl__new-btn" (click)="intake.open()">
     <span class="icon">add</span>New Intake
   </button>
 </div>
@@ -90,7 +90,7 @@
         <span class="icon wl__summary-icon" aria-hidden="true">psychology</span>
         <span class="wl__summary-patient">{{ summaryPatientName() }}</span>
         <span class="wl__summary-label">Case Summary</span>
-        <button class="wl__summary-close" (click)="closeSummary()" aria-label="Close summary">
+        <button pButton [text]="true" type="button" class="wl__summary-close" (click)="closeSummary()" aria-label="Close summary">
           <span class="icon">close</span>
         </button>
       </div>
@@ -100,6 +100,20 @@
       @if (summaryAi.state() === 'error') {
         <p class="wl__summary-error">{{ summaryAi.error() }}</p>
       }
+    </div>
+  }
+
+  <!-- Loading / error states -->
+  @if (store.loading()) {
+    <div class="wl__loading" aria-live="polite">
+      <span class="icon wl__spin" aria-hidden="true">progress_activity</span>Loading patients…
+    </div>
+  }
+  @if (store.error()) {
+    <div class="wl__error-banner" role="alert">
+      <span class="icon icon--filled" aria-hidden="true">error</span>
+      {{ store.error() }}
+      <button pButton [text]="true" type="button" (click)="store.loadPatients()">Retry</button>
     </div>
   }
 
@@ -146,11 +160,9 @@
         <td class="wl__td wl__td--text wl__td--dim">{{ p.facility }}</td>
         <!-- Actions -->
         <td class="wl__td wl__td--actions">
-          <button class="wl__action-btn" title="View"><span class="icon">visibility</span></button>
-          <button class="wl__action-btn" title="AI case summary" (click)="summarizeCase(p)">
-            <span class="icon">auto_awesome</span>
+          <button pButton [text]="true" type="button" class="wl__action-btn" title="More actions" (click)="openRowMenu($event, p)">
+            <span class="icon">more_horiz</span>
           </button>
-          <button class="wl__action-btn" title="More"><span class="icon">more_horiz</span></button>
         </td>
       </tr>
     </ng-template>
@@ -161,13 +173,15 @@
             <span class="icon wl__empty-icon">search_off</span>
             <div class="wl__empty-title">No matching records</div>
             <div class="wl__empty-sub">No patients match the current filters.</div>
-            <button class="wl__clear-btn" (click)="store.clearFilters()">Clear filters</button>
+            <button pButton type="button" severity="secondary" [outlined]="true" class="wl__clear-btn" (click)="store.clearFilters()">Clear filters</button>
           </div>
         </td>
       </tr>
     </ng-template>
   </p-table>
 </section>
+
+<p-menu #rowMenu [model]="menuItems()" [popup]="true" styleClass="wl__row-menu" />
 
 <!-- Intake modal -->
 @if (intake.isOpen()) {
