@@ -4,7 +4,8 @@ export type DirStatus = 'Active' | 'Admitted' | 'Discharged';
 export interface Patient {
   id: string;
   name: string;
-  age: string;
+  age: number;
+  sex: 'M' | 'F';
   status: PatientStatus;
   assignee: string;
   payer: string;

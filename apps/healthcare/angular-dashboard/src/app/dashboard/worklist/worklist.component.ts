@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal, ViewChild } from '@angular/core';
+import { Component, inject, computed, signal, effect, ViewChild, ElementRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -35,7 +35,39 @@ export class WorklistComponent {
   protected readonly ai     = inject(AiAssistantService);
 
   @ViewChild('rowMenu') rowMenu!: Menu;
+  @ViewChild('selectAllBox') selectAllBox!: ElementRef<HTMLInputElement>;
   protected menuItems = signal<MenuItem[]>([]);
+
+  // ── Row selection ─────────────────────────────────────────────────────────
+  protected readonly selectedIds = signal<Set<string>>(new Set());
+  protected readonly allSelected = computed(() => {
+    const rows = this.store.filteredPatients();
+    return rows.length > 0 && rows.every(p => this.selectedIds().has(p.id));
+  });
+  protected readonly someSelected = computed(() =>
+    this.selectedIds().size > 0 && !this.allSelected()
+  );
+
+  constructor() {
+    effect(() => {
+      if (this.selectAllBox) {
+        this.selectAllBox.nativeElement.indeterminate = this.someSelected();
+      }
+    });
+  }
+
+  protected toggleSelectAll(): void {
+    const rows = this.store.filteredPatients();
+    this.selectedIds.set(
+      this.allSelected() ? new Set() : new Set(rows.map(p => p.id))
+    );
+  }
+
+  protected toggleRow(id: string): void {
+    const next = new Set(this.selectedIds());
+    if (next.has(id)) { next.delete(id); } else { next.add(id); }
+    this.selectedIds.set(next);
+  }
 
   protected readonly STATUS_OPTIONS: (PatientStatus | 'All')[] = [
     'All', 'Registered', 'Pending', 'Authorized', 'Payment Posted',
@@ -71,7 +103,7 @@ export class WorklistComponent {
     this.summaryPatientName.set(p.name);
     this.ai.fill(
       this.summaryAi,
-      `Patient: ${p.name} (${p.id}), Age: ${p.age}, Status: ${p.status}, ` +
+      `Patient: ${p.name} (${p.id}), Age: ${p.age}${p.sex}, Status: ${p.status}, ` +
       `Payer: ${p.payer}, Provider: ${p.assignee !== 'Unassigned' ? p.assignee : 'unassigned'}, ` +
       `Facility: ${p.facility}. Summarize their current case status for shift handoff.`,
       { system: CASE_SUMMARY_SYSTEM },
@@ -79,8 +111,10 @@ export class WorklistComponent {
   }
 
   protected closeSummary(): void {
+    this.ai.abort();
     this.summaryAi.state.set('idle');
     this.summaryAi.text.set('');
+    this.summaryAi.error.set('');
     this.summaryPatientName.set('');
   }
 

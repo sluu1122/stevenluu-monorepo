@@ -25,7 +25,9 @@ export function createAiField(): AiField {
 
 @Injectable({ providedIn: 'root' })
 export class AiAssistantService {
-  async *stream(prompt: string, options: SuggestOptions = {}): AsyncGenerator<string> {
+  private controller: AbortController | null = null;
+
+  async *stream(prompt: string, options: SuggestOptions = {}, signal?: AbortSignal): AsyncGenerator<string> {
     const response = await fetch(`${AI_API}/api/suggest`, {
       method:  'POST',
       headers: { 'content-type': 'application/json' },
@@ -34,6 +36,7 @@ export class AiAssistantService {
         system: options.system,
         think:  options.think ?? false,
       }),
+      signal,
     });
 
     if (!response.ok || !response.body) {
@@ -70,17 +73,25 @@ export class AiAssistantService {
   }
 
   async fill(field: AiField, prompt: string, options: SuggestOptions = {}): Promise<void> {
+    this.controller?.abort();
+    this.controller = new AbortController();
     field.text.set('');
     field.error.set('');
     field.state.set('streaming');
     try {
-      for await (const chunk of this.stream(prompt, options)) {
+      for await (const chunk of this.stream(prompt, options, this.controller.signal)) {
         field.text.update(s => s + chunk);
       }
       field.state.set('done');
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       field.error.set(err instanceof Error ? err.message : 'AI request failed');
       field.state.set('error');
     }
+  }
+
+  abort(): void {
+    this.controller?.abort();
+    this.controller = null;
   }
 }

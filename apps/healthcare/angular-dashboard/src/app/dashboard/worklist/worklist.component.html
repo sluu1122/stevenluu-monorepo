@@ -118,67 +118,79 @@
   }
 
   <!-- p-table -->
-  <p-table
-    [value]="store.filteredPatients()"
-    dataKey="id"
-    styleClass="wl__table"
-  >
-    <ng-template pTemplate="header">
-      <tr class="wl__thead-row">
-        <th class="wl__th wl__th--check"><input type="checkbox" class="wl__check" aria-label="Select all patients"></th>
-        <th class="wl__th">Patient Identifier</th>
-        <th class="wl__th">Intake Status</th>
-        <th class="wl__th">Provider</th>
-        <th class="wl__th">Insurance</th>
-        <th class="wl__th">Facility</th>
-        <th class="wl__th wl__th--right">Actions</th>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="body" let-p>
-      <tr class="wl__row">
-        <td class="wl__td wl__td--check"><input type="checkbox" class="wl__check" [attr.aria-label]="'Select patient ' + p.name"></td>
-        <!-- Patient -->
-        <td class="wl__td">
-          <span class="wl__patient-name">{{ p.name }}</span>
-          <span class="wl__patient-meta mono">{{ p.id }} · {{ p.age }}</span>
-        </td>
-        <!-- Status badge -->
-        <td class="wl__td">
-          <app-status-badge [status]="p.status" />
-        </td>
-        <!-- Provider -->
-        <td class="wl__td wl__td--text">
-          @if (p.assignee !== 'Unassigned') {
-            {{ p.assignee }}
-          } @else {
-            <button class="wl__assign-btn">
-              <span class="icon">person_add</span>Assign
+  @if (!store.loading() && !store.error()) {
+    <p-table
+      [value]="store.filteredPatients()"
+      dataKey="id"
+      styleClass="wl__table"
+    >
+      <ng-template pTemplate="header">
+        <tr class="wl__thead-row">
+          <th class="wl__th wl__th--check">
+            <input #selectAllBox type="checkbox" class="wl__check"
+              aria-label="Select all patients"
+              [checked]="allSelected()"
+              (change)="toggleSelectAll()">
+          </th>
+          <th class="wl__th">Patient Identifier</th>
+          <th class="wl__th">Intake Status</th>
+          <th class="wl__th">Provider</th>
+          <th class="wl__th">Insurance</th>
+          <th class="wl__th">Facility</th>
+          <th class="wl__th wl__th--right">Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-p>
+        <tr class="wl__row">
+          <td class="wl__td wl__td--check">
+            <input type="checkbox" class="wl__check"
+              [attr.aria-label]="'Select patient ' + p.name"
+              [checked]="selectedIds().has(p.id)"
+              (change)="toggleRow(p.id)">
+          </td>
+          <!-- Patient -->
+          <td class="wl__td">
+            <span class="wl__patient-name">{{ p.name }}</span>
+            <span class="wl__patient-meta mono">{{ p.id }} · {{ p.age }}{{ p.sex }}</span>
+          </td>
+          <!-- Status badge -->
+          <td class="wl__td">
+            <app-status-badge [status]="p.status" />
+          </td>
+          <!-- Provider -->
+          <td class="wl__td wl__td--text">
+            @if (p.assignee !== 'Unassigned') {
+              {{ p.assignee }}
+            } @else {
+              <button class="wl__assign-btn">
+                <span class="icon">person_add</span>Assign
+              </button>
+            }
+          </td>
+          <td class="wl__td wl__td--text">{{ p.payer }}</td>
+          <td class="wl__td wl__td--text wl__td--dim">{{ p.facility }}</td>
+          <!-- Actions -->
+          <td class="wl__td wl__td--actions">
+            <button pButton [text]="true" type="button" class="wl__action-btn" title="More actions" (click)="openRowMenu($event, p)">
+              <span class="icon">more_horiz</span>
             </button>
-          }
-        </td>
-        <td class="wl__td wl__td--text">{{ p.payer }}</td>
-        <td class="wl__td wl__td--text wl__td--dim">{{ p.facility }}</td>
-        <!-- Actions -->
-        <td class="wl__td wl__td--actions">
-          <button pButton [text]="true" type="button" class="wl__action-btn" title="More actions" (click)="openRowMenu($event, p)">
-            <span class="icon">more_horiz</span>
-          </button>
-        </td>
-      </tr>
-    </ng-template>
-    <ng-template pTemplate="emptymessage">
-      <tr>
-        <td colspan="7">
-          <div class="wl__empty">
-            <span class="icon wl__empty-icon">search_off</span>
-            <div class="wl__empty-title">No matching records</div>
-            <div class="wl__empty-sub">No patients match the current filters.</div>
-            <button pButton type="button" severity="secondary" [outlined]="true" class="wl__clear-btn" (click)="store.clearFilters()">Clear filters</button>
-          </div>
-        </td>
-      </tr>
-    </ng-template>
-  </p-table>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7">
+            <div class="wl__empty">
+              <span class="icon wl__empty-icon">search_off</span>
+              <div class="wl__empty-title">No matching records</div>
+              <div class="wl__empty-sub">No patients match the current filters.</div>
+              <button pButton type="button" severity="secondary" [outlined]="true" class="wl__clear-btn" (click)="store.clearFilters()">Clear filters</button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
 </section>
 
 <p-menu #rowMenu [model]="menuItems()" [popup]="true" styleClass="wl__row-menu" />
