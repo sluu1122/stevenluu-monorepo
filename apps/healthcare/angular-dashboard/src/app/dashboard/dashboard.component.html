@@ -25,10 +25,10 @@
       }
     </nav>
 
-    <div class="dashboard__nav-footer">
+    <!-- <div class="dashboard__nav-footer">
       <span class="icon dashboard__nav-settings">settings</span>
       <div class="dashboard__avatar dashboard__avatar--small">AC</div>
-    </div>
+    </div> -->
   </aside>
 
   <!-- ── Main column ── -->
@@ -40,7 +40,7 @@
         @let nav = store.activeNav();
         <div class="dashboard__header-title-row">
           <h1 class="dashboard__header-title">
-            @if (nav === 'Worklist') { Patient Worklist }
+            @if (nav === 'Worklist') { Worklist }
             @else if (nav === 'Patient Intake') { Patient Intake }
             @else { Patient Search }
           </h1>
@@ -56,15 +56,15 @@
       </div>
 
       <div class="dashboard__header-right">
-        <button pButton [text]="true" type="button" class="dashboard__icon-btn" aria-label="Notifications">
+        <!-- <button pButton [text]="true" type="button" class="dashboard__icon-btn" aria-label="Notifications">
           <span class="icon" aria-hidden="true">notifications</span>
           <span class="dashboard__notif-dot"></span>
-        </button>
+        </button> -->
 
         <div class="dashboard__user">
-          <div class="dashboard__avatar" aria-hidden="true">AC</div>
+          <p-avatar label="SL" shape="circle" styleClass="dashboard__avatar" />
           <div class="dashboard__user-info">
-            <span class="dashboard__user-name">Avery Chen</span>
+            <span class="dashboard__user-name">Steven Luu</span>
             <span class="dashboard__user-role">Charge Coordinator</span>
           </div>
         </div>

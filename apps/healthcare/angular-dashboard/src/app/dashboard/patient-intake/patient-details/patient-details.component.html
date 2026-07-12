@@ -1,0 +1,95 @@
+<div class="head">
+  <div class="head-left">
+    <h3 class="title">Patient Details</h3>
+    <span class="verified-badge"><span class="icon verified-icon" aria-hidden="true">check</span>Verified</span>
+  </div>
+  <button pButton type="button" severity="secondary" [outlined]="true" class="edit-btn" (click)="openModal()">
+    <span class="icon" aria-hidden="true">edit</span>Edit
+  </button>
+</div>
+<div class="details-grid">
+  <div class="field">
+    <div class="field-label">Legal Name</div>
+    <div class="field-value">{{ record.name }}</div>
+  </div>
+  <div class="field">
+    <div class="field-label">Date of Birth</div>
+    <div class="field-value mono">{{ record.dob }}</div>
+  </div>
+  <div class="field">
+    <div class="field-label">Sex</div>
+    <div class="field-value">{{ record.sex === 'M' ? 'Male' : 'Female' }}</div>
+  </div>
+  <div class="field">
+    <div class="field-label">MRN</div>
+    <div class="field-value mono">{{ record.mrn }}</div>
+  </div>
+  <div class="field">
+    <div class="field-label">Contact Number</div>
+    <div class="field-value">{{ record.phone }}</div>
+  </div>
+  <div class="field">
+    <div class="field-label">Email</div>
+    <div class="field-value">daniel.marsh&#64;example.com</div>
+  </div>
+  <div class="field field--full">
+    <div class="field-label">Residential Address</div>
+    <div class="field-value">1420 Pacific Heights Blvd, San Francisco, CA 94109</div>
+  </div>
+</div>
+
+@if (modalOpen()) {
+  <div class="pi-view-modal-overlay" (click)="onOverlayClick($event)" tabindex="-1">
+    <div class="pi-view-modal" cdkTrapFocus cdkTrapFocusAutoCapture role="dialog" aria-modal="true" aria-label="Edit Demographics">
+      <div class="pi-view-modal__head">
+        <h3 class="pi-view-modal__title">Edit Demographics</h3>
+        <button pButton [text]="true" type="button" class="pi-view-modal__close" (click)="closeModal()" aria-label="Close dialog"><span class="icon" aria-hidden="true">close</span></button>
+      </div>
+      <div class="pi-view-modal__body">
+        <form [formGroup]="demoForm">
+          <div class="pi-view-modal__field">
+            <label class="pi-view-modal__label" for="pd-name">Legal Full Name</label>
+            <input id="pd-name" class="pi-view-modal__input" formControlName="name">
+          </div>
+          <div class="pi-view-modal__grid-3">
+            <div class="pi-view-modal__field">
+              <label class="pi-view-modal__label" for="pd-dob">Date of Birth</label>
+              <input id="pd-dob" class="pi-view-modal__input mono" formControlName="dob">
+            </div>
+            <div class="pi-view-modal__field">
+              <label class="pi-view-modal__label" for="pd-sex">Sex</label>
+              <div class="pi-view-modal__select-wrap">
+                <select id="pd-sex" class="pi-view-modal__select" formControlName="sex">
+                  <option>Male</option><option>Female</option><option>Other</option>
+                </select>
+                <span class="icon pi-view-modal__select-caret" aria-hidden="true">expand_more</span>
+              </div>
+            </div>
+            <div class="pi-view-modal__field">
+              <label class="pi-view-modal__label" for="pd-mrn">MRN</label>
+              <input id="pd-mrn" class="pi-view-modal__input mono" formControlName="mrn">
+            </div>
+          </div>
+          <div class="pi-view-modal__field">
+            <label class="pi-view-modal__label" for="pd-address">Residential Address</label>
+            <input id="pd-address" class="pi-view-modal__input" formControlName="address">
+          </div>
+          <div class="pi-view-modal__grid-2">
+            <div class="pi-view-modal__field">
+              <label class="pi-view-modal__label" for="pd-phone">Contact Number</label>
+              <input id="pd-phone" class="pi-view-modal__input" formControlName="phone">
+            </div>
+            <div class="pi-view-modal__field">
+              <label class="pi-view-modal__label" for="pd-email">Email</label>
+              <input id="pd-email" class="pi-view-modal__input" formControlName="email">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="pi-view-modal__footer">
+        <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view-modal__cancel" (click)="closeModal()">Cancel</button>
+        <button pButton type="button" class="pi-view-modal__save" (click)="closeModal()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+}

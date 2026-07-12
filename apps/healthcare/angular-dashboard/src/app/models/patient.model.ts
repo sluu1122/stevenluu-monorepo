@@ -16,7 +16,7 @@ export interface DirectoryRecord {
   mrn: string;
   name: string;
   dob: string;
-  sex: string;
+  sex: 'M' | 'F';
   phone: string;
   payer: string;
   status: DirStatus;

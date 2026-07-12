@@ -1,0 +1,38 @@
+<div class="head">
+  <h3 class="title">Intake Status</h3>
+</div>
+<div class="tracker">
+  @for (step of trackerSteps; track step.n; let last = $last) {
+    <div class="tracker-item">
+      <div class="tracker-rail">
+        <span
+          class="tracker-circle"
+          [class.tracker-circle--done]="step.done"
+          [class.tracker-circle--active]="step.active"
+          aria-hidden="true"
+        >
+          @if (step.done) {
+            <span class="icon tracker-check">check</span>
+          } @else {
+            {{ step.n }}
+          }
+        </span>
+        @if (!last) {
+          <span
+            class="tracker-line"
+            [class.tracker-line--done]="step.done"
+            aria-hidden="true"
+          ></span>
+        }
+      </div>
+      <div class="tracker-label-col">
+        <span
+          class="tracker-label"
+          [class.tracker-label--active]="step.active"
+          [class.tracker-label--done]="step.done"
+        >{{ step.label }}</span>
+        <span class="tracker-sub">{{ step.sub }}</span>
+      </div>
+    </div>
+  }
+</div>

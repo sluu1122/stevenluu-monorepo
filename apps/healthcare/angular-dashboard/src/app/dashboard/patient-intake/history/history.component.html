@@ -1,0 +1,20 @@
+<div class="head">
+  <h3 class="title">History</h3>
+  <span class="history-date">Today · Jun 15</span>
+</div>
+<div class="history-body">
+  @for (h of history; track h.time) {
+    <div class="history-item">
+      <div class="history-rail">
+        <span class="history-dot" [style.background]="h.dot" aria-hidden="true"></span>
+        @if (!h.last) {
+          <span class="history-line" aria-hidden="true"></span>
+        }
+      </div>
+      <div class="history-content" [class.history-content--last]="h.last">
+        <div class="history-text">{{ h.text }}</div>
+        <div class="history-meta"><span class="mono">{{ h.time }}</span> · {{ h.actor }}</div>
+      </div>
+    </div>
+  }
+</div>

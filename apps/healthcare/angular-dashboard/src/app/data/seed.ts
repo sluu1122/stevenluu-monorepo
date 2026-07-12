@@ -34,5 +34,5 @@ export const DIRECTORY: DirectoryRecord[] = [
 ];
 
 // Single source of truth for the demo patient used across intake & wizard views
-export const DEMO_PATIENT = ALL_PATIENTS.find(p => p.id === 'PT-04830')!;
+export const DEMO_PATIENT    = ALL_PATIENTS.find(p => p.id === 'PT-04830')!;
 export const DEMO_DIR_RECORD = DIRECTORY.find(r => r.mrn === 'MRN-558120')!;

@@ -1,0 +1,80 @@
+<div class="head">
+  <h3 class="title">Notes &amp; Documents</h3>
+  <button pButton type="button" severity="secondary" [outlined]="true" class="edit-btn" (click)="openModal()">
+    <span class="icon" aria-hidden="true">add</span>Add Note
+  </button>
+</div>
+<div class="notes-body">
+  <div class="notes-list">
+    <div class="note-item">
+      <div class="note-avatar note-avatar--blue" aria-hidden="true">AC</div>
+      <div class="note-content">
+        <div class="note-meta"><span class="note-author">Avery Chen</span><span class="note-time">09:51</span></div>
+        <div class="note-text">Patient reports prior authorization on file with previous provider. Awaiting payer ID from referring office to confirm.</div>
+      </div>
+    </div>
+    <div class="note-item">
+      <div class="note-avatar note-avatar--purple" aria-hidden="true">MO</div>
+      <div class="note-content">
+        <div class="note-meta"><span class="note-author">Dr. M. Okafor</span><span class="note-time">09:46</span></div>
+        <div class="note-text">No acute distress on initial assessment. Hold for insurance clearance before triage routing.</div>
+      </div>
+    </div>
+  </div>
+  <div class="notes-divider"></div>
+  <div class="docs-label">Attached Documents</div>
+  <div class="docs-list">
+    <div class="doc-row">
+      <span class="icon doc-icon doc-icon--blue" aria-hidden="true">image</span>
+      <div class="doc-info">
+        <div class="doc-name">Insurance_Card_Front.jpg</div>
+        <div class="doc-size mono">1.2 MB</div>
+      </div>
+      <button pButton [text]="true" type="button" class="doc-dl-btn" aria-label="Download Insurance_Card_Front.jpg">
+        <span class="icon" aria-hidden="true">download</span>
+      </button>
+    </div>
+    <div class="doc-row">
+      <span class="icon doc-icon doc-icon--red" aria-hidden="true">picture_as_pdf</span>
+      <div class="doc-info">
+        <div class="doc-name">Referral_Letter.pdf</div>
+        <div class="doc-size mono">84 KB</div>
+      </div>
+      <button pButton [text]="true" type="button" class="doc-dl-btn" aria-label="Download Referral_Letter.pdf">
+        <span class="icon" aria-hidden="true">download</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+@if (modalOpen()) {
+  <div class="pi-view-modal-overlay" (click)="onOverlayClick($event)" tabindex="-1">
+    <div class="pi-view-modal" cdkTrapFocus cdkTrapFocusAutoCapture role="dialog" aria-modal="true" aria-label="Add Note">
+      <div class="pi-view-modal__head">
+        <h3 class="pi-view-modal__title">Add Note</h3>
+        <button pButton [text]="true" type="button" class="pi-view-modal__close" (click)="closeModal()" aria-label="Close dialog"><span class="icon" aria-hidden="true">close</span></button>
+      </div>
+      <div class="pi-view-modal__body">
+        <form [formGroup]="noteForm">
+          <div class="pi-view-modal__field">
+            <label class="pi-view-modal__label" for="note-category">Note Category</label>
+            <div class="pi-view-modal__select-wrap">
+              <select id="note-category" class="pi-view-modal__select" formControlName="category">
+                <option>Clinical</option><option>Administrative</option><option>Insurance</option><option>Follow-up</option>
+              </select>
+              <span class="icon pi-view-modal__select-caret" aria-hidden="true">expand_more</span>
+            </div>
+          </div>
+          <div class="pi-view-modal__field">
+            <label class="pi-view-modal__label" for="note-text">Note</label>
+            <textarea id="note-text" class="pi-view-modal__textarea" placeholder="Type your note…" rows="5" formControlName="note"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="pi-view-modal__footer">
+        <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view-modal__cancel" (click)="closeModal()">Cancel</button>
+        <button pButton type="button" class="pi-view-modal__save" (click)="closeModal()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+}

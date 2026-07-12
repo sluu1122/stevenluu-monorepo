@@ -1,0 +1,102 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+}
+
+.title { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
+
+.edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue-text);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+
+  &:hover { background: #f7faff; border-color: var(--blue-border); }
+  .icon { font-size: 15px; }
+}
+
+.ins-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ins-card {
+  border: 1px solid var(--border-soft);
+  border-radius: 11px;
+  padding: 12px 13px;
+}
+
+.ins-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.ins-rank {
+  flex-shrink: 0;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--slate-bg);
+  color: var(--slate-text);
+
+  &--primary { background: var(--blue-bg); color: var(--blue-text); }
+}
+
+.ins-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ins-info { min-width: 0; }
+
+.ins-name { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+
+.ins-meta { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+
+.ins-edit {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+
+  &:hover { background: #f7faff; border-color: var(--blue-border); }
+  .icon { font-size: 16px; color: var(--dim); }
+}
