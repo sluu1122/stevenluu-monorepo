@@ -1,11 +1,12 @@
 export type PatientStatus = 'Registered' | 'Pending' | 'Authorized' | 'Payment Posted' | 'Completed';
 export type DirStatus = 'Active' | 'Admitted' | 'Discharged';
+export type Sex = 'M' | 'F' | 'O';
 
 export interface Patient {
   id: string;
   name: string;
   age: number;
-  sex: 'M' | 'F';
+  sex: Sex;
   status: PatientStatus;
   assignee: string;
   payer: string;
@@ -16,7 +17,7 @@ export interface DirectoryRecord {
   mrn: string;
   name: string;
   dob: string;
-  sex: 'M' | 'F';
+  sex: Sex;
   phone: string;
   payer: string;
   status: DirStatus;

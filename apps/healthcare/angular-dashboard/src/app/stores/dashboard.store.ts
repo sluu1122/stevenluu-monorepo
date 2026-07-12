@@ -45,7 +45,7 @@ export const DashboardStore = signalStore(
       });
     }),
 
-    kpiCounts: computed(() => {
+    statusCounts: computed(() => {
       const counts = { registered: 0, pending: 0, authorized: 0, payment: 0 };
       for (const p of store.inProgressPatients()) {
         if      (p.status === 'Registered')     counts.registered++;

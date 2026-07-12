@@ -1,8 +1,10 @@
+export type Sex = 'M' | 'F' | 'O';
+
 export interface Patient {
   id: string;
   name: string;
   age: number;
-  sex: 'M' | 'F';
+  sex: Sex;
   status: string;
   assignee: string;
   payer: string;
@@ -13,7 +15,7 @@ export interface DirectoryRecord {
   mrn: string;
   name: string;
   dob: string;
-  sex: 'M' | 'F';
+  sex: Sex;
   phone: string;
   payer: string;
   status: string;
@@ -40,7 +42,7 @@ export interface ReferenceData {
 export interface Demographics {
   name: string;
   dob: string;
-  sex: 'M' | 'F';
+  sex: Sex;
   mrn: string;
   phone: string;
   email: string;

@@ -3,6 +3,9 @@ import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ButtonModule } from 'primeng/button';
 import { IntakeCaseStore } from '../../../stores/intake-case.store';
+import type { Sex } from '../../../models/patient.model';
+
+type SexLabel = 'Male' | 'Female' | 'Other';
 
 @Component({
   selector: 'app-pi-patient-details',
@@ -19,7 +22,7 @@ export class PatientDetailsComponent {
   protected readonly demoForm = new FormGroup({
     name:    new FormControl(''),
     dob:     new FormControl(''),
-    sex:     new FormControl('Male'),
+    sex:     new FormControl<SexLabel | null>(null),
     mrn:     new FormControl(''),
     address: new FormControl(''),
     phone:   new FormControl(''),
@@ -29,6 +32,14 @@ export class PatientDetailsComponent {
   @HostListener('document:keydown.escape')
   onEscape(): void { if (this.modalOpen()) this.closeModal(); }
 
+  protected sexLabel(sex: Sex): SexLabel {
+    return sex === 'M' ? 'Male' : sex === 'F' ? 'Female' : 'Other';
+  }
+
+  private sexCode(label: SexLabel | null): Sex {
+    return label === 'Male' ? 'M' : label === 'Female' ? 'F' : 'O';
+  }
+
   protected openModal(): void {
     const d = this.store.demographics();
     if (!d) return;
@@ -36,7 +47,7 @@ export class PatientDetailsComponent {
     this.demoForm.reset({
       name:    d.name,
       dob:     d.dob,
-      sex:     d.sex === 'M' ? 'Male' : 'Female',
+      sex:     this.sexLabel(d.sex),
       mrn:     d.mrn,
       address: d.address,
       phone:   d.phone,
@@ -55,7 +66,7 @@ export class PatientDetailsComponent {
     this.store.saveDemographics({
       name:    v.name ?? '',
       dob:     v.dob ?? '',
-      sex:     v.sex === 'Female' ? 'F' : v.sex === 'Male' ? 'M' : current.sex,
+      sex:     this.sexCode(v.sex ?? null),
       mrn:     v.mrn ?? '',
       address: v.address ?? '',
       phone:   v.phone ?? '',

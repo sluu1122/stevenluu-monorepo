@@ -1,9 +1,9 @@
-import type { AuthType, InsuranceRank } from './patient.model';
+import type { AuthType, InsuranceRank, Sex } from './patient.model';
 
 export interface Demographics {
   name: string;
   dob: string;
-  sex: 'M' | 'F';
+  sex: Sex;
   mrn: string;
   phone: string;
   email: string;

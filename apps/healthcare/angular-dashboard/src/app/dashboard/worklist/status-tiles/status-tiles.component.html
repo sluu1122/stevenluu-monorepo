@@ -1,0 +1,17 @@
+@if (store.worklistTab() === 'In Progress') {
+  <div class="wl__statuses">
+    @for (k of statusTiles(); track k.label) {
+      <button
+        class="wl__status-tile"
+        [class.wl__status-tile--active]="store.statusFilter() === k.status"
+        (click)="toggleStatus(k.status)"
+      >
+        <div class="wl__status-header">
+          <span class="wl__status-dot" [style.background]="k.dot"></span>
+          <span class="wl__status-label">{{ k.label }}</span>
+        </div>
+        <div class="wl__status-count">{{ k.count }}</div>
+      </button>
+    }
+  </div>
+}
