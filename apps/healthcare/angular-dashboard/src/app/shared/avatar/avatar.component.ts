@@ -1,4 +1,5 @@
 import { Component, input, computed } from '@angular/core';
+import { initialsOf } from '../initials';
 
 interface Tint { bg: string; color: string; border: string; }
 
@@ -37,11 +38,7 @@ export class AvatarComponent {
   readonly tintName = input<string>('');
   readonly cssClass = input<string>('');
 
-  protected readonly initials = computed(() => {
-    const parts = this.name().trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return '?';
-    return parts.map(w => w[0]).slice(-2).join('').toUpperCase();
-  });
+  protected readonly initials = computed(() => initialsOf(this.name()));
 
   protected readonly tint = computed<Tint>(() =>
     resolveTint(this.tintName() || this.name())

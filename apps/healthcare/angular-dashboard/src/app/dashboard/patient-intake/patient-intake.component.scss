@@ -4,6 +4,37 @@
   display: flex;
   flex-direction: column;
 
+  // ── Loading / error states ──────────────────────
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 40px 20px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  &__spin { animation: piSpinDot 0.65s linear infinite; font-size: 18px; }
+
+  @keyframes piSpinDot { to { transform: rotate(360deg); } }
+
+  &__error-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 12px 20px;
+    background: var(--red-bg);
+    border: 1px solid var(--red-border);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    color: var(--red-dark);
+    flex-shrink: 0;
+
+    .icon { font-size: 16px; }
+  }
+
   // ── Workspace layout ────────────────────────────
   &__workspace {
     flex: 1;

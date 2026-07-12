@@ -1,38 +1,26 @@
 <div class="head">
   <h3 class="title">Patient Insurance</h3>
-  <button pButton type="button" severity="secondary" [outlined]="true" class="edit-btn" (click)="openModal('add')">
+  <button pButton type="button" severity="secondary" [outlined]="true" class="edit-btn" (click)="openModal()">
     <span class="icon" aria-hidden="true">add</span>Add
   </button>
 </div>
 <div class="ins-list">
-  <div class="ins-card">
-    <div class="ins-body">
-      <div class="ins-info">
-        <div class="ins-title-row">
-          <div class="ins-name">{{ patient.payer }}</div>
-          <span class="ins-rank ins-rank--primary">Primary</span>
+  @for (ins of store.insurances(); track ins.id) {
+    <div class="ins-card">
+      <div class="ins-body">
+        <div class="ins-info">
+          <div class="ins-title-row">
+            <div class="ins-name">{{ ins.provider }}</div>
+            <span class="ins-rank" [class.ins-rank--primary]="ins.rank === 'Primary'">{{ ins.rank }}</span>
+          </div>
+          <div class="ins-meta">{{ ins.planType }} · <span class="mono">{{ ins.groupNumber || ins.memberId }}</span></div>
         </div>
-        <div class="ins-meta">PPO — Preferred · <span class="mono">GRP-44120</span></div>
+        <button pButton [text]="true" type="button" class="ins-edit" (click)="openModal(ins)" [attr.aria-label]="'Edit ' + ins.rank.toLowerCase() + ' insurance'">
+          <span class="icon" aria-hidden="true">edit</span>
+        </button>
       </div>
-      <button pButton [text]="true" type="button" class="ins-edit" (click)="openModal('primary')" aria-label="Edit primary insurance">
-        <span class="icon" aria-hidden="true">edit</span>
-      </button>
     </div>
-  </div>
-  <div class="ins-card">
-    <div class="ins-body">
-      <div class="ins-info">
-        <div class="ins-title-row">
-          <div class="ins-name">Medicare</div>
-          <span class="ins-rank">Secondary</span>
-        </div>
-        <div class="ins-meta">Part B · <span class="mono">W8842100123</span></div>
-      </div>
-      <button class="ins-edit" (click)="openModal('secondary')" aria-label="Edit secondary insurance">
-        <span class="icon" aria-hidden="true">edit</span>
-      </button>
-    </div>
-  </div>
+  }
 </div>
 
 @if (modalOpen()) {
@@ -44,12 +32,28 @@
       </div>
       <div class="pi-view-modal__body">
         <form [formGroup]="insuranceForm">
+          <div class="pi-view-modal__field">
+            <span class="pi-view-modal__label" id="ins-rank-label">Insurance Rank</span>
+            <div class="pi-view-modal__seg" role="group" aria-labelledby="ins-rank-label">
+              @for (r of reference.insuranceRanks(); track r) {
+                <button
+                  type="button"
+                  class="pi-view-modal__seg-btn"
+                  [class.pi-view-modal__seg-btn--active]="rank() === r"
+                  [attr.aria-pressed]="rank() === r"
+                  (click)="setRank(r)"
+                >{{ r }}</button>
+              }
+            </div>
+          </div>
           <div class="pi-view-modal__grid-2">
             <div class="pi-view-modal__field">
               <label class="pi-view-modal__label" for="ins-provider">Insurance Provider</label>
               <div class="pi-view-modal__select-wrap">
                 <select id="ins-provider" class="pi-view-modal__select" formControlName="provider">
-                  <option>Aetna</option><option>United Health</option><option>Cigna</option><option>Blue Cross</option><option>Medicare</option>
+                  @for (p of reference.payers(); track p) {
+                    <option [value]="p">{{ p }}</option>
+                  }
                 </select>
                 <span class="icon pi-view-modal__select-caret" aria-hidden="true">expand_more</span>
               </div>
@@ -58,7 +62,9 @@
               <label class="pi-view-modal__label" for="ins-plan">Plan Type</label>
               <div class="pi-view-modal__select-wrap">
                 <select id="ins-plan" class="pi-view-modal__select" formControlName="planType">
-                  <option>PPO — Preferred</option><option>HMO</option><option>EPO</option><option>Part B</option><option>Medicare Advantage</option>
+                  @for (pt of reference.planTypes(); track pt) {
+                    <option [value]="pt">{{ pt }}</option>
+                  }
                 </select>
                 <span class="icon pi-view-modal__select-caret" aria-hidden="true">expand_more</span>
               </div>
@@ -92,14 +98,16 @@
           <div class="pi-view-modal__field">
             <label class="pi-view-modal__label pi-view-modal__label--valid-row" for="ins-member">
               Member / Policy Number
-              <span class="pi-view-modal__valid-badge"><span class="icon pi-view-modal__valid-icon" aria-hidden="true">check_circle</span>Valid</span>
+              @if (insuranceForm.get('member')!.value) {
+                <span class="pi-view-modal__valid-badge"><span class="icon pi-view-modal__valid-icon" aria-hidden="true">check_circle</span>Valid</span>
+              }
             </label>
-            <input id="ins-member" class="pi-view-modal__input pi-view-modal__input--valid mono" formControlName="member">
+            <input id="ins-member" class="pi-view-modal__input mono" [class.pi-view-modal__input--valid]="insuranceForm.get('member')!.value" formControlName="member">
           </div>
           <div class="pi-view-modal__field">
             <span class="pi-view-modal__label" id="ins-auth-type-label">Authorization Type</span>
             <div class="pi-view-modal__seg" role="group" aria-labelledby="ins-auth-type-label">
-              @for (a of AUTH_TYPES; track a) {
+              @for (a of reference.authTypes(); track a) {
                 <button type="button" class="pi-view-modal__seg-btn" [class.pi-view-modal__seg-btn--active]="authType() === a" [attr.aria-pressed]="authType() === a" (click)="setAuthType(a)">{{ a }}</button>
               }
             </div>
@@ -115,8 +123,19 @@
             </div>
           </div>
         </form>
+        @if (saveError()) {
+          <div class="pi-view-modal__error-msg" role="alert">
+            <span class="icon icon--filled pi-view-modal__error-icon" aria-hidden="true">error</span>
+            {{ saveError() }}
+          </div>
+        }
       </div>
       <div class="pi-view-modal__footer">
+        @if (editing()) {
+          <button pButton type="button" severity="danger" [text]="true" class="pi-view-modal__delete" (click)="delete()">
+            <span class="icon" aria-hidden="true">delete</span>Delete Insurance
+          </button>
+        }
         <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view-modal__cancel" (click)="closeModal()">Cancel</button>
         <button pButton type="button" class="pi-view-modal__save" (click)="save()">Save Changes</button>
       </div>

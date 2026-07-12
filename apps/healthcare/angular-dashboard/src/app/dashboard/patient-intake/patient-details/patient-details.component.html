@@ -7,36 +7,38 @@
     <span class="icon" aria-hidden="true">edit</span>Edit
   </button>
 </div>
-<div class="details-grid">
-  <div class="field">
-    <div class="field-label">Legal Name</div>
-    <div class="field-value">{{ record.name }}</div>
+@if (store.demographics(); as d) {
+  <div class="details-grid">
+    <div class="field">
+      <div class="field-label">Legal Name</div>
+      <div class="field-value">{{ d.name }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Date of Birth</div>
+      <div class="field-value mono">{{ d.dob }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Sex</div>
+      <div class="field-value">{{ d.sex === 'M' ? 'Male' : 'Female' }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">MRN</div>
+      <div class="field-value mono">{{ d.mrn }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Contact Number</div>
+      <div class="field-value">{{ d.phone }}</div>
+    </div>
+    <div class="field">
+      <div class="field-label">Email</div>
+      <div class="field-value">{{ d.email }}</div>
+    </div>
+    <div class="field field--full">
+      <div class="field-label">Residential Address</div>
+      <div class="field-value">{{ d.address }}</div>
+    </div>
   </div>
-  <div class="field">
-    <div class="field-label">Date of Birth</div>
-    <div class="field-value mono">{{ record.dob }}</div>
-  </div>
-  <div class="field">
-    <div class="field-label">Sex</div>
-    <div class="field-value">{{ record.sex === 'M' ? 'Male' : 'Female' }}</div>
-  </div>
-  <div class="field">
-    <div class="field-label">MRN</div>
-    <div class="field-value mono">{{ record.mrn }}</div>
-  </div>
-  <div class="field">
-    <div class="field-label">Contact Number</div>
-    <div class="field-value">{{ record.phone }}</div>
-  </div>
-  <div class="field">
-    <div class="field-label">Email</div>
-    <div class="field-value">daniel.marsh&#64;example.com</div>
-  </div>
-  <div class="field field--full">
-    <div class="field-label">Residential Address</div>
-    <div class="field-value">1420 Pacific Heights Blvd, San Francisco, CA 94109</div>
-  </div>
-</div>
+}
 
 @if (modalOpen()) {
   <div class="pi-view-modal-overlay" (click)="onOverlayClick($event)" tabindex="-1">
@@ -85,10 +87,16 @@
             </div>
           </div>
         </form>
+        @if (saveError()) {
+          <div class="pi-view-modal__error-msg" role="alert">
+            <span class="icon icon--filled pi-view-modal__error-icon" aria-hidden="true">error</span>
+            {{ saveError() }}
+          </div>
+        }
       </div>
       <div class="pi-view-modal__footer">
         <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view-modal__cancel" (click)="closeModal()">Cancel</button>
-        <button pButton type="button" class="pi-view-modal__save" (click)="closeModal()">Save Changes</button>
+        <button pButton type="button" class="pi-view-modal__save" (click)="save()">Save Changes</button>
       </div>
     </div>
   </div>

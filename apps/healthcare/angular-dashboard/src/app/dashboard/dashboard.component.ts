@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { DashboardStore } from '../stores/dashboard.store';
+import { SessionStore } from '../stores/session.store';
 import { WorklistComponent } from './worklist/worklist.component';
 import { PatientIntakeComponent } from './patient-intake/patient-intake.component';
 import { PatientSearchComponent } from './patient-search/patient-search.component';
@@ -24,5 +25,6 @@ const NAV_DEFS: NavDef[] = [
 })
 export class DashboardComponent {
   protected readonly store = inject(DashboardStore);
+  protected readonly session = inject(SessionStore);
   protected readonly navDefs = NAV_DEFS;
 }

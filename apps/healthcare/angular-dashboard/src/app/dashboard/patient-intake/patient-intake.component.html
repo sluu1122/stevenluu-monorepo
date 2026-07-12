@@ -1,4 +1,15 @@
 <div class="pi-view">
+  @if (store.loading()) {
+    <div class="pi-view__loading" aria-live="polite">
+      <span class="icon pi-view__spin" aria-hidden="true">progress_activity</span>Loading intake case…
+    </div>
+  } @else if (store.error()) {
+    <div class="pi-view__error-banner" role="alert">
+      <span class="icon icon--filled" aria-hidden="true">error</span>
+      {{ store.error() }}
+      <button pButton [text]="true" type="button" (click)="store.loadCase()">Retry</button>
+    </div>
+  }
   <div class="pi-view__workspace" [class.pi-view__workspace--has-expanded]="expandedCard() !== null">
 
     <div class="pi-view__top-half" [class.pi-view__top-half--hidden]="expandedCard() !== null">

@@ -17,44 +17,31 @@
 </div>
 <div class="notes-body">
   <div class="notes-list">
-    <div class="note-item">
-      <div class="note-avatar note-avatar--blue" aria-hidden="true">AC</div>
-      <div class="note-content">
-        <div class="note-meta"><span class="note-author">Avery Chen</span><span class="note-time">09:51</span></div>
-        <div class="note-text">Patient reports prior authorization on file with previous provider. Awaiting payer ID from referring office to confirm.</div>
+    @for (n of store.notes(); track n.id) {
+      <div class="note-item">
+        <div class="note-avatar note-avatar--{{ n.avatarTint }}" aria-hidden="true">{{ initialsOf(n.author) }}</div>
+        <div class="note-content">
+          <div class="note-meta"><span class="note-author">{{ n.author }}</span><span class="note-time">{{ n.time }}</span></div>
+          <div class="note-text">{{ n.text }}</div>
+        </div>
       </div>
-    </div>
-    <div class="note-item">
-      <div class="note-avatar note-avatar--purple" aria-hidden="true">MO</div>
-      <div class="note-content">
-        <div class="note-meta"><span class="note-author">Dr. M. Okafor</span><span class="note-time">09:46</span></div>
-        <div class="note-text">No acute distress on initial assessment. Hold for insurance clearance before triage routing.</div>
-      </div>
-    </div>
+    }
   </div>
   <div class="notes-divider"></div>
   <div class="docs-label">Attached Documents</div>
   <div class="docs-list">
-    <div class="doc-row">
-      <span class="icon doc-icon doc-icon--blue" aria-hidden="true">image</span>
-      <div class="doc-info">
-        <div class="doc-name">Insurance_Card_Front.jpg</div>
-        <div class="doc-size mono">1.2 MB</div>
+    @for (d of store.documents(); track d.id) {
+      <div class="doc-row">
+        <span class="icon doc-icon" [class.doc-icon--blue]="d.kind === 'image'" [class.doc-icon--red]="d.kind === 'pdf'" aria-hidden="true">{{ d.kind === 'pdf' ? 'picture_as_pdf' : 'image' }}</span>
+        <div class="doc-info">
+          <div class="doc-name">{{ d.name }}</div>
+          <div class="doc-size mono">{{ d.sizeLabel }}</div>
+        </div>
+        <button pButton [text]="true" type="button" class="doc-dl-btn" [attr.aria-label]="'Download ' + d.name">
+          <span class="icon" aria-hidden="true">download</span>
+        </button>
       </div>
-      <button pButton [text]="true" type="button" class="doc-dl-btn" aria-label="Download Insurance_Card_Front.jpg">
-        <span class="icon" aria-hidden="true">download</span>
-      </button>
-    </div>
-    <div class="doc-row">
-      <span class="icon doc-icon doc-icon--red" aria-hidden="true">picture_as_pdf</span>
-      <div class="doc-info">
-        <div class="doc-name">Referral_Letter.pdf</div>
-        <div class="doc-size mono">84 KB</div>
-      </div>
-      <button pButton [text]="true" type="button" class="doc-dl-btn" aria-label="Download Referral_Letter.pdf">
-        <span class="icon" aria-hidden="true">download</span>
-      </button>
-    </div>
+    }
   </div>
 </div>
 
@@ -71,7 +58,9 @@
             <label class="pi-view-modal__label" for="note-category">Note Category</label>
             <div class="pi-view-modal__select-wrap">
               <select id="note-category" class="pi-view-modal__select" formControlName="category">
-                <option>Clinical</option><option>Administrative</option><option>Insurance</option><option>Follow-up</option>
+                @for (c of reference.noteCategories(); track c) {
+                  <option [value]="c">{{ c }}</option>
+                }
               </select>
               <span class="icon pi-view-modal__select-caret" aria-hidden="true">expand_more</span>
             </div>
@@ -81,10 +70,16 @@
             <textarea id="note-text" class="pi-view-modal__textarea" placeholder="Type your note…" rows="5" formControlName="note"></textarea>
           </div>
         </form>
+        @if (saveError()) {
+          <div class="pi-view-modal__error-msg" role="alert">
+            <span class="icon icon--filled pi-view-modal__error-icon" aria-hidden="true">error</span>
+            {{ saveError() }}
+          </div>
+        }
       </div>
       <div class="pi-view-modal__footer">
         <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view-modal__cancel" (click)="closeModal()">Cancel</button>
-        <button pButton type="button" class="pi-view-modal__save" (click)="closeModal()">Save Changes</button>
+        <button pButton type="button" class="pi-view-modal__save" (click)="save()">Save Changes</button>
       </div>
     </div>
   </div>

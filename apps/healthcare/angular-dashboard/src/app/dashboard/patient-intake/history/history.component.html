@@ -13,7 +13,7 @@
   </div>
 </div>
 <div class="history-body">
-  @for (group of history; track group.date) {
+  @for (group of history(); track group.date) {
     <div class="history-group">
       <div class="history-date-sep">{{ group.date }}</div>
       @for (event of group.events; track event.time; let last = $last) {

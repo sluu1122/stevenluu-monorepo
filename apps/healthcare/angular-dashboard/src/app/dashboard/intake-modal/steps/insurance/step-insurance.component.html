@@ -18,7 +18,7 @@
         <label class="wz__label">Insurance Payer</label>
         <div class="wz__select-wrap">
           <select class="wz__select" formControlName="payer">
-            @for (p of PAYERS; track p) { <option>{{ p }}</option> }
+            @for (p of PAYERS(); track p) { <option>{{ p }}</option> }
           </select>
           <span class="icon wz__select-caret" aria-hidden="true">expand_more</span>
         </div>

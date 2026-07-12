@@ -27,3 +27,4 @@ export interface DirectoryRecord {
 export type NavView = 'Worklist' | 'Patient Intake' | 'Patient Search';
 export type WorklistTab = 'In Progress' | 'Completed';
 export type AuthType = 'Inpatient' | 'Outpatient' | 'Telehealth';
+export type InsuranceRank = 'Primary' | 'Secondary' | 'Tertiary';

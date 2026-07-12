@@ -1,8 +1,8 @@
-import { Component, HostListener, signal } from '@angular/core';
+import { Component, HostListener, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ButtonModule } from 'primeng/button';
-import { DEMO_DIR_RECORD } from '../../../data/seed';
+import { IntakeCaseStore } from '../../../stores/intake-case.store';
 
 @Component({
   selector: 'app-pi-patient-details',
@@ -12,24 +12,60 @@ import { DEMO_DIR_RECORD } from '../../../data/seed';
   styleUrl: './patient-details.component.scss',
 })
 export class PatientDetailsComponent {
-  protected readonly record = DEMO_DIR_RECORD;
+  protected readonly store = inject(IntakeCaseStore);
   protected readonly modalOpen = signal(false);
+  protected readonly saveError = signal('');
 
   protected readonly demoForm = new FormGroup({
-    name:    new FormControl(DEMO_DIR_RECORD.name),
-    dob:     new FormControl(DEMO_DIR_RECORD.dob),
-    sex:     new FormControl(DEMO_DIR_RECORD.sex === 'M' ? 'Male' : 'Female'),
-    mrn:     new FormControl(DEMO_DIR_RECORD.mrn),
-    address: new FormControl('1420 Pacific Heights Blvd'),
-    phone:   new FormControl(DEMO_DIR_RECORD.phone),
-    email:   new FormControl('daniel.marsh@example.com'),
+    name:    new FormControl(''),
+    dob:     new FormControl(''),
+    sex:     new FormControl('Male'),
+    mrn:     new FormControl(''),
+    address: new FormControl(''),
+    phone:   new FormControl(''),
+    email:   new FormControl(''),
   });
 
   @HostListener('document:keydown.escape')
   onEscape(): void { if (this.modalOpen()) this.closeModal(); }
 
-  protected openModal(): void { this.modalOpen.set(true); }
+  protected openModal(): void {
+    const d = this.store.demographics();
+    if (!d) return;
+    this.saveError.set('');
+    this.demoForm.reset({
+      name:    d.name,
+      dob:     d.dob,
+      sex:     d.sex === 'M' ? 'Male' : 'Female',
+      mrn:     d.mrn,
+      address: d.address,
+      phone:   d.phone,
+      email:   d.email,
+    });
+    this.modalOpen.set(true);
+  }
+
   protected closeModal(): void { this.modalOpen.set(false); }
+
+  protected save(): void {
+    const current = this.store.demographics();
+    if (!current) return;
+    const v = this.demoForm.value;
+    this.saveError.set('');
+    this.store.saveDemographics({
+      name:    v.name ?? '',
+      dob:     v.dob ?? '',
+      sex:     v.sex === 'Female' ? 'F' : v.sex === 'Male' ? 'M' : current.sex,
+      mrn:     v.mrn ?? '',
+      address: v.address ?? '',
+      phone:   v.phone ?? '',
+      email:   v.email ?? '',
+    }).subscribe({
+      next: () => this.closeModal(),
+      error: (err: Error) => this.saveError.set(err.message),
+    });
+  }
+
   protected onOverlayClick(event: MouseEvent): void {
     if ((event.target as HTMLElement) === event.currentTarget) this.closeModal();
   }

@@ -33,7 +33,7 @@
           [ngModel]="payer()"
           (ngModelChange)="payer.set($event)"
         >
-          @for (opt of PAYER_OPTIONS; track opt) {
+          @for (opt of store.payerOptions(); track opt) {
             <option [value]="opt">{{ opt }}</option>
           }
         </select>
@@ -53,12 +53,22 @@
     <div class="ps__results-head">
       <div class="ps__results-head-left">
         <h3 class="ps__results-title">Results</h3>
-        <span class="ps__results-count">{{ results().length }} of {{ total }} patients</span>
+        <span class="ps__results-count">{{ results().length }} of {{ store.total() }} patients</span>
       </div>
       <span class="ps__results-tag mono">Directory · all units</span>
     </div>
 
-    @if (results().length > 0) {
+    @if (store.loading()) {
+      <div class="ps__loading" aria-live="polite">
+        <span class="icon ps__spin" aria-hidden="true">progress_activity</span>Loading directory…
+      </div>
+    } @else if (store.error()) {
+      <div class="ps__error-banner" role="alert">
+        <span class="icon icon--filled" aria-hidden="true">error</span>
+        {{ store.error() }}
+        <button pButton [text]="true" type="button" (click)="store.loadDirectory()">Retry</button>
+      </div>
+    } @else if (results().length > 0) {
       <p-table
         [value]="results()"
         dataKey="mrn"

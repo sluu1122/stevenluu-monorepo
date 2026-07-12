@@ -1,13 +1,11 @@
-import { Component, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
-import { DIRECTORY } from '../../data/seed';
+import { DirectoryStore } from '../../stores/directory.store';
 import type { DirectoryRecord, DirStatus } from '../../models/patient.model';
-
-const PAYERS = ['All', ...Array.from(new Set(DIRECTORY.map(r => r.payer))).sort()];
 
 @Component({
   selector: 'app-patient-search',
@@ -17,20 +15,20 @@ const PAYERS = ['All', ...Array.from(new Set(DIRECTORY.map(r => r.payer))).sort(
   styleUrl: './patient-search.component.scss',
 })
 export class PatientSearchComponent {
+  protected readonly store = inject(DirectoryStore);
+
   protected query  = signal('');
   protected status = signal<DirStatus | 'All'>('All');
   protected payer  = signal('All');
 
   protected readonly STATUS_OPTIONS: (DirStatus | 'All')[] = ['All', 'Active', 'Admitted', 'Discharged'];
-  protected readonly PAYER_OPTIONS = PAYERS;
-  protected readonly total = DIRECTORY.length;
 
   protected readonly results = computed(() => {
     const q  = this.query().trim().toLowerCase();
     const st = this.status();
     const py = this.payer();
 
-    return DIRECTORY.filter(r => {
+    return this.store.records().filter(r => {
       const okStatus = st === 'All' || r.status === st;
       const okPayer  = py === 'All' || r.payer === py;
       const okSearch = !q

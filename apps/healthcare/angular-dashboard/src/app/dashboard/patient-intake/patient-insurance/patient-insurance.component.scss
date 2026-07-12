@@ -100,3 +100,11 @@
   &:hover { background: #f7faff; border-color: var(--blue-border); }
   .icon { font-size: 16px; color: var(--dim); }
 }
+
+.pi-view-modal__delete {
+  margin-right: auto;
+  color: var(--red-dark);
+
+  &:hover { background: var(--red-bg); }
+  .icon { font-size: 16px; }
+}

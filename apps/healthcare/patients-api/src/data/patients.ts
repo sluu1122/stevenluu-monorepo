@@ -1,13 +1,4 @@
-interface Patient {
-  id: string;
-  name: string;
-  age: number;
-  sex: 'M' | 'F';
-  status: string;
-  assignee: string;
-  payer: string;
-  facility: string;
-}
+import type { Patient } from './types.js';
 
 export const ALL_PATIENTS: Patient[] = [
   { id: 'PT-04821', name: 'Eleanor Whitfield', age: 74, sex: 'F', status: 'Authorized',     assignee: 'Dr. A. Soto',   payer: 'Medicare',      facility: 'Main Campus' },

@@ -61,13 +61,15 @@
           <span class="dashboard__notif-dot"></span>
         </button> -->
 
-        <div class="dashboard__user">
-          <p-avatar label="SL" shape="circle" styleClass="dashboard__avatar" />
-          <div class="dashboard__user-info">
-            <span class="dashboard__user-name">Steven Luu</span>
-            <span class="dashboard__user-role">Charge Coordinator</span>
+        @if (session.user(); as user) {
+          <div class="dashboard__user">
+            <p-avatar [label]="session.userInitials()" shape="circle" styleClass="dashboard__avatar" />
+            <div class="dashboard__user-info">
+              <span class="dashboard__user-name">{{ user.name }}</span>
+              <span class="dashboard__user-role">{{ user.role }}</span>
+            </div>
           </div>
-        </div>
+        }
       </div>
     </header>
 
