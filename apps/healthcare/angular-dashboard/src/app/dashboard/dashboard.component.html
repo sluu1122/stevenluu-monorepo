@@ -11,9 +11,11 @@
         <button
           class="dashboard__nav-btn"
           [class.dashboard__nav-btn--active]="store.activeNav() === item.label"
+          [disabled]="isNavDisabled(item.label)"
           (click)="store.setNav(item.label)"
           [attr.aria-label]="item.label"
           [attr.aria-current]="store.activeNav() === item.label ? 'page' : null"
+          [attr.aria-disabled]="isNavDisabled(item.label) || null"
         >
           <span
             class="dashboard__nav-indicator"
@@ -50,7 +52,10 @@
         </div>
         <p class="dashboard__header-sub">
           @if (nav === 'Worklist') { Clinical Operations Queue }
-          @else if (nav === 'Patient Intake') { New patient registration &amp; authorization workflow }
+          @else if (nav === 'Patient Intake') {
+            @if (intakeCase.demographics(); as d) { {{ d.name }} · MRN {{ d.mrn }} }
+            @else { New patient registration &amp; authorization workflow }
+          }
           @else { Facility-wide patient directory }
         </p>
       </div>

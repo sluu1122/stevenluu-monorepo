@@ -12,39 +12,39 @@ export class IntakeCaseService {
   private readonly http    = inject(HttpClient);
   private readonly baseUrl = environment.patientsApiUrl;
 
-  getIntakeCase(): Observable<IntakeCase> {
+  getIntakeCase(patientId: string): Observable<IntakeCase> {
     return this.http
-      .get<IntakeCase>(`${this.baseUrl}/api/intake-case`)
+      .get<IntakeCase>(`${this.baseUrl}/api/intake-case/${patientId}`)
       .pipe(timeout(TIMEOUT_MS));
   }
 
-  updateDemographics(demographics: Demographics): Observable<IntakeCase> {
+  updateDemographics(patientId: string, demographics: Demographics): Observable<IntakeCase> {
     return this.http
-      .put<IntakeCase>(`${this.baseUrl}/api/intake-case/demographics`, demographics)
+      .put<IntakeCase>(`${this.baseUrl}/api/intake-case/${patientId}/demographics`, demographics)
       .pipe(timeout(TIMEOUT_MS));
   }
 
-  addInsurance(insurance: InsuranceInput): Observable<IntakeCase> {
+  addInsurance(patientId: string, insurance: InsuranceInput): Observable<IntakeCase> {
     return this.http
-      .post<IntakeCase>(`${this.baseUrl}/api/intake-case/insurances`, insurance)
+      .post<IntakeCase>(`${this.baseUrl}/api/intake-case/${patientId}/insurances`, insurance)
       .pipe(timeout(TIMEOUT_MS));
   }
 
-  updateInsurance(id: string, insurance: InsuranceInput): Observable<IntakeCase> {
+  updateInsurance(patientId: string, id: string, insurance: InsuranceInput): Observable<IntakeCase> {
     return this.http
-      .put<IntakeCase>(`${this.baseUrl}/api/intake-case/insurances/${id}`, insurance)
+      .put<IntakeCase>(`${this.baseUrl}/api/intake-case/${patientId}/insurances/${id}`, insurance)
       .pipe(timeout(TIMEOUT_MS));
   }
 
-  deleteInsurance(id: string): Observable<IntakeCase> {
+  deleteInsurance(patientId: string, id: string): Observable<IntakeCase> {
     return this.http
-      .delete<IntakeCase>(`${this.baseUrl}/api/intake-case/insurances/${id}`)
+      .delete<IntakeCase>(`${this.baseUrl}/api/intake-case/${patientId}/insurances/${id}`)
       .pipe(timeout(TIMEOUT_MS));
   }
 
-  addNote(note: NoteInput): Observable<IntakeCase> {
+  addNote(patientId: string, note: NoteInput): Observable<IntakeCase> {
     return this.http
-      .post<IntakeCase>(`${this.baseUrl}/api/intake-case/notes`, note)
+      .post<IntakeCase>(`${this.baseUrl}/api/intake-case/${patientId}/notes`, note)
       .pipe(timeout(TIMEOUT_MS));
   }
 }

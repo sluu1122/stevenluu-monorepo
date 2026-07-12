@@ -61,6 +61,12 @@
 
     &--active { background: #f3f6fb; }
     &:hover:not(&--active) { background: #f8f9fb; }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+      background: transparent;
+    }
   }
 
   &__nav-indicator {

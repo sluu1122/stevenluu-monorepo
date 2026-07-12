@@ -53,52 +53,68 @@ export function createServer() {
     res.json(DIRECTORY);
   });
 
-  app.get('/api/intake-case', (_req, res) => {
-    res.json(getIntakeCase());
+  app.get('/api/intake-case/:patientId', (req, res) => {
+    const intakeCase = getIntakeCase(req.params.patientId);
+    if (!intakeCase) {
+      return res.status(404).json({ error: `intake case for ${req.params.patientId} not found` });
+    }
+    res.json(intakeCase);
   });
 
-  app.put('/api/intake-case/demographics', (req, res) => {
+  app.put('/api/intake-case/:patientId/demographics', (req, res) => {
     const { name, dob, sex, mrn, phone, email, address } = req.body ?? {};
     if (!name || !dob || !mrn) {
       return res.status(400).json({ error: 'name, dob, and mrn are required' });
     }
-    res.json(updateDemographics({ name, dob, sex, mrn, phone, email, address }));
+    const updated = updateDemographics(req.params.patientId, { name, dob, sex, mrn, phone, email, address });
+    if (!updated) {
+      return res.status(404).json({ error: `intake case for ${req.params.patientId} not found` });
+    }
+    res.json(updated);
   });
 
-  app.post('/api/intake-case/insurances', (req, res) => {
+  app.post('/api/intake-case/:patientId/insurances', (req, res) => {
     const result = validateInsurancePayload(req.body);
     if ('error' in result) {
       return res.status(400).json({ error: result.error });
     }
-    res.status(201).json(addInsurance(result.value));
+    const updated = addInsurance(req.params.patientId, result.value);
+    if (!updated) {
+      return res.status(404).json({ error: `intake case for ${req.params.patientId} not found` });
+    }
+    res.status(201).json(updated);
   });
 
-  app.put('/api/intake-case/insurances/:id', (req, res) => {
+  app.put('/api/intake-case/:patientId/insurances/:id', (req, res) => {
     const result = validateInsurancePayload(req.body);
     if ('error' in result) {
       return res.status(400).json({ error: result.error });
     }
-    const updated = updateInsurance(req.params.id, result.value);
+    const updated = updateInsurance(req.params.patientId, req.params.id, result.value);
     if (!updated) {
       return res.status(404).json({ error: `insurance ${req.params.id} not found` });
     }
     res.json(updated);
   });
 
-  app.delete('/api/intake-case/insurances/:id', (req, res) => {
-    const updated = deleteInsurance(req.params.id);
+  app.delete('/api/intake-case/:patientId/insurances/:id', (req, res) => {
+    const updated = deleteInsurance(req.params.patientId, req.params.id);
     if (!updated) {
       return res.status(404).json({ error: `insurance ${req.params.id} not found` });
     }
     res.json(updated);
   });
 
-  app.post('/api/intake-case/notes', (req, res) => {
+  app.post('/api/intake-case/:patientId/notes', (req, res) => {
     const { category, text } = req.body ?? {};
     if (!text || !String(text).trim()) {
       return res.status(400).json({ error: 'note text is required' });
     }
-    res.status(201).json(addNote({ category: category || 'Clinical', text: String(text).trim() }));
+    const updated = addNote(req.params.patientId, { category: category || 'Clinical', text: String(text).trim() });
+    if (!updated) {
+      return res.status(404).json({ error: `intake case for ${req.params.patientId} not found` });
+    }
+    res.status(201).json(updated);
   });
 
   return app;

@@ -1,11 +1,14 @@
-import type { Demographics, InsuranceInput, IntakeCase } from './types.js';
+import type { Demographics, HistoryEvent, HistoryGroup, InsuranceInput, IntakeCase, IntakeNote, Patient, TrackerStep } from './types.js';
 import { CURRENT_USER } from './current-user.js';
+import { ALL_PATIENTS } from './patients.js';
 
 let insSeq = 3;
 let noteSeq = 3;
 
-const intakeCase: IntakeCase = {
-  patientId: 'PT-04830',
+const DANIEL_ID = 'PT-04830';
+
+const DANIEL_CASE: IntakeCase = {
+  patientId: DANIEL_ID,
   demographics: {
     name: 'Daniel R. Marsh',
     dob: '1981-03-14',
@@ -68,43 +71,161 @@ const intakeCase: IntakeCase = {
   ],
 };
 
+const STEP_DEFS = [
+  { n: 1, label: 'Registered',     sub: 'Identity verified' },
+  { n: 2, label: 'Pending',        sub: 'Eligibility pending' },
+  { n: 3, label: 'Authorized',     sub: 'Awaiting payer' },
+  { n: 4, label: 'Payment Posted', sub: 'Financial clearance' },
+  { n: 5, label: 'Completed',      sub: 'Case closed' },
+];
+
+function trackerFor(status: string): TrackerStep[] {
+  const currentIndex = STEP_DEFS.findIndex(s => s.label === status) + 1 || 1;
+  return STEP_DEFS.map(s => ({
+    ...s,
+    done:   s.n < currentIndex || (s.n === currentIndex && currentIndex === 5),
+    active: s.n === currentIndex && currentIndex !== 5,
+  }));
+}
+
+const STATUS_NOTE: Record<string, (p: Patient) => string> = {
+  Registered:       (p) => `Patient registered and identity verified against MPI. Awaiting eligibility check with ${p.payer}.`,
+  Pending:          (p) => `Eligibility check initiated with ${p.payer}. Payer ID confirmation pending before authorization can proceed.`,
+  Authorized:       (p) => `Prior authorization confirmed with ${p.payer}. Case cleared for scheduling.`,
+  'Payment Posted': (p) => `Payment posted and reconciled with ${p.payer}. Financial clearance complete.`,
+  Completed:        () => 'Case closed. All documentation finalized and archived.',
+};
+
+const STATUS_HISTORY: Record<string, (p: Patient) => string> = {
+  Registered:       (p) => `Intake record created for ${p.name}. Identity verified against MPI.`,
+  Pending:          (p) => `Eligibility check initiated with ${p.payer}.`,
+  Authorized:       (p) => `Prior authorization confirmed with ${p.payer}. Case cleared for scheduling.`,
+  'Payment Posted': (p) => `Payment posted and reconciled with ${p.payer}.`,
+  Completed:        () => 'Case closed and archived. All documentation finalized.',
+};
+
+function notesFor(p: Patient): IntakeNote[] {
+  const author = p.assignee !== 'Unassigned' ? p.assignee : 'Avery Chen';
+  const tint: 'blue' | 'purple' = author.startsWith('Dr.') ? 'purple' : 'blue';
+  const statusNote = STATUS_NOTE[p.status]?.(p) ?? `Intake review in progress for ${p.name}.`;
+
+  const notes: IntakeNote[] = [
+    { id: 'note-1', author, avatarTint: tint, time: '09:46', category: 'Clinical', text: statusNote },
+  ];
+
+  if (p.status !== 'Registered') {
+    notes.unshift({
+      id: 'note-2',
+      author: 'Avery Chen',
+      avatarTint: 'blue',
+      time: '10:05',
+      category: 'Insurance',
+      text: `Coverage verified with ${p.payer}. No outstanding documentation required at this time.`,
+    });
+  }
+
+  return notes;
+}
+
+function historyFor(p: Patient): HistoryGroup[] {
+  const currentIndex = STEP_DEFS.findIndex(s => s.label === p.status) + 1 || 1;
+  const times = ['09:15', '09:32', '09:48', '10:05', '10:20'];
+  const events: HistoryEvent[] = [];
+
+  for (let i = 0; i < currentIndex; i++) {
+    const step = STEP_DEFS[i];
+    events.push({
+      text: STATUS_HISTORY[step.label]?.(p) ?? `${step.label} step reached.`,
+      time: times[i],
+      actor: i === 0 ? 'System' : (p.assignee !== 'Unassigned' ? p.assignee : 'Avery Chen'),
+      dot: i === 0 ? '#2a6fdb' : '#1aa564',
+    });
+  }
+
+  events.reverse();
+  return [{ date: 'Today · Jun 15', events }];
+}
+
+function generateCase(p: Patient): IntakeCase {
+  const suffix = p.id.replace('PT-', '');
+  const nameParts = p.name.trim().split(/\s+/);
+  const first = nameParts[0].toLowerCase().replace(/[^a-z]/g, '');
+  const last  = nameParts[nameParts.length - 1].toLowerCase().replace(/[^a-z]/g, '');
+  const birthYear = new Date().getFullYear() - p.age;
+
+  return {
+    patientId: p.id,
+    demographics: {
+      name: p.name,
+      dob: `${birthYear}-01-15`,
+      sex: p.sex,
+      mrn: `MRN-${suffix}`,
+      phone: `(415) 555-${suffix.slice(-4)}`,
+      email: `${first}.${last}@example.com`,
+      address: `${1000 + Number(suffix)} Market St, San Francisco, CA 94103`,
+    },
+    insurances: [
+      {
+        id: 'ins-1', rank: 'Primary', provider: p.payer, planType: 'PPO — Preferred',
+        payerId: '', groupNumber: `GRP-${suffix}`, memberId: `MEM-${suffix}`,
+        authType: 'Inpatient', effectiveDate: '2026-06-01', expirationDate: '2027-05-31',
+      },
+    ],
+    notes: notesFor(p),
+    documents: [],
+    history: historyFor(p),
+    trackerSteps: trackerFor(p.status),
+  };
+}
+
+const intakeCases = new Map<string, IntakeCase>(
+  ALL_PATIENTS.map(p => [p.id, p.id === DANIEL_ID ? DANIEL_CASE : generateCase(p)])
+);
+
 function nowTime(): string {
   return new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
 }
 
-export function getIntakeCase(): IntakeCase {
-  return intakeCase;
+export function getIntakeCase(patientId: string): IntakeCase | undefined {
+  return intakeCases.get(patientId);
 }
 
-export function updateDemographics(input: Demographics): IntakeCase {
-  Object.assign(intakeCase.demographics, input);
-  return intakeCase;
+export function updateDemographics(patientId: string, input: Demographics): IntakeCase | undefined {
+  const c = intakeCases.get(patientId);
+  if (!c) return undefined;
+  Object.assign(c.demographics, input);
+  return c;
 }
 
-export function addInsurance(input: InsuranceInput): IntakeCase {
-  intakeCase.insurances.push({
-    ...input,
-    id: `ins-${insSeq++}`,
-  });
-  return intakeCase;
+export function addInsurance(patientId: string, input: InsuranceInput): IntakeCase | undefined {
+  const c = intakeCases.get(patientId);
+  if (!c) return undefined;
+  c.insurances.push({ ...input, id: `ins-${insSeq++}` });
+  return c;
 }
 
-export function updateInsurance(id: string, input: InsuranceInput): IntakeCase | undefined {
-  const existing = intakeCase.insurances.find(i => i.id === id);
+export function updateInsurance(patientId: string, id: string, input: InsuranceInput): IntakeCase | undefined {
+  const c = intakeCases.get(patientId);
+  if (!c) return undefined;
+  const existing = c.insurances.find(i => i.id === id);
   if (!existing) return undefined;
   Object.assign(existing, input);
-  return intakeCase;
+  return c;
 }
 
-export function deleteInsurance(id: string): IntakeCase | undefined {
-  const idx = intakeCase.insurances.findIndex(i => i.id === id);
+export function deleteInsurance(patientId: string, id: string): IntakeCase | undefined {
+  const c = intakeCases.get(patientId);
+  if (!c) return undefined;
+  const idx = c.insurances.findIndex(i => i.id === id);
   if (idx === -1) return undefined;
-  intakeCase.insurances.splice(idx, 1);
-  return intakeCase;
+  c.insurances.splice(idx, 1);
+  return c;
 }
 
-export function addNote(input: { category: string; text: string }): IntakeCase {
-  intakeCase.notes.unshift({
+export function addNote(patientId: string, input: { category: string; text: string }): IntakeCase | undefined {
+  const c = intakeCases.get(patientId);
+  if (!c) return undefined;
+  c.notes.unshift({
     id: `note-${noteSeq++}`,
     author: CURRENT_USER.name,
     avatarTint: 'blue',
@@ -112,5 +233,5 @@ export function addNote(input: { category: string; text: string }): IntakeCase {
     category: input.category,
     text: input.text,
   });
-  return intakeCase;
+  return c;
 }

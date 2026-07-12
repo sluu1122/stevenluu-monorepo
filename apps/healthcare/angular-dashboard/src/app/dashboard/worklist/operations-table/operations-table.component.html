@@ -107,12 +107,6 @@
     >
       <ng-template pTemplate="header">
         <tr class="wl__thead-row">
-          <th class="wl__th wl__th--check">
-            <input #selectAllBox type="checkbox" class="wl__check"
-              aria-label="Select all patients"
-              [checked]="allSelected()"
-              (change)="toggleSelectAll()">
-          </th>
           <th class="wl__th">Patient Identifier</th>
           <th class="wl__th">Intake Status</th>
           <th class="wl__th">Provider</th>
@@ -123,14 +117,8 @@
       </ng-template>
       <ng-template pTemplate="body" let-p>
         <tr class="wl__row">
-          <td class="wl__td wl__td--check">
-            <input type="checkbox" class="wl__check"
-              [attr.aria-label]="'Select patient ' + p.name"
-              [checked]="selectedIds().has(p.id)"
-              (change)="toggleRow(p.id)">
-          </td>
           <!-- Patient -->
-          <td class="wl__td">
+          <td class="wl__td wl__td--clickable" (click)="openPatient(p)">
             <span class="wl__patient-name">{{ p.name }}</span>
             <span class="wl__patient-meta mono">{{ p.id }} · {{ p.age }}{{ p.sex }}</span>
           </td>
@@ -160,7 +148,7 @@
       </ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="7">
+          <td colspan="6">
             <div class="wl__empty">
               <span class="icon wl__empty-icon">search_off</span>
               <div class="wl__empty-title">No matching records</div>

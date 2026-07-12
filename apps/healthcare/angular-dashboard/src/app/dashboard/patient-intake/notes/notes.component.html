@@ -27,22 +27,24 @@
       </div>
     }
   </div>
-  <div class="notes-divider"></div>
-  <div class="docs-label">Attached Documents</div>
-  <div class="docs-list">
-    @for (d of store.documents(); track d.id) {
-      <div class="doc-row">
-        <span class="icon doc-icon" [class.doc-icon--blue]="d.kind === 'image'" [class.doc-icon--red]="d.kind === 'pdf'" aria-hidden="true">{{ d.kind === 'pdf' ? 'picture_as_pdf' : 'image' }}</span>
-        <div class="doc-info">
-          <div class="doc-name">{{ d.name }}</div>
-          <div class="doc-size mono">{{ d.sizeLabel }}</div>
+  @if (store.documents().length > 0) {
+    <div class="notes-divider"></div>
+    <div class="docs-label">Attached Documents</div>
+    <div class="docs-list">
+      @for (d of store.documents(); track d.id) {
+        <div class="doc-row">
+          <span class="icon doc-icon" [class.doc-icon--blue]="d.kind === 'image'" [class.doc-icon--red]="d.kind === 'pdf'" aria-hidden="true">{{ d.kind === 'pdf' ? 'picture_as_pdf' : 'image' }}</span>
+          <div class="doc-info">
+            <div class="doc-name">{{ d.name }}</div>
+            <div class="doc-size mono">{{ d.sizeLabel }}</div>
+          </div>
+          <button pButton [text]="true" type="button" class="doc-dl-btn" [attr.aria-label]="'Download ' + d.name">
+            <span class="icon" aria-hidden="true">download</span>
+          </button>
         </div>
-        <button pButton [text]="true" type="button" class="doc-dl-btn" [attr.aria-label]="'Download ' + d.name">
-          <span class="icon" aria-hidden="true">download</span>
-        </button>
-      </div>
-    }
-  </div>
+      }
+    </div>
+  }
 </div>
 
 @if (modalOpen()) {
