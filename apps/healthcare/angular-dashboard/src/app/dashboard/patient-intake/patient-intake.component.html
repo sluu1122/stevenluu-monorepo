@@ -1,7 +1,7 @@
 <div class="pi-view">
-  <div class="pi-view__workspace">
+  <div class="pi-view__workspace" [class.pi-view__workspace--has-expanded]="expandedCard() !== null">
 
-    <div class="pi-view__top-half">
+    <div class="pi-view__top-half" [class.pi-view__top-half--hidden]="expandedCard() !== null">
       <div class="pi-view__card pi-view__card--patient">
         <app-pi-patient-details />
       </div>
@@ -10,16 +10,18 @@
       </div>
     </div>
 
-    <div class="pi-view__bottom-half">
-      <div class="pi-view__card pi-view__card--tracker">
+    <div class="pi-view__bottom-half" [class.pi-view__bottom-half--tracker-gone]="expandedCard() !== null">
+      <div class="pi-view__card pi-view__card--tracker" [class.is-collapsing]="expandedCard() !== null">
         <app-pi-intake-status />
       </div>
-      <div class="pi-view__right-col">
-        <div class="pi-view__card pi-view__card--notes">
-          <app-pi-notes />
+      <div class="pi-view__right-col"
+           [class.pi-view__right-col--notes-expanded]="expandedCard() === 'notes'"
+           [class.pi-view__right-col--history-expanded]="expandedCard() === 'history'">
+        <div class="pi-view__card pi-view__card--notes" [class.is-collapsing]="expandedCard() === 'history'">
+          <app-pi-notes [expanded]="expandedCard() === 'notes'" (expand)="expand('notes')" (collapse)="collapse()" />
         </div>
-        <div class="pi-view__card pi-view__card--history">
-          <app-pi-history />
+        <div class="pi-view__card pi-view__card--history" [class.is-collapsing]="expandedCard() === 'notes'">
+          <app-pi-history [expanded]="expandedCard() === 'history'" (expand)="expand('history')" (collapse)="collapse()" />
         </div>
       </div>
     </div>

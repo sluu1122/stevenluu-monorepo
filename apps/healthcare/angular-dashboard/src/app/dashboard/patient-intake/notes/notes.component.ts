@@ -1,4 +1,4 @@
-import { Component, HostListener, signal } from '@angular/core';
+import { Component, HostListener, input, output, signal } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ButtonModule } from 'primeng/button';
@@ -11,6 +11,10 @@ import { ButtonModule } from 'primeng/button';
   styleUrl: './notes.component.scss',
 })
 export class NotesComponent {
+  readonly expanded = input<boolean>(false);
+  readonly expand   = output<void>();
+  readonly collapse = output<void>();
+
   protected readonly modalOpen = signal(false);
 
   protected readonly noteForm = new FormGroup({

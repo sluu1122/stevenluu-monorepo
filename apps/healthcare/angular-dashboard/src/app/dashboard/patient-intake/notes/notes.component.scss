@@ -16,6 +16,24 @@
 
 .title { margin: 0; font-size: 15px; font-weight: 600; color: var(--ink); }
 
+.head-right { display: flex; align-items: center; gap: 8px; }
+
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s, border-color 0.12s;
+
+  &:hover { background: #f7faff; border-color: var(--blue-border); }
+  .icon { font-size: 16px; color: var(--dim); }
+}
+
 .edit-btn {
   display: inline-flex;
   align-items: center;

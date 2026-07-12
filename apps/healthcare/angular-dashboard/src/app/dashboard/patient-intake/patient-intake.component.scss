@@ -1,25 +1,51 @@
 .pi-view {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 
   // ── Workspace layout ────────────────────────────
   &__workspace {
     flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    row-gap: 20px;
+    transition: grid-template-rows 0.3s ease, row-gap 0.3s ease;
+
+    &--has-expanded {
+      grid-template-rows: 0fr 1fr;
+      row-gap: 0;
+    }
   }
 
   &__top-half {
     display: flex;
     gap: 20px;
     align-items: stretch;
+    min-height: 0;
+    overflow: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+
+    &--hidden {
+      opacity: 0;
+      transform: translateY(-4px);
+      pointer-events: none;
+    }
   }
 
   &__bottom-half {
-    display: flex;
-    gap: 20px;
-    min-height: 420px;
+    display: grid;
+    grid-template-columns: 228px 1fr;
+    grid-template-rows: 1fr;
+    column-gap: 20px;
+    min-height: 0;
+    transition: grid-template-columns 0.3s ease, column-gap 0.3s ease;
+
+    &--tracker-gone {
+      grid-template-columns: 0fr 1fr;
+      column-gap: 0;
+    }
   }
 
   // ── Shared card shell ────────────────────────────
@@ -34,17 +60,31 @@
 
     &--patient  { flex: 2; }
     &--insurance { flex: 1; }
-    &--tracker  { width: 228px; flex-shrink: 0; }
-    &--notes    { flex: 1; }
-    &--history  { flex: 1; }
+
+    &--tracker {
+      min-width: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      &.is-collapsing { opacity: 0; transform: translateX(-4px); pointer-events: none; }
+    }
+
+    &--notes,
+    &--history {
+      min-height: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      &.is-collapsing { opacity: 0; transform: scale(0.98) translateY(4px); pointer-events: none; }
+    }
   }
 
   // ── Right column ─────────────────────────────────
   &__right-col {
-    flex: 2;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    row-gap: 20px;
+    transition: grid-template-rows 0.3s ease, row-gap 0.3s ease;
+
+    &--notes-expanded   { grid-template-rows: 1fr 0fr; row-gap: 0; }
+    &--history-expanded { grid-template-rows: 0fr 1fr; row-gap: 0; }
   }
 }

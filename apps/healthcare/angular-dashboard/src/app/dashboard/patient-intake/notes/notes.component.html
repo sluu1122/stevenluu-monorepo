@@ -1,8 +1,19 @@
 <div class="head">
   <h3 class="title">Notes &amp; Documents</h3>
-  <button pButton type="button" severity="secondary" [outlined]="true" class="edit-btn" (click)="openModal()">
-    <span class="icon" aria-hidden="true">add</span>Add Note
-  </button>
+  <div class="head-right">
+    <button pButton type="button" severity="secondary" [outlined]="true" class="edit-btn" (click)="openModal()">
+      <span class="icon" aria-hidden="true">add</span>Add Note
+    </button>
+    @if (expanded()) {
+      <button class="icon-btn" (click)="collapse.emit()" aria-label="Collapse to default view">
+        <span class="icon">close_fullscreen</span>
+      </button>
+    } @else {
+      <button class="icon-btn" (click)="expand.emit()" aria-label="Expand to full view">
+        <span class="icon">open_in_full</span>
+      </button>
+    }
+  </div>
 </div>
 <div class="notes-body">
   <div class="notes-list">
