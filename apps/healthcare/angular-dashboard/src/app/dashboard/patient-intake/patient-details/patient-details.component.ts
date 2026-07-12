@@ -3,6 +3,7 @@ import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ButtonModule } from 'primeng/button';
 import { IntakeCaseStore } from '../../../stores/intake-case.store';
+import { sexCode } from '../../../shared/sex';
 import type { Sex } from '../../../models/patient.model';
 
 type SexLabel = 'Male' | 'Female' | 'Other';
@@ -36,10 +37,6 @@ export class PatientDetailsComponent {
     return sex === 'M' ? 'Male' : sex === 'F' ? 'Female' : 'Other';
   }
 
-  private sexCode(label: SexLabel | null): Sex {
-    return label === 'Male' ? 'M' : label === 'Female' ? 'F' : 'O';
-  }
-
   protected openModal(): void {
     const d = this.store.demographics();
     if (!d) return;
@@ -66,7 +63,7 @@ export class PatientDetailsComponent {
     this.store.saveDemographics({
       name:    v.name ?? '',
       dob:     v.dob ?? '',
-      sex:     this.sexCode(v.sex ?? null),
+      sex:     sexCode(v.sex ?? ''),
       mrn:     v.mrn ?? '',
       address: v.address ?? '',
       phone:   v.phone ?? '',

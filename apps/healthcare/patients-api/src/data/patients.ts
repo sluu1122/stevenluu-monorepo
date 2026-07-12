@@ -1,4 +1,4 @@
-import type { Patient } from './types.js';
+import type { Patient, Sex } from './types.js';
 
 export const ALL_PATIENTS: Patient[] = [
   { id: 'PT-03184', name: 'Eleanor Whitfield', age: 74, sex: 'F', status: 'Authorized',     assignee: 'Dr. A. Soto',   payer: 'Medicare',      facility: 'Main Campus' },
@@ -15,3 +15,38 @@ export const ALL_PATIENTS: Patient[] = [
   { id: 'PT-02508', name: 'Lena Petrova',       age: 41, sex: 'F', status: 'Completed',      assignee: 'Dr. M. Okafor', payer: 'Medicare',      facility: 'Riverside' },
   { id: 'PT-06694', name: 'Owen Fitzgerald',    age: 25, sex: 'M', status: 'Completed',      assignee: 'Dr. A. Soto',   payer: 'Cigna',         facility: 'South Pavilion' },
 ];
+
+export interface NewPatientInput {
+  name: string;
+  dob: string;
+  sex: Sex;
+  payer: string;
+}
+
+let patientSeq = 9001;
+
+function ageFromDob(dob: string): number {
+  const birth = new Date(dob);
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const hadBirthdayThisYear =
+    now.getMonth() > birth.getMonth() ||
+    (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
+  if (!hadBirthdayThisYear) age--;
+  return age;
+}
+
+export function addPatient(input: NewPatientInput): Patient {
+  const patient: Patient = {
+    id: `PT-${String(patientSeq++).padStart(5, '0')}`,
+    name: input.name,
+    age: ageFromDob(input.dob),
+    sex: input.sex,
+    status: 'Registered',
+    assignee: 'Unassigned',
+    payer: input.payer,
+    facility: 'Main Campus',
+  };
+  ALL_PATIENTS.push(patient);
+  return patient;
+}

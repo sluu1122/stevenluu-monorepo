@@ -13,6 +13,13 @@ export interface Patient {
   facility: string;
 }
 
+export interface NewPatientInput {
+  name: string;
+  dob: string;
+  sex: Sex;
+  payer: string;
+}
+
 export interface DirectoryRecord {
   mrn: string;
   name: string;

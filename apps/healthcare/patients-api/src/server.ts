@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { ALL_PATIENTS } from './data/patients.js';
+import { ALL_PATIENTS, addPatient } from './data/patients.js';
 import { DIRECTORY } from './data/directory.js';
 import { REFERENCE_DATA } from './data/reference.js';
 import { CURRENT_USER } from './data/current-user.js';
@@ -31,6 +31,14 @@ export function createServer() {
 
   app.get('/api/patients', (_req, res) => {
     res.json(ALL_PATIENTS);
+  });
+
+  app.post('/api/patients', (req, res) => {
+    const { name, dob, sex, payer } = req.body ?? {};
+    if (!name || !dob) {
+      return res.status(400).json({ error: 'name and dob are required' });
+    }
+    res.status(201).json(addPatient({ name, dob, sex: sex || 'O', payer: payer || 'Aetna' }));
   });
 
   app.get('/api/me', (_req, res) => {

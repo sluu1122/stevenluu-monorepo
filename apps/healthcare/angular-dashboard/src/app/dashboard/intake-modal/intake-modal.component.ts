@@ -1,5 +1,5 @@
 import {
-  Component, HostListener, ViewEncapsulation, computed, inject, viewChild,
+  Component, HostListener, ViewEncapsulation, computed, inject, signal, viewChild,
 } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
 import { ButtonModule } from 'primeng/button';
@@ -31,6 +31,8 @@ const STEPS = ['Patient', 'Diagnosis', 'Procedure', 'Insurance', 'Review'];
 export class IntakeModalComponent {
   protected readonly store = inject(IntakeWizardStore);
   protected readonly STEPS = STEPS;
+  protected readonly submitting = signal(false);
+  protected readonly submitError = signal('');
 
   // Signal queries resolve synchronously with the current view state —
   // returns undefined when the @if condition is false, which is safe here
@@ -64,6 +66,15 @@ export class IntakeModalComponent {
     else if (step === 4) valid = this.insuranceStep()?.validate() ?? true;
 
     if (valid) this.store.nextStep();
+  }
+
+  protected onSubmit(): void {
+    this.submitError.set('');
+    this.submitting.set(true);
+    this.store.submit().subscribe({
+      next: () => { this.submitting.set(false); this.store.close(); },
+      error: (err: Error) => { this.submitting.set(false); this.submitError.set(err.message); },
+    });
   }
 
   @HostListener('document:keydown.escape')

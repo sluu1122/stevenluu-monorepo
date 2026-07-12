@@ -1,11 +1,15 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
-import { Subscription, TimeoutError } from 'rxjs';
+import { Observable, Subscription, TimeoutError, catchError, tap, throwError } from 'rxjs';
 import {
   ClinicalDecisionSupportService,
   MnResult,
   MnRequest,
 } from '../services/clinical-decision-support.service';
+import { PatientService } from '../services/patient.service';
+import { DashboardStore } from './dashboard.store';
+import { sexCode } from '../shared/sex';
+import type { NewPatientInput, Patient } from '../models/patient.model';
 
 export interface IntakeProcedure {
   id: string;
@@ -88,7 +92,9 @@ export const IntakeWizardStore = signalStore(
   })),
 
   withMethods((store) => {
-    const cds = inject(ClinicalDecisionSupportService);
+    const cds            = inject(ClinicalDecisionSupportService);
+    const patientService = inject(PatientService);
+    const dashboardStore = inject(DashboardStore);
     let mnSub: Subscription | null = null;
 
     return {
@@ -106,6 +112,24 @@ export const IntakeWizardStore = signalStore(
         });
       },
       close()                { patchState(store, { isOpen: false }); },
+
+      submit(): Observable<Patient> {
+        const input: NewPatientInput = {
+          name:  store.name(),
+          dob:   store.dob(),
+          sex:   sexCode(store.sex()),
+          payer: store.insurances()[0]?.payer ?? 'Aetna',
+        };
+        return patientService.addPatient(input).pipe(
+          tap(() => dashboardStore.loadPatients()),
+          catchError(err => throwError(() => new Error(
+            err instanceof TimeoutError
+              ? 'Request timed out. Check that patients-api is running.'
+              : 'Failed to submit intake.'
+          ))),
+        );
+      },
+
       goToStep(step: number) { patchState(store, { activeStep: step }); },
       nextStep()             { patchState(store, { activeStep: Math.min(5, store.activeStep() + 1) }); },
       prevStep()             { patchState(store, { activeStep: Math.max(1, store.activeStep() - 1) }); },

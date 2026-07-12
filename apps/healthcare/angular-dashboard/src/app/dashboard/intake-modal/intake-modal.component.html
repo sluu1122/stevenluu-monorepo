@@ -64,6 +64,13 @@
       }
     </div>
 
+    @if (submitError()) {
+      <div class="wz__inline-error" role="alert" style="margin: 0 24px">
+        <span class="icon icon--filled wz__error-icon" aria-hidden="true">error</span>
+        {{ submitError() }}
+      </div>
+    }
+
     <!-- Footer -->
     <div class="wz__footer">
       <button pButton type="button" severity="secondary" [outlined]="true"
@@ -90,8 +97,12 @@
         }
 
         @if (store.isReviewStep()) {
-          <button pButton type="button" severity="success" (click)="store.close()">
-            <span class="icon" aria-hidden="true">check_circle</span>Submit Intake
+          <button pButton type="button" severity="success" [disabled]="submitting()" (click)="onSubmit()">
+            @if (submitting()) {
+              <span class="icon" aria-hidden="true">hourglass_empty</span>Submitting…
+            } @else {
+              <span class="icon" aria-hidden="true">check_circle</span>Submit Intake
+            }
           </button>
         }
 
