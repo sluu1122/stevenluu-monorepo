@@ -8,8 +8,8 @@ import {
 } from '../services/clinical-decision-support.service';
 import { PatientService } from '../services/patient.service';
 import { DashboardStore } from './dashboard.store';
-import { sexCode } from '../shared/sex';
-import type { NewPatientInput, Patient } from '../models/patient.model';
+import { sexCode, sexLabel } from '../shared/sex';
+import type { DirectoryRecord, NewPatientInput, Patient } from '../models/patient.model';
 
 export interface IntakeProcedure {
   id: string;
@@ -98,17 +98,22 @@ export const IntakeWizardStore = signalStore(
     let mnSub: Subscription | null = null;
 
     return {
-      open() {
+      open(prefill?: DirectoryRecord) {
         mnSub?.unsubscribe();
         mnSub = null;
         patchState(store, {
           isOpen: true, activeStep: 1,
           provisionalId: nextIntakeId(),
           mnRun: false, mnPending: false, mnResults: [], mnError: '',
-          name: '', dob: '', sex: '', mrn: '', phone: '', email: '',
+          name:  prefill?.name ?? '',
+          dob:   prefill?.dob ?? '',
+          sex:   prefill ? sexLabel(prefill.sex) : '',
+          mrn:   prefill?.mrn ?? '',
+          phone: prefill?.phone ?? '',
+          email: '',
           dxText: '', dxIcds: [],
           procedures: [{ id: 'p1', text: '', cpts: [] }],
-          insurances: [{ id: 'w1', payer: 'Aetna', scopeAll: true, procIds: [] }],
+          insurances: [{ id: 'w1', payer: prefill?.payer ?? 'Aetna', scopeAll: true, procIds: [] }],
         });
       },
       close()                { patchState(store, { isOpen: false }); },

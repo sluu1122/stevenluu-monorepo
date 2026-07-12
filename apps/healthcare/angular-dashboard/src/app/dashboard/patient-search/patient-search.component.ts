@@ -5,6 +5,8 @@ import { ButtonModule } from 'primeng/button';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { DirectoryStore } from '../../stores/directory.store';
+import { IntakeWizardStore } from '../../stores/intake-wizard.store';
+import { DashboardStore } from '../../stores/dashboard.store';
 import type { DirectoryRecord, DirStatus } from '../../models/patient.model';
 
 @Component({
@@ -15,7 +17,9 @@ import type { DirectoryRecord, DirStatus } from '../../models/patient.model';
   styleUrl: './patient-search.component.scss',
 })
 export class PatientSearchComponent {
-  protected readonly store = inject(DirectoryStore);
+  protected readonly store  = inject(DirectoryStore);
+  protected readonly intake = inject(IntakeWizardStore);
+  private readonly dashboard = inject(DashboardStore);
 
   protected query  = signal('');
   protected status = signal<DirStatus | 'All'>('All');
@@ -51,4 +55,9 @@ export class PatientSearchComponent {
   }
 
   protected trackByMrn(_: number, r: DirectoryRecord): string { return r.mrn; }
+
+  protected openIntake(r: DirectoryRecord): void {
+    this.intake.open(r);
+    this.dashboard.setNav('Worklist');
+  }
 }

@@ -102,7 +102,7 @@
               <app-status-badge [status]="r.status" />
             </td>
             <td class="ps__td ps__td--actions">
-              <button pButton [text]="true" type="button" class="ps__open-btn" title="Open patient">
+              <button pButton [text]="true" type="button" class="ps__open-btn" title="Start new intake" (click)="openIntake(r)">
                 <span class="icon">arrow_forward</span>
               </button>
             </td>
