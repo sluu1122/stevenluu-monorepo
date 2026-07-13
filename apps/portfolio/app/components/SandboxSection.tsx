@@ -2,7 +2,7 @@ import { Reveal } from './Reveal';
 
 const sandboxes = [
   {
-    href: process.env.NEXT_PUBLIC_ANGULAR_SANDBOX_URL ?? 'https://angular.stevenluu.com',
+    href: process.env.NEXT_PUBLIC_ANGULAR_SANDBOX_URL || 'https://angular.stevenluu.com',
     monogram: 'Ng',
     monogramStyle: { background: 'linear-gradient(160deg,#FFF0F2,#FCE3E6)', border: '1px solid #F6D7DB', color: 'var(--color-angular-red)' },
     hoverClass: 'hover:border-angular-hover-border',
@@ -13,7 +13,7 @@ const sandboxes = [
     delay: 0,
   },
   {
-    href: process.env.NEXT_PUBLIC_REACT_SANDBOX_URL ?? 'https://react.stevenluu.com',
+    href: process.env.NEXT_PUBLIC_REACT_SANDBOX_URL || 'https://react.stevenluu.com',
     monogram: 'Re',
     monogramStyle: { background: 'linear-gradient(160deg,#EBF8FD,#DDF0F8)', border: '1px solid #CDE9F3', color: 'var(--color-react-blue)' },
     hoverClass: 'hover:border-react-hover-border',

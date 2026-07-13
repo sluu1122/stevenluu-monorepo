@@ -63,7 +63,7 @@ export function NetWorthCard() {
                 fontFamily: "'Geist Mono', monospace",
                 boxShadow: '0 4px 12px rgba(15,23,42,0.08)',
               }}
-              formatter={(v: number) => [fmt(v), 'Net Worth']}
+              formatter={(v) => [fmt(Number(v)), 'Net Worth']}
               labelFormatter={() => ''}
             />
             <Area

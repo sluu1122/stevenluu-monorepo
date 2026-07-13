@@ -1,16 +1,9 @@
 # Deploying to the Synology DS423+
 
-6 of the 7 apps in this monorepo are built into Docker images on your dev machine
-and pushed to GitHub Container Registry (ghcr.io). The NAS never compiles anything
-— it only pulls pre-built images and runs them via Container Manager. This keeps
+All 7 apps in this monorepo are built into Docker images on your dev machine and
+pushed to GitHub Container Registry (ghcr.io). The NAS never compiles anything —
+it only pulls pre-built images and runs them via Container Manager. This keeps
 the DS423+'s low-power CPU out of the build path entirely.
-
-**react-dashboard is not yet included** — its production build currently fails on
-a pre-existing `recharts@2.15.4` / `@types/react@19.2.x` type incompatibility,
-unrelated to Docker (confirmed reproducible with plain `npx tsc -b`, outside any
-container). Its `Dockerfile` is written and ready; uncomment its service in
-`docker-compose.yml` once that's fixed (pin older `@types/react` types for
-react-dashboard + packages/ui, or migrate to recharts v3).
 
 ## 1. Build and push images (dev machine)
 
@@ -18,7 +11,7 @@ react-dashboard + packages/ui, or migrate to recharts v3).
 $sha = (git rev-parse --short HEAD)
 docker login ghcr.io -u <your-github-username>
 
-foreach ($svc in "portfolio","angular-dashboard","ai-api","cpt-api","icd-api","patients-api") {
+foreach ($svc in "portfolio","react-dashboard","angular-dashboard","ai-api","cpt-api","icd-api","patients-api") {
   docker buildx build --platform linux/amd64 `
     -f "apps/**/$svc/Dockerfile" `
     -t "ghcr.io/<your-github-username>/$svc:latest" -t "ghcr.io/<your-github-username>/$svc:$sha" `
@@ -30,14 +23,12 @@ foreach ($svc in "portfolio","angular-dashboard","ai-api","cpt-api","icd-api","p
 machine's default — the DS423+'s Celeron J4125 is amd64-only, and a silent
 arch mismatch is the most common "works here, fails on the NAS" failure mode.
 
-`portfolio` additionally needs its sandbox-link build args. Since react-dashboard
-isn't deployed yet, leave `NEXT_PUBLIC_REACT_SANDBOX_URL` unset for now — it falls
-back to `https://react.stevenluu.com` (the existing default) — and set it once
-react-dashboard is live:
+`portfolio` additionally needs its sandbox-link build args:
 
 ```powershell
 docker buildx build --platform linux/amd64 -f apps/portfolio/Dockerfile `
   --build-arg NEXT_PUBLIC_ANGULAR_SANDBOX_URL=https://angular.yourdomain.com `
+  --build-arg NEXT_PUBLIC_REACT_SANDBOX_URL=https://react.yourdomain.com `
   -t ghcr.io/<your-github-username>/portfolio:latest --push .
 ```
 
@@ -54,7 +45,7 @@ If `docker buildx build` complains about a missing builder instance, run once:
    directly (no SSH needed). When prompted for environment variables, fill in the
    real values from `.env.example` (copy that file to `.env` first and edit it, or
    enter values directly in the GUI import step).
-4. Start the project. First run pulls all images and starts 8 containers (6 apps +
+4. Start the project. First run pulls all images and starts 9 containers (7 apps +
    `ollama` + the one-shot `ollama-init`, which exits 0 once its model pull
    finishes — that's expected, not a failure).
 
@@ -66,6 +57,7 @@ one HTTPS rule per hostname, all pointing at `localhost:<published-port>`:
 | Hostname | → | NAS port |
 |---|---|---|
 | `portfolio.yourdomain.com` | | `3000` |
+| `react.yourdomain.com` | | `8081` |
 | `angular.yourdomain.com` | | `8082` |
 | `healthcare-api.yourdomain.com/ai` | | `3001` |
 | `healthcare-api.yourdomain.com/cpt` | | `3002` |
@@ -75,10 +67,6 @@ one HTTPS rule per hostname, all pointing at `localhost:<published-port>`:
 If your DSM version's reverse-proxy UI doesn't support path-based routing for the
 4 API rows, fall back to 4 separate subdomains (`ai-api.yourdomain.com`, etc.) —
 just update `.env`'s `*_API_URL` values to match whichever scheme you use.
-
-Once react-dashboard is fixed and uncommented in `docker-compose.yml`, add
-`react.yourdomain.com` → `8081` here too, and re-build portfolio with
-`NEXT_PUBLIC_REACT_SANDBOX_URL` pointed at it.
 
 **DDNS + certificates**: Control Panel → External Access → DDNS (register your
 hostname), then Control Panel → Security → Certificate → Add → Let's Encrypt (one
@@ -91,9 +79,9 @@ miss — reverse-proxy rules alone don't work without this.
 
 ## 4. Verify
 
-- Container Manager shows all 8 containers running (or exited-0 for `ollama-init`).
-- `https://portfolio.yourdomain.com` and `https://angular.yourdomain.com` load
-  over HTTPS with valid certs.
+- Container Manager shows all 9 containers running (or exited-0 for `ollama-init`).
+- `https://portfolio.yourdomain.com`, `https://angular.yourdomain.com`, and
+  `https://react.yourdomain.com` all load over HTTPS with valid certs.
 - On the live Angular site, open devtools → Network tab → confirm a request to
   `assets/config.json` returns real public API URLs (not `localhost`, not literal
   `${CPT_API_URL}` placeholder text — the latter means the nginx entrypoint script
@@ -108,7 +96,7 @@ miss — reverse-proxy rules alone don't work without this.
 
 ## Notes on the `ollama` service
 
-- Capped at `mem_limit: 6g` in `docker-compose.yml` — with the other 7 containers
+- Capped at `mem_limit: 6g` in `docker-compose.yml` — with the other 8 containers
   realistically using well under 2GB combined, that leaves roughly 10GB of the
   NAS's 18GB free for DSM itself and its other packages. Don't raise this cap
   without also checking what else is running on the NAS at the time.

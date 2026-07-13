@@ -20,30 +20,24 @@ services:
       context: .
       dockerfile: apps/portfolio/Dockerfile
       args:
-        NEXT_PUBLIC_ANGULAR_SANDBOX_URL: ${NEXT_PUBLIC_ANGULAR_SANDBOX_URL:-}
-        NEXT_PUBLIC_REACT_SANDBOX_URL: ${NEXT_PUBLIC_REACT_SANDBOX_URL:-}
+        NEXT_PUBLIC_ANGULAR_SANDBOX_URL: ${NEXT_PUBLIC_ANGULAR_SANDBOX_URL:-http://localhost:8082}
+        NEXT_PUBLIC_REACT_SANDBOX_URL: ${NEXT_PUBLIC_REACT_SANDBOX_URL:-http://localhost:8081}
     restart: unless-stopped
     networks: [appnet]
     ports: ["3000:3000"]
     mem_limit: 512m
     logging: *default-logging
 
-  # react-dashboard is intentionally excluded for now: its production build
-  # (tsc -b) fails on a pre-existing recharts@2.15.4 / @types/react@19.2.x type
-  # incompatibility, unrelated to Docker — recharts' own maintainers have marked
-  # the 2.x branch unmaintained. Its Dockerfile (apps/finance/react-dashboard/Dockerfile)
-  # is ready to go once that's resolved (pin older @types/react for this app +
-  # packages/ui, or migrate to recharts v3) — just uncomment this service then.
-  # react-dashboard:
-  #   image: ghcr.io/sluu123/react-dashboard:latest
-  #   build:
-  #     context: .
-  #     dockerfile: apps/finance/react-dashboard/Dockerfile
-  #   restart: unless-stopped
-  #   networks: [appnet]
-  #   ports: ["8081:80"]
-  #   mem_limit: 128m
-  #   logging: *default-logging
+  react-dashboard:
+    image: ghcr.io/sluu123/react-dashboard:latest
+    build:
+      context: .
+      dockerfile: apps/finance/react-dashboard/Dockerfile
+    restart: unless-stopped
+    networks: [appnet]
+    ports: ["8081:80"]
+    mem_limit: 128m
+    logging: *default-logging
 
   angular-dashboard:
     image: ghcr.io/sluu123/angular-dashboard:latest
