@@ -89,6 +89,7 @@ export async function completeChat(
     method:  'POST',
     headers: { 'content-type': 'application/json' },
     body:    JSON.stringify({ model, messages, stream: false }),
+    signal:  AbortSignal.timeout(10_000),
   });
 
   if (!res.ok) throw new Error(`Ollama chat failed: HTTP ${res.status}`);
@@ -106,6 +107,7 @@ export async function* streamChat(
     method:  'POST',
     headers: { 'content-type': 'application/json' },
     body:    JSON.stringify({ model, messages, stream: true, think }),
+    signal:  AbortSignal.timeout(10_000),
   });
 
   if (!res.ok || !res.body) throw new Error(`Ollama chat failed: HTTP ${res.status}`);

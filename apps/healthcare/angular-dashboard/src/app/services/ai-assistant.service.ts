@@ -1,6 +1,5 @@
 import { Injectable, signal, WritableSignal } from '@angular/core';
-
-const AI_API = 'http://localhost:3001';
+import { environment } from '../../environments/environment';
 
 export type AiState = 'idle' | 'streaming' | 'done' | 'error';
 
@@ -28,7 +27,7 @@ export class AiAssistantService {
   private controller: AbortController | null = null;
 
   async *stream(prompt: string, options: SuggestOptions = {}, signal?: AbortSignal): AsyncGenerator<string> {
-    const response = await fetch(`${AI_API}/api/suggest`, {
+    const response = await fetch(`${environment.aiApiUrl}/api/suggest`, {
       method:  'POST',
       headers: { 'content-type': 'application/json' },
       body:    JSON.stringify({

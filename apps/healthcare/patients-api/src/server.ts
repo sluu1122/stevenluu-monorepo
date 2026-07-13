@@ -7,7 +7,7 @@ import { CURRENT_USER } from './data/current-user.js';
 import { getIntakeCase, updateDemographics, addInsurance, updateInsurance, deleteInsurance, addNote, addCaseForPatient } from './data/intake-case.js';
 import type { InsuranceInput, InsuranceRank } from './data/types.js';
 
-const ALLOWED_ORIGINS = ['http://localhost:4200', 'http://localhost:4300'];
+const ALLOWED_ORIGINS = (process.env['ALLOWED_ORIGINS'] ?? 'http://localhost:4200,http://localhost:4300').split(',');
 const VALID_RANKS: InsuranceRank[] = REFERENCE_DATA.insuranceRanks;
 
 function buildNewPatientInsurances(payer: string, rawInsurances: unknown): InsuranceInput[] {

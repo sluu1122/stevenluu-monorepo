@@ -1,0 +1,6 @@
+{
+  "cptApiUrl": "http://localhost:3002",
+  "icdApiUrl": "http://localhost:3003",
+  "aiApiUrl": "http://localhost:3001",
+  "patientsApiUrl": "http://localhost:3004"
+}

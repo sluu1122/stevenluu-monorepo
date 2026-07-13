@@ -1,0 +1,6 @@
+{
+  "cptApiUrl": "${CPT_API_URL}",
+  "icdApiUrl": "${ICD_API_URL}",
+  "aiApiUrl": "${AI_API_URL}",
+  "patientsApiUrl": "${PATIENTS_API_URL}"
+}

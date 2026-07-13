@@ -1,0 +1,169 @@
+name: stevenluu-monorepo
+
+networks:
+  appnet:
+    driver: bridge
+
+volumes:
+  ollama_data:
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  portfolio:
+    image: ghcr.io/sluu123/portfolio:latest
+    build:
+      context: .
+      dockerfile: apps/portfolio/Dockerfile
+      args:
+        NEXT_PUBLIC_ANGULAR_SANDBOX_URL: ${NEXT_PUBLIC_ANGULAR_SANDBOX_URL:-}
+        NEXT_PUBLIC_REACT_SANDBOX_URL: ${NEXT_PUBLIC_REACT_SANDBOX_URL:-}
+    restart: unless-stopped
+    networks: [appnet]
+    ports: ["3000:3000"]
+    mem_limit: 512m
+    logging: *default-logging
+
+  # react-dashboard is intentionally excluded for now: its production build
+  # (tsc -b) fails on a pre-existing recharts@2.15.4 / @types/react@19.2.x type
+  # incompatibility, unrelated to Docker — recharts' own maintainers have marked
+  # the 2.x branch unmaintained. Its Dockerfile (apps/finance/react-dashboard/Dockerfile)
+  # is ready to go once that's resolved (pin older @types/react for this app +
+  # packages/ui, or migrate to recharts v3) — just uncomment this service then.
+  # react-dashboard:
+  #   image: ghcr.io/sluu123/react-dashboard:latest
+  #   build:
+  #     context: .
+  #     dockerfile: apps/finance/react-dashboard/Dockerfile
+  #   restart: unless-stopped
+  #   networks: [appnet]
+  #   ports: ["8081:80"]
+  #   mem_limit: 128m
+  #   logging: *default-logging
+
+  angular-dashboard:
+    image: ghcr.io/sluu123/angular-dashboard:latest
+    build:
+      context: .
+      dockerfile: apps/healthcare/angular-dashboard/Dockerfile
+    restart: unless-stopped
+    networks: [appnet]
+    ports: ["8082:80"]
+    mem_limit: 128m
+    logging: *default-logging
+    environment:
+      - CPT_API_URL=${CPT_API_URL}
+      - ICD_API_URL=${ICD_API_URL}
+      - AI_API_URL=${AI_API_URL}
+      - PATIENTS_API_URL=${PATIENTS_API_URL}
+    depends_on: [ai-api, cpt-api, icd-api, patients-api]
+
+  ai-api:
+    image: ghcr.io/sluu123/ai-api:latest
+    build:
+      context: .
+      dockerfile: apps/healthcare/ai-api/Dockerfile
+    restart: unless-stopped
+    networks: [appnet]
+    ports: ["3001:3001"]
+    mem_limit: 512m
+    logging: *default-logging
+    environment:
+      - PORT=3001
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - OLLAMA_URL=http://ollama:11434
+      - MODEL=qwen2.5-coder:1.5b
+    depends_on: [ollama]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  cpt-api:
+    image: ghcr.io/sluu123/cpt-api:latest
+    build:
+      context: .
+      dockerfile: apps/healthcare/cpt-api/Dockerfile
+    restart: unless-stopped
+    networks: [appnet]
+    ports: ["3002:3002"]
+    mem_limit: 256m
+    logging: *default-logging
+    environment:
+      - PORT=3002
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3002/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  icd-api:
+    image: ghcr.io/sluu123/icd-api:latest
+    build:
+      context: .
+      dockerfile: apps/healthcare/icd-api/Dockerfile
+    restart: unless-stopped
+    networks: [appnet]
+    ports: ["3003:3003"]
+    mem_limit: 256m
+    logging: *default-logging
+    environment:
+      - PORT=3003
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3003/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  patients-api:
+    image: ghcr.io/sluu123/patients-api:latest
+    build:
+      context: .
+      dockerfile: apps/healthcare/patients-api/Dockerfile
+    restart: unless-stopped
+    networks: [appnet]
+    ports: ["3004:3004"]
+    mem_limit: 256m
+    logging: *default-logging
+    environment:
+      - PORT=3004
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3004/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Local LLM backing ai-api's AI-assist features. Capped well below the NAS's
+  # total RAM so it can never starve the other 6 services or DSM itself; CPU-only
+  # inference on the DS423+'s Celeron is expected to be slow, not a stability risk.
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    networks: [appnet]
+    volumes:
+      - ollama_data:/root/.ollama
+    mem_limit: 6g
+    logging: *default-logging
+
+  # One-shot: waits for ollama to be ready, then pulls the model ai-api expects.
+  # Replaces ai-api's own `postinstall` (suppressed at image build time via
+  # --ignore-scripts, since it assumes a local Ollama binary that isn't present then).
+  ollama-init:
+    image: ollama/ollama:latest
+    networks: [appnet]
+    depends_on: [ollama]
+    restart: "no"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "until ollama list >/dev/null 2>&1; do sleep 2; done;
+       ollama pull qwen2.5-coder:1.5b"
