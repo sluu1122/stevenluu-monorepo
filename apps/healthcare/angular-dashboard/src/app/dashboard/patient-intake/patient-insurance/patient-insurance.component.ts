@@ -1,17 +1,17 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ButtonModule } from 'primeng/button';
 import { IntakeCaseStore } from '../../../stores/intake-case.store';
 import { ReferenceStore } from '../../../stores/reference.store';
 import type { Insurance, InsuranceInput } from '../../../models/intake.model';
 import type { AuthType, InsuranceRank } from '../../../models/patient.model';
+import { PiViewModalComponent } from '../../../shared/pi-view-modal/pi-view-modal.component';
 
 @Component({
   selector: 'app-pi-patient-insurance',
   standalone: true,
-  imports: [ReactiveFormsModule, CdkTrapFocus, ButtonModule],
+  imports: [ReactiveFormsModule, ButtonModule, PiViewModalComponent],
   templateUrl: './patient-insurance.component.html',
   styleUrl: './patient-insurance.component.scss',
 })
@@ -20,7 +20,6 @@ export class PatientInsuranceComponent {
   protected readonly reference = inject(ReferenceStore);
 
   protected readonly modalOpen = signal(false);
-  protected readonly authType = signal<AuthType>('Inpatient');
   protected readonly editing = signal<Insurance | null>(null);
   protected readonly saveError = signal('');
 
@@ -40,6 +39,10 @@ export class PatientInsuranceComponent {
     initialValue: this.insuranceForm.controls.rank.value,
   });
 
+  protected readonly authType = toSignal(this.insuranceForm.controls.authType.valueChanges, {
+    initialValue: this.insuranceForm.controls.authType.value,
+  });
+
   protected readonly modalTitle = computed(() =>
     `${this.editing() ? 'Edit' : 'Add'} ${this.rank()} Insurance`
   );
@@ -49,14 +52,10 @@ export class PatientInsuranceComponent {
     return ctrl.invalid && (ctrl.touched || ctrl.dirty);
   }
 
-  @HostListener('document:keydown.escape')
-  onEscape(): void { if (this.modalOpen()) this.closeModal(); }
-
   protected openModal(ins: Insurance | null = null): void {
     this.editing.set(ins);
     this.saveError.set('');
     const authVal: AuthType = ins?.authType ?? 'Inpatient';
-    this.authType.set(authVal);
     const rankVal: InsuranceRank = ins?.rank ?? this.reference.insuranceRanks()[0] ?? 'Primary';
 
     this.insuranceForm.reset({
@@ -112,7 +111,6 @@ export class PatientInsuranceComponent {
   }
 
   protected setAuthType(type: AuthType): void {
-    this.authType.set(type);
     this.insuranceForm.patchValue({ authType: type });
   }
 

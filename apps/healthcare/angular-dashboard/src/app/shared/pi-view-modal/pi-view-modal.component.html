@@ -1,0 +1,16 @@
+<div class="pi-view-modal-overlay" tabindex="-1">
+  <div class="pi-view-modal" cdkTrapFocus cdkTrapFocusAutoCapture role="dialog" aria-modal="true" [attr.aria-label]="title()">
+    <div class="pi-view-modal__head">
+      <h3 class="pi-view-modal__title">{{ title() }}</h3>
+      <button pButton [text]="true" type="button" class="pi-view-modal__close" (click)="closeModal.emit()" aria-label="Close dialog">
+        <span class="icon" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <div class="pi-view-modal__body">
+      <ng-content select="[modalBody]" />
+    </div>
+    <div class="pi-view-modal__footer">
+      <ng-content select="[modalFooter]" />
+    </div>
+  </div>
+</div>

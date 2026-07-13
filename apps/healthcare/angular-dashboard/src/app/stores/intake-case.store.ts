@@ -1,7 +1,8 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, patchState } from '@ngrx/signals';
-import { TimeoutError, catchError, tap, throwError, type Observable } from 'rxjs';
+import { catchError, tap, throwError, type Observable } from 'rxjs';
 import { IntakeCaseService } from '../services/intake-case.service';
+import { errorMessage } from '../shared/api-error';
 import type { IntakeCase, Demographics, InsuranceInput, NoteInput } from '../models/intake.model';
 
 interface IntakeCaseState {
@@ -18,12 +19,6 @@ const initialState: IntakeCaseState = {
   error: '',
 };
 
-function errorMessage(err: unknown, fallback: string): string {
-  return err instanceof TimeoutError
-    ? 'Request timed out. Check that patients-api is running.'
-    : fallback;
-}
-
 export const IntakeCaseStore = signalStore(
   { providedIn: 'root' },
   withState(initialState),
@@ -38,9 +33,12 @@ export const IntakeCaseStore = signalStore(
   })),
 
   withMethods((store, intakeCaseService = inject(IntakeCaseService)) => {
-    function withPatch(request: Observable<IntakeCase>, failMsg: string): Observable<IntakeCase> {
+    // Guards against a late response for a patient the user has since navigated away from.
+    function withPatch(patientId: string, request: Observable<IntakeCase>, failMsg: string): Observable<IntakeCase> {
       return request.pipe(
-        tap((intakeCase) => patchState(store, { intakeCase })),
+        tap((intakeCase) => {
+          if (store.currentPatientId() === patientId) patchState(store, { intakeCase });
+        }),
         catchError((err) => throwError(() => new Error(errorMessage(err, failMsg)))),
       );
     }
@@ -48,16 +46,19 @@ export const IntakeCaseStore = signalStore(
     function load(patientId: string): void {
       patchState(store, { loading: true, error: '', currentPatientId: patientId });
       intakeCaseService.getIntakeCase(patientId).subscribe({
-        next: (intakeCase) => patchState(store, { intakeCase, loading: false }),
-        error: (err) => patchState(store, {
-          loading: false,
-          error: errorMessage(err, 'Failed to load intake case. Please retry.'),
-        }),
+        next: (intakeCase) => {
+          if (store.currentPatientId() === patientId) patchState(store, { intakeCase, loading: false });
+        },
+        error: (err) => {
+          if (store.currentPatientId() !== patientId) return;
+          patchState(store, { loading: false, error: errorMessage(err, 'Failed to load intake case. Please retry.') });
+        },
       });
     }
 
     return {
       selectPatient(patientId: string): void {
+        if (patientId === store.currentPatientId() && store.intakeCase() !== null) return;
         load(patientId);
       },
       loadCase(): void {
@@ -65,19 +66,24 @@ export const IntakeCaseStore = signalStore(
         if (patientId) load(patientId);
       },
       saveDemographics(demographics: Demographics): Observable<IntakeCase> {
-        return withPatch(intakeCaseService.updateDemographics(store.currentPatientId()!, demographics), 'Failed to save demographics.');
+        const patientId = store.currentPatientId()!;
+        return withPatch(patientId, intakeCaseService.updateDemographics(patientId, demographics), 'Failed to save demographics.');
       },
       addInsurance(insurance: InsuranceInput): Observable<IntakeCase> {
-        return withPatch(intakeCaseService.addInsurance(store.currentPatientId()!, insurance), 'Failed to add insurance.');
+        const patientId = store.currentPatientId()!;
+        return withPatch(patientId, intakeCaseService.addInsurance(patientId, insurance), 'Failed to add insurance.');
       },
       updateInsurance(id: string, insurance: InsuranceInput): Observable<IntakeCase> {
-        return withPatch(intakeCaseService.updateInsurance(store.currentPatientId()!, id, insurance), 'Failed to update insurance.');
+        const patientId = store.currentPatientId()!;
+        return withPatch(patientId, intakeCaseService.updateInsurance(patientId, id, insurance), 'Failed to update insurance.');
       },
       deleteInsurance(id: string): Observable<IntakeCase> {
-        return withPatch(intakeCaseService.deleteInsurance(store.currentPatientId()!, id), 'Failed to delete insurance.');
+        const patientId = store.currentPatientId()!;
+        return withPatch(patientId, intakeCaseService.deleteInsurance(patientId, id), 'Failed to delete insurance.');
       },
       addNote(note: NoteInput): Observable<IntakeCase> {
-        return withPatch(intakeCaseService.addNote(store.currentPatientId()!, note), 'Failed to add note.');
+        const patientId = store.currentPatientId()!;
+        return withPatch(patientId, intakeCaseService.addNote(patientId, note), 'Failed to add note.');
       },
     };
   }),

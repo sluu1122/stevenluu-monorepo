@@ -1,15 +1,15 @@
-import { Component, HostListener, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
-import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { ButtonModule } from 'primeng/button';
 import { IntakeCaseStore } from '../../../stores/intake-case.store';
 import { ReferenceStore } from '../../../stores/reference.store';
 import { initialsOf } from '../../../shared/initials';
+import { PiViewModalComponent } from '../../../shared/pi-view-modal/pi-view-modal.component';
 
 @Component({
   selector: 'app-pi-notes',
   standalone: true,
-  imports: [ReactiveFormsModule, CdkTrapFocus, ButtonModule],
+  imports: [ReactiveFormsModule, ButtonModule, PiViewModalComponent],
   templateUrl: './notes.component.html',
   styleUrl: './notes.component.scss',
 })
@@ -20,17 +20,17 @@ export class NotesComponent {
 
   protected readonly store = inject(IntakeCaseStore);
   protected readonly reference = inject(ReferenceStore);
-  protected readonly initialsOf = initialsOf;
   protected readonly modalOpen = signal(false);
   protected readonly saveError = signal('');
+
+  protected readonly notesVm = computed(() =>
+    this.store.notes().map(n => ({ ...n, initials: initialsOf(n.author) }))
+  );
 
   protected readonly noteForm = new FormGroup({
     category: new FormControl(''),
     note:     new FormControl(''),
   });
-
-  @HostListener('document:keydown.escape')
-  onEscape(): void { if (this.modalOpen()) this.closeModal(); }
 
   protected openModal(): void {
     this.saveError.set('');

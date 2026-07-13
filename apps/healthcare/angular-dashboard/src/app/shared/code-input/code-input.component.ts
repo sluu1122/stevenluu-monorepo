@@ -110,6 +110,7 @@ export class CodeInputComponent implements ControlValueAccessor, OnInit {
       }
       if (event.key === 'Escape') {
         event.preventDefault();
+        event.stopPropagation();
         this.activeIdx.set(-1);
         this.queryChange.emit('');
         return;

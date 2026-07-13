@@ -2,15 +2,10 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, TimeoutError, of } from 'rxjs';
-import { debounceTime, switchMap, catchError, map, timeout } from 'rxjs/operators';
 import { CodeInputComponent } from '../../../../shared/code-input/code-input.component';
 import { IntakeProcedure, IntakeWizardStore } from '../../../../stores/intake-wizard.store';
-import { CptService } from '../../../../services/cpt.service';
-import type { CptCode } from '../../../../data/cpt-codes';
-import { SEARCH_TIMEOUT_MS } from '../../../../constants';
-
-const MIN_QUERY_LEN = 2;
+import { CptService, type CptCode } from '../../../../services/cpt.service';
+import { createCodeSearch } from '../../../../shared/code-search';
 
 function cptsRequired(ctrl: AbstractControl): ValidationErrors | null {
   return ((ctrl.value as string[] | null) ?? []).length === 0 ? { required: true } : null;
@@ -32,13 +27,13 @@ export class StepProcedureComponent {
     this.store.procedures().map(p => this.makeProcGroup(p))
   );
 
-  protected readonly procForms    = signal<FormGroup[]>(
+  protected readonly procForms = signal<FormGroup[]>(
     [...this.procArray.controls as FormGroup[]]
   );
-  private readonly cptQuery$      = new Subject<{ id: string; q: string }>();
-  private readonly suggestionsMap = signal<Record<string, CptCode[]>>({});
-  protected readonly searchError  = signal<string | null>(null);
-  protected readonly searching    = signal(false);
+
+  private readonly cptSearch      = createCodeSearch<CptCode>(q => this.cptService.search(q), 'CPT');
+  protected readonly searching    = this.cptSearch.searching;
+  protected readonly searchError  = this.cptSearch.searchError;
 
   protected readonly procVm = computed(() => {
     const procedures = this.store.procedures();
@@ -47,34 +42,6 @@ export class StepProcedureComponent {
       .map((proc, i) => ({ proc, form: forms[i] }))
       .filter((item): item is { proc: typeof item.proc; form: FormGroup } => item.form != null);
   });
-
-  constructor() {
-    this.destroyRef.onDestroy(() => this.cptQuery$.complete());
-
-    this.cptQuery$.pipe(
-      debounceTime(250),
-      switchMap(({ id, q }) => {
-        if (q.length < MIN_QUERY_LEN) return of({ id, results: [] as CptCode[] });
-        this.searching.set(true);
-        return this.cptService.search(q).pipe(
-          timeout(SEARCH_TIMEOUT_MS),
-          map(results => ({ id, results })),
-          catchError((err: unknown) => {
-            const msg = err instanceof TimeoutError
-              ? 'CPT search timed out — try again'
-              : 'CPT lookup failed. Check your connection.';
-            this.searchError.set(msg);
-            return of({ id, results: [] as CptCode[] });
-          }),
-        );
-      }),
-      takeUntilDestroyed(this.destroyRef),
-    ).subscribe(({ id, results }) => {
-      this.searching.set(false);
-      this.searchError.set(null);
-      this.suggestionsMap.update(m => ({ ...m, [id]: results }));
-    });
-  }
 
   private makeProcGroup(p: IntakeProcedure): FormGroup {
     const g = this.fb.group({
@@ -91,16 +58,11 @@ export class StepProcedureComponent {
   }
 
   protected cptSuggestions(id: string): CptCode[] {
-    return this.suggestionsMap()[id] ?? [];
+    return this.cptSearch.suggestionsFor(id);
   }
 
   protected onCptQuery(id: string, q: string): void {
-    if (!q) {
-      this.suggestionsMap.update(m => ({ ...m, [id]: [] }));
-      this.searching.set(false);
-      return;
-    }
-    this.cptQuery$.next({ id, q });
+    this.cptSearch.query(id, q);
   }
 
   protected addProcedure(): void {
@@ -116,7 +78,6 @@ export class StepProcedureComponent {
     this.store.removeProcedure(id);
     this.procArray.removeAt(index);
     this.procForms.set([...this.procArray.controls as FormGroup[]]);
-    this.suggestionsMap.update(m => { const n = { ...m }; delete n[id]; return n; });
   }
 
   validate(): boolean {

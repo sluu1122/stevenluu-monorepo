@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
-import { TimeoutError } from 'rxjs';
 import { PatientService } from '../services/patient.service';
+import { errorMessage } from '../shared/api-error';
 import type { Patient, NavView, WorklistTab, PatientStatus } from '../models/patient.model';
 
 interface DashboardState {
@@ -71,12 +71,15 @@ export const DashboardStore = signalStore(
           });
         },
         error: (err) => {
-          const msg = err instanceof TimeoutError
-            ? 'Request timed out. Check that patients-api is running.'
-            : 'Failed to load patients. Please retry.';
-          patchState(store, { loading: false, error: msg });
+          patchState(store, { loading: false, error: errorMessage(err, 'Failed to load patients. Please retry.') });
         },
       });
+    },
+    upsertPatient(patient: Patient) {
+      const inProgress = store.inProgressPatients().filter(p => p.id !== patient.id);
+      const completed  = store.completedPatients().filter(p => p.id !== patient.id);
+      if (patient.status === 'Completed') completed.push(patient); else inProgress.push(patient);
+      patchState(store, { inProgressPatients: inProgress, completedPatients: completed });
     },
     setNav(nav: NavView) { patchState(store, { activeNav: nav }); },
     setTab(tab: WorklistTab) { patchState(store, { worklistTab: tab, search: '', statusFilter: 'All' }); },

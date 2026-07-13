@@ -9,6 +9,7 @@ import { DatePickerModule } from 'primeng/datepicker';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputMaskModule } from 'primeng/inputmask';
 import { IntakeWizardStore } from '../../../../stores/intake-wizard.store';
+import { SEX_LABELS } from '../../../../shared/sex';
 
 function dobValidator(ctrl: AbstractControl): ValidationErrors | null {
   const v = ctrl.value as Date | null;
@@ -46,7 +47,7 @@ export class StepPatientComponent {
   protected readonly store       = inject(IntakeWizardStore);
   private readonly fb            = inject(FormBuilder);
   protected readonly today       = new Date();
-  protected readonly SEX_OPTIONS = ['Male', 'Female', 'Other'];
+  protected readonly SEX_OPTIONS = SEX_LABELS;
 
   protected readonly form = this.fb.group({
     name:  [this.store.name(),          [Validators.required]],
@@ -59,11 +60,14 @@ export class StepPatientComponent {
 
   constructor() {
     this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(v => {
-      const stringFields = ['name', 'sex', 'mrn', 'phone', 'email'] as const;
-      for (const f of stringFields) {
-        this.store.setPatientField(f, v[f] ?? '');
-      }
-      this.store.setPatientField('dob', formatDob(v.dob));
+      this.store.setPatientFields({
+        name:  v.name  ?? '',
+        sex:   v.sex   ?? '',
+        mrn:   v.mrn   ?? '',
+        phone: v.phone ?? '',
+        email: v.email ?? '',
+        dob:   formatDob(v.dob),
+      });
     });
   }
 

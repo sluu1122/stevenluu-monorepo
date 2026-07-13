@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
-import { TimeoutError } from 'rxjs';
 import { PatientService } from '../services/patient.service';
+import { errorMessage } from '../shared/api-error';
 import type { DirectoryRecord } from '../models/patient.model';
 
 interface DirectoryState {
@@ -33,10 +33,7 @@ export const DirectoryStore = signalStore(
       patientService.getDirectory().subscribe({
         next: (records) => patchState(store, { records, loading: false }),
         error: (err) => {
-          const msg = err instanceof TimeoutError
-            ? 'Request timed out. Check that patients-api is running.'
-            : 'Failed to load patient directory. Please retry.';
-          patchState(store, { loading: false, error: msg });
+          patchState(store, { loading: false, error: errorMessage(err, 'Failed to load patient directory. Please retry.') });
         },
       });
     },

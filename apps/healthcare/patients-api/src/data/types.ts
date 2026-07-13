@@ -12,6 +12,7 @@ export interface Patient {
 }
 
 export interface DirectoryRecord {
+  patientId?: string;
   mrn: string;
   name: string;
   dob: string;

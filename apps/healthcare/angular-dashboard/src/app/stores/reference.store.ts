@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { signalStore, withState, withMethods, withHooks, patchState } from '@ngrx/signals';
-import { TimeoutError } from 'rxjs';
 import { AppContextService } from '../services/app-context.service';
+import { errorMessage } from '../shared/api-error';
 import type { AuthType, InsuranceRank } from '../models/patient.model';
 
 interface ReferenceState {
@@ -34,10 +34,7 @@ export const ReferenceStore = signalStore(
       appContext.getReference().subscribe({
         next: (ref) => patchState(store, { ...ref, loading: false }),
         error: (err) => {
-          const msg = err instanceof TimeoutError
-            ? 'Request timed out. Check that patients-api is running.'
-            : 'Failed to load reference data.';
-          patchState(store, { loading: false, error: msg });
+          patchState(store, { loading: false, error: errorMessage(err, 'Failed to load reference data.') });
         },
       });
     },

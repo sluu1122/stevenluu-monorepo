@@ -54,8 +54,6 @@ export class PatientSearchComponent {
     this.payer.set('All');
   }
 
-  protected trackByMrn(_: number, r: DirectoryRecord): string { return r.mrn; }
-
   protected openIntake(r: DirectoryRecord): void {
     this.intake.open(r);
     this.dashboard.setNav('Worklist');

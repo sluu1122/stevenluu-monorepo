@@ -9,6 +9,7 @@ import {
 import { PatientService } from '../services/patient.service';
 import { DashboardStore } from './dashboard.store';
 import { sexCode, sexLabel } from '../shared/sex';
+import { errorMessage } from '../shared/api-error';
 import type { DirectoryRecord, NewPatientInput, Patient } from '../models/patient.model';
 
 export interface IntakeProcedure {
@@ -123,15 +124,15 @@ export const IntakeWizardStore = signalStore(
           name:  store.name(),
           dob:   store.dob(),
           sex:   sexCode(store.sex()),
+          mrn:   store.mrn(),
+          phone: store.phone(),
+          email: store.email(),
           payer: store.insurances()[0]?.payer ?? 'Aetna',
+          insurances: store.insurances().map(w => ({ payer: w.payer })),
         };
         return patientService.addPatient(input).pipe(
-          tap(() => dashboardStore.loadPatients()),
-          catchError(err => throwError(() => new Error(
-            err instanceof TimeoutError
-              ? 'Request timed out. Check that patients-api is running.'
-              : 'Failed to submit intake.'
-          ))),
+          tap(patient => dashboardStore.upsertPatient(patient)),
+          catchError(err => throwError(() => new Error(errorMessage(err, 'Failed to submit intake.')))),
         );
       },
 
@@ -143,10 +144,13 @@ export const IntakeWizardStore = signalStore(
       setPatientField(field: 'name' | 'dob' | 'sex' | 'mrn' | 'phone' | 'email', value: string) {
         patchState(store, { [field]: value });
       },
+      setPatientFields(fields: Partial<Pick<IntakeState, 'name' | 'dob' | 'sex' | 'mrn' | 'phone' | 'email'>>) {
+        patchState(store, fields);
+      },
 
       // Step 2
       setDxText(dxText: string)   { patchState(store, { dxText }); },
-      setDxIcds(dxIcds: string[]) { patchState(store, { dxIcds }); },
+      setDxIcds(dxIcds: string[]) { patchState(store, { dxIcds, mnRun: false, mnResults: [] }); },
 
       // Step 3
       addProcedure() {
@@ -156,6 +160,7 @@ export const IntakeWizardStore = signalStore(
         patchState(store, {
           procedures: store.procedures().filter(p => p.id !== id),
           insurances: store.insurances().map(w => ({ ...w, procIds: w.procIds.filter(x => x !== id) })),
+          mnRun: false, mnResults: [],
         });
       },
       setProcedureText(id: string, text: string) {
@@ -164,6 +169,7 @@ export const IntakeWizardStore = signalStore(
       setProcCpts(id: string, cpts: string[]) {
         patchState(store, {
           procedures: store.procedures().map(p => p.id === id ? { ...p, cpts } : p),
+          mnRun: false, mnResults: [],
         });
       },
 

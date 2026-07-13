@@ -4,11 +4,26 @@ import { ALL_PATIENTS, addPatient } from './data/patients.js';
 import { DIRECTORY } from './data/directory.js';
 import { REFERENCE_DATA } from './data/reference.js';
 import { CURRENT_USER } from './data/current-user.js';
-import { getIntakeCase, updateDemographics, addInsurance, updateInsurance, deleteInsurance, addNote } from './data/intake-case.js';
+import { getIntakeCase, updateDemographics, addInsurance, updateInsurance, deleteInsurance, addNote, addCaseForPatient } from './data/intake-case.js';
 import type { InsuranceInput, InsuranceRank } from './data/types.js';
 
 const ALLOWED_ORIGINS = ['http://localhost:4200', 'http://localhost:4300'];
 const VALID_RANKS: InsuranceRank[] = REFERENCE_DATA.insuranceRanks;
+
+function buildNewPatientInsurances(payer: string, rawInsurances: unknown): InsuranceInput[] {
+  const entries = Array.isArray(rawInsurances) ? rawInsurances : [];
+  return entries.map((ins, i) => ({
+    rank:           VALID_RANKS[i] ?? VALID_RANKS[VALID_RANKS.length - 1],
+    provider:       (ins as { payer?: string })?.payer || payer,
+    planType:       'PPO — Preferred',
+    payerId:        '',
+    groupNumber:    '',
+    memberId:       '',
+    authType:       'Inpatient',
+    effectiveDate:  '',
+    expirationDate: '',
+  }));
+}
 
 function validateInsurancePayload(body: unknown): { error: string } | { value: InsuranceInput } {
   const { rank, provider, planType, payerId, groupNumber, memberId, authType, effectiveDate, expirationDate } =
@@ -34,11 +49,19 @@ export function createServer() {
   });
 
   app.post('/api/patients', (req, res) => {
-    const { name, dob, sex, payer } = req.body ?? {};
+    const { name, dob, sex, mrn, phone, email, payer, insurances } = req.body ?? {};
     if (!name || !dob) {
       return res.status(400).json({ error: 'name and dob are required' });
     }
-    res.status(201).json(addPatient({ name, dob, sex: sex || 'O', payer: payer || 'Aetna' }));
+    const resolvedPayer = payer || 'Aetna';
+    const patient = addPatient({ name, dob, sex: sex || 'O', payer: resolvedPayer });
+    addCaseForPatient(patient, {
+      mrn:   mrn   || '',
+      phone: phone || '',
+      email: email || '',
+      insurances: buildNewPatientInsurances(resolvedPayer, insurances),
+    });
+    res.status(201).json(patient);
   });
 
   app.get('/api/me', (_req, res) => {

@@ -41,63 +41,77 @@
 }
 
 @if (modalOpen()) {
-  <div class="pi-view-modal-overlay" tabindex="-1">
-    <div class="pi-view-modal" cdkTrapFocus cdkTrapFocusAutoCapture role="dialog" aria-modal="true" aria-label="Edit Demographics">
-      <div class="pi-view-modal__head">
-        <h3 class="pi-view-modal__title">Edit Demographics</h3>
-        <button pButton [text]="true" type="button" class="pi-view-modal__close" (click)="closeModal()" aria-label="Close dialog"><span class="icon" aria-hidden="true">close</span></button>
-      </div>
-      <div class="pi-view-modal__body">
-        <form [formGroup]="demoForm">
-          <div class="pi-view-modal__field">
-            <label class="pi-view-modal__label" for="pd-name">Legal Full Name</label>
-            <input id="pd-name" class="pi-view-modal__input" formControlName="name">
-          </div>
-          <div class="pi-view-modal__grid-3">
-            <div class="pi-view-modal__field">
-              <label class="pi-view-modal__label" for="pd-dob">Date of Birth</label>
-              <input id="pd-dob" class="pi-view-modal__input mono" formControlName="dob">
+  <app-pi-view-modal title="Edit Demographics" (closeModal)="closeModal()">
+    <ng-container modalBody>
+      <form [formGroup]="demoForm">
+        <div class="pi-view-modal__field">
+          <label class="pi-view-modal__label" for="pd-name">Legal Full Name</label>
+          <input id="pd-name" class="pi-view-modal__input" [class.pi-view-modal__input--error]="demoForm.get('name')!.invalid && demoForm.get('name')!.touched" formControlName="name">
+          @if (demoForm.get('name')!.invalid && demoForm.get('name')!.touched) {
+            <div class="pi-view-modal__error-msg" role="alert">
+              <span class="icon icon--filled pi-view-modal__error-icon" aria-hidden="true">error</span>
+              Legal name is required
             </div>
-            <div class="pi-view-modal__field">
-              <label class="pi-view-modal__label" for="pd-sex">Sex</label>
-              <div class="pi-view-modal__select-wrap">
-                <select id="pd-sex" class="pi-view-modal__select" formControlName="sex">
-                  <option>Male</option><option>Female</option><option>Other</option>
-                </select>
-                <span class="icon pi-view-modal__select-caret" aria-hidden="true">expand_more</span>
+          }
+        </div>
+        <div class="pi-view-modal__grid-3">
+          <div class="pi-view-modal__field">
+            <label class="pi-view-modal__label" for="pd-dob">Date of Birth</label>
+            <input id="pd-dob" class="pi-view-modal__input mono" [class.pi-view-modal__input--error]="demoForm.get('dob')!.invalid && demoForm.get('dob')!.touched" formControlName="dob">
+            @if (demoForm.get('dob')!.invalid && demoForm.get('dob')!.touched) {
+              <div class="pi-view-modal__error-msg" role="alert">
+                <span class="icon icon--filled pi-view-modal__error-icon" aria-hidden="true">error</span>
+                Required
               </div>
-            </div>
-            <div class="pi-view-modal__field">
-              <label class="pi-view-modal__label" for="pd-mrn">MRN</label>
-              <input id="pd-mrn" class="pi-view-modal__input mono" formControlName="mrn">
+            }
+          </div>
+          <div class="pi-view-modal__field">
+            <label class="pi-view-modal__label" for="pd-sex">Sex</label>
+            <div class="pi-view-modal__select-wrap">
+              <select id="pd-sex" class="pi-view-modal__select" formControlName="sex">
+                @for (label of SEX_LABELS; track label) {
+                  <option>{{ label }}</option>
+                }
+              </select>
+              <span class="icon pi-view-modal__select-caret" aria-hidden="true">expand_more</span>
             </div>
           </div>
           <div class="pi-view-modal__field">
-            <label class="pi-view-modal__label" for="pd-address">Residential Address</label>
-            <input id="pd-address" class="pi-view-modal__input" formControlName="address">
+            <label class="pi-view-modal__label" for="pd-mrn">MRN</label>
+            <input id="pd-mrn" class="pi-view-modal__input mono" [class.pi-view-modal__input--error]="demoForm.get('mrn')!.invalid && demoForm.get('mrn')!.touched" formControlName="mrn">
+            @if (demoForm.get('mrn')!.invalid && demoForm.get('mrn')!.touched) {
+              <div class="pi-view-modal__error-msg" role="alert">
+                <span class="icon icon--filled pi-view-modal__error-icon" aria-hidden="true">error</span>
+                Required
+              </div>
+            }
           </div>
-          <div class="pi-view-modal__grid-2">
-            <div class="pi-view-modal__field">
-              <label class="pi-view-modal__label" for="pd-phone">Contact Number</label>
-              <input id="pd-phone" class="pi-view-modal__input" formControlName="phone">
-            </div>
-            <div class="pi-view-modal__field">
-              <label class="pi-view-modal__label" for="pd-email">Email</label>
-              <input id="pd-email" class="pi-view-modal__input" formControlName="email">
-            </div>
+        </div>
+        <div class="pi-view-modal__field">
+          <label class="pi-view-modal__label" for="pd-address">Residential Address</label>
+          <input id="pd-address" class="pi-view-modal__input" formControlName="address">
+        </div>
+        <div class="pi-view-modal__grid-2">
+          <div class="pi-view-modal__field">
+            <label class="pi-view-modal__label" for="pd-phone">Contact Number</label>
+            <input id="pd-phone" class="pi-view-modal__input" formControlName="phone">
           </div>
-        </form>
-        @if (saveError()) {
-          <div class="pi-view-modal__error-msg" role="alert">
-            <span class="icon icon--filled pi-view-modal__error-icon" aria-hidden="true">error</span>
-            {{ saveError() }}
+          <div class="pi-view-modal__field">
+            <label class="pi-view-modal__label" for="pd-email">Email</label>
+            <input id="pd-email" class="pi-view-modal__input" formControlName="email">
           </div>
-        }
-      </div>
-      <div class="pi-view-modal__footer">
-        <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view-modal__cancel" (click)="closeModal()">Cancel</button>
-        <button pButton type="button" class="pi-view-modal__save" (click)="save()">Save Changes</button>
-      </div>
-    </div>
-  </div>
+        </div>
+      </form>
+      @if (saveError()) {
+        <div class="pi-view-modal__error-msg" role="alert">
+          <span class="icon icon--filled pi-view-modal__error-icon" aria-hidden="true">error</span>
+          {{ saveError() }}
+        </div>
+      }
+    </ng-container>
+    <ng-container modalFooter>
+      <button pButton type="button" severity="secondary" [outlined]="true" class="pi-view-modal__cancel" (click)="closeModal()">Cancel</button>
+      <button pButton type="button" class="pi-view-modal__save" (click)="save()">Save Changes</button>
+    </ng-container>
+  </app-pi-view-modal>
 }

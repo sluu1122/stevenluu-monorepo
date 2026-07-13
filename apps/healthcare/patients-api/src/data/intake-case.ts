@@ -1,6 +1,7 @@
 import type { Demographics, HistoryEvent, HistoryGroup, InsuranceInput, IntakeCase, IntakeNote, Patient, TrackerStep } from './types.js';
 import { CURRENT_USER } from './current-user.js';
 import { ALL_PATIENTS } from './patients.js';
+import { DIRECTORY } from './directory.js';
 
 let insSeq = 3;
 let noteSeq = 3;
@@ -194,6 +195,46 @@ export function updateDemographics(patientId: string, input: Demographics): Inta
   const c = intakeCases.get(patientId);
   if (!c) return undefined;
   Object.assign(c.demographics, input);
+
+  const patient = ALL_PATIENTS.find(p => p.id === patientId);
+  if (patient) {
+    patient.name = input.name;
+    patient.sex = input.sex;
+  }
+
+  const directoryRecord = DIRECTORY.find(d => d.patientId === patientId);
+  if (directoryRecord) {
+    directoryRecord.name  = input.name;
+    directoryRecord.dob   = input.dob;
+    directoryRecord.sex   = input.sex;
+    directoryRecord.phone = input.phone;
+  }
+
+  return c;
+}
+
+export interface NewCaseDetails {
+  mrn: string;
+  phone: string;
+  email: string;
+  insurances: InsuranceInput[];
+}
+
+export function addCaseForPatient(p: Patient, details: NewCaseDetails): IntakeCase {
+  const generated = generateCase(p);
+  const c: IntakeCase = {
+    ...generated,
+    demographics: {
+      ...generated.demographics,
+      mrn:   details.mrn   || generated.demographics.mrn,
+      phone: details.phone || generated.demographics.phone,
+      email: details.email || generated.demographics.email,
+    },
+    insurances: details.insurances.length
+      ? details.insurances.map(ins => ({ ...ins, id: `ins-${insSeq++}` }))
+      : generated.insurances,
+  };
+  intakeCases.set(p.id, c);
   return c;
 }
 

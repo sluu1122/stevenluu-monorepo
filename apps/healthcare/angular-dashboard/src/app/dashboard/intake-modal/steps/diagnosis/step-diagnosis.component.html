@@ -13,7 +13,7 @@
           inputId="wz-icds"
           placeholder="Type ICD-10 code, press Enter…"
           [hasError]="showError"
-          [suggestions]="icdSuggestions()"
+          [suggestions]="icdSuggestions"
           (queryChange)="onIcdQuery($event)"
         />
         @if (searching()) {

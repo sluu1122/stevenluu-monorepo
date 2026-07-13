@@ -1,7 +1,7 @@
 import { computed, inject } from '@angular/core';
 import { signalStore, withState, withComputed, withMethods, withHooks, patchState } from '@ngrx/signals';
-import { TimeoutError } from 'rxjs';
 import { AppContextService } from '../services/app-context.service';
+import { errorMessage } from '../shared/api-error';
 import { initialsOf } from '../shared/initials';
 import type { CurrentUser } from '../models/app-context.model';
 
@@ -31,10 +31,7 @@ export const SessionStore = signalStore(
       appContext.getMe().subscribe({
         next: (user) => patchState(store, { user, loading: false }),
         error: (err) => {
-          const msg = err instanceof TimeoutError
-            ? 'Request timed out. Check that patients-api is running.'
-            : 'Failed to load user session.';
-          patchState(store, { loading: false, error: msg });
+          patchState(store, { loading: false, error: errorMessage(err, 'Failed to load user session.') });
         },
       });
     },
