@@ -24,7 +24,7 @@
 </div>
 
 @if (modalOpen()) {
-  <div class="pi-view-modal-overlay" (click)="onOverlayClick($event)" tabindex="-1">
+  <div class="pi-view-modal-overlay" tabindex="-1">
     <div class="pi-view-modal" cdkTrapFocus cdkTrapFocusAutoCapture role="dialog" aria-modal="true" [attr.aria-label]="modalTitle()">
       <div class="pi-view-modal__head">
         <h3 class="pi-view-modal__title">{{ modalTitle() }}</h3>

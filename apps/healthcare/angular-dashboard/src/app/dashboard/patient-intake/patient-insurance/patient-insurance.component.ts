@@ -119,8 +119,4 @@ export class PatientInsuranceComponent {
   protected setRank(r: InsuranceRank): void {
     this.insuranceForm.patchValue({ rank: r });
   }
-
-  protected onOverlayClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement) === event.currentTarget) this.closeModal();
-  }
 }

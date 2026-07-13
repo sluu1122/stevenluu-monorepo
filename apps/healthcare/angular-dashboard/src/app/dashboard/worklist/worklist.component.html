@@ -1,2 +1,23 @@
+<!-- Tab row + New Intake button -->
+<div class="wl__toolbar">
+  <div class="wl__tabs">
+    @for (tab of TABS; track tab) {
+      <button
+        class="wl__tab"
+        [class.wl__tab--active]="store.worklistTab() === tab"
+        (click)="store.setTab(tab)"
+      >
+        <span>{{ tab }}</span>
+        <span class="wl__tab-count">
+          {{ tab === 'In Progress' ? store.inProgressPatients().length : store.completedPatients().length }}
+        </span>
+      </button>
+    }
+  </div>
+  <button pButton type="button" class="wl__new-btn" (click)="intake.open()">
+    <span class="icon">add</span>New Intake
+  </button>
+</div>
+
 <app-wl-status-tiles />
 <app-wl-operations-table />

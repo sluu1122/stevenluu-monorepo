@@ -10,7 +10,7 @@ import { IntakeCaseStore } from '../../../stores/intake-case.store';
 import { AiAssistantService, createAiField } from '../../../services/ai-assistant.service';
 import { IntakeModalComponent } from '../../intake-modal/intake-modal.component';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
-import type { Patient, PatientStatus, WorklistTab } from '../../../models/patient.model';
+import type { Patient, PatientStatus } from '../../../models/patient.model';
 
 const CASE_SUMMARY_SYSTEM =
   'You are a clinical operations coordinator. Summarize the patient case status for care team ' +
@@ -35,8 +35,6 @@ export class OperationsTableComponent {
   protected readonly STATUS_OPTIONS: (PatientStatus | 'All')[] = [
     'All', 'Registered', 'Pending', 'Authorized', 'Payment Posted',
   ];
-
-  protected readonly TABS: WorklistTab[] = ['In Progress', 'Completed'];
 
   // ── Row navigation ────────────────────────────────────────────────────────
   protected openPatient(p: Patient): void {

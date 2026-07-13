@@ -69,8 +69,4 @@ export class PatientDetailsComponent {
       error: (err: Error) => this.saveError.set(err.message),
     });
   }
-
-  protected onOverlayClick(event: MouseEvent): void {
-    if ((event.target as HTMLElement) === event.currentTarget) this.closeModal();
-  }
 }
