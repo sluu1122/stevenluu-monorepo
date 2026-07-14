@@ -70,6 +70,20 @@ setInterval(() => {
   }
 }, rateLimitWindow).unref();
 
+// Behind a Cloudflare Tunnel the socket peer is always cloudflared, so req.ip is
+// the same for every external caller. Prefer the real client IP from Cloudflare's
+// forwarded headers so the limiter is per-visitor, not global.
+function clientIp(req: Request): string {
+  const cf = req.headers['cf-connecting-ip'];
+  if (typeof cf === 'string' && cf) return cf;
+  const xff = req.headers['x-forwarded-for'];
+  if (typeof xff === 'string') {
+    const first = xff.split(',')[0]?.trim();
+    if (first) return first;
+  }
+  return req.ip ?? 'unknown';
+}
+
 function sendSse(res: Response, data: unknown): void {
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
@@ -85,6 +99,11 @@ export function createServer(): express.Application {
   });
 
   app.post('/api/suggest', async (req: Request, res: Response) => {
+    if (isRateLimited(clientIp(req))) {
+      res.status(429).json({ error: 'Too many requests — please wait before retrying' });
+      return;
+    }
+
     const { prompt, system, think = false } = req.body as SuggestBody;
 
     if (!prompt?.trim()) {
@@ -115,8 +134,7 @@ export function createServer(): express.Application {
   });
 
   app.post('/api/cds/medical-necessity', async (req: Request, res: Response) => {
-    const ip = req.ip ?? 'unknown';
-    if (isRateLimited(ip)) {
+    if (isRateLimited(clientIp(req))) {
       res.status(429).json({ error: 'Too many requests — please wait before retrying' });
       return;
     }
