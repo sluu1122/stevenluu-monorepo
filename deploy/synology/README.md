@@ -41,47 +41,49 @@ If `docker buildx build` complains about a missing builder instance, run once:
 2. Container Manager → Registry → Settings → add registry `ghcr.io`, log in with a
    GitHub personal access token (`read:packages` scope) — required since these are
    private images.
-3. Container Manager → Project → Create → paste the repo's `docker-compose.yml`
-   directly (no SSH needed). When prompted for environment variables, fill in the
-   real values from `.env.example` (copy that file to `.env` first and edit it, or
-   enter values directly in the GUI import step).
-4. Start the project. First run pulls all images and starts 9 containers (7 apps +
-   `ollama` + the one-shot `ollama-init`, which exits 0 once its model pull
-   finishes — that's expected, not a failure).
+3. Container Manager → Project → Create → paste the repo's pull-only
+   `deploy/synology/docker-compose.nas.yml` (it references the `ghcr.io` images and
+   the `cloudflared` tunnel service; it has no `build:` sections, so the NAS never
+   compiles). No SSH needed. Put the real values in a `.env` file next to the
+   compose (copy `.env.example` and edit it) — including `CLOUDFLARE_TUNNEL_TOKEN`
+   from the tunnel setup in step 3 below.
+4. Start the project. First run pulls all images and starts 10 containers (7 apps +
+   `cloudflared` + `ollama` + the one-shot `ollama-init`, which exits 0 once its
+   model pull finishes — that's expected, not a failure).
 
-## 3. Expose it publicly
+## 3. Expose it publicly (Cloudflare Tunnel)
 
-**Reverse Proxy** (Control Panel → Login Portal → Advanced → Reverse Proxy),
-one HTTPS rule per hostname, all pointing at `localhost:<published-port>`:
+The stack is published through a **Cloudflare Tunnel** — an outbound-only connection
+from the `cloudflared` container to Cloudflare's edge. This hides the home IP, needs
+**no inbound router ports**, and lets Cloudflare terminate public HTTPS for free.
+See **[cloudflare-tunnel.md](cloudflare-tunnel.md)** for the full step-by-step:
+Cloudflare account + DNS migration (keeping the email MX records intact), the tunnel
+token, public-hostname routing, and the teardown of the old port-forward path.
 
-| Hostname | → | NAS port |
+In short: DNS for `stevenluu.com` is hosted at Cloudflare, and the tunnel maps each
+public hostname to a Docker service on the internal `appnet` network:
+
+| Public hostname | → | Service |
 |---|---|---|
-| `portfolio.stevenluu.com` | | `3000` |
-| `react.stevenluu.com` | | `8081` |
-| `angular.stevenluu.com` | | `8082` |
-| `healthcare-api.stevenluu.com/ai` | | `3001` |
-| `healthcare-api.stevenluu.com/cpt` | | `3002` |
-| `healthcare-api.stevenluu.com/icd` | | `3003` |
-| `healthcare-api.stevenluu.com/patients` | | `3004` |
+| `stevenluu.com`, `www.stevenluu.com` | | `portfolio:3000` |
+| `angular.stevenluu.com` | | `angular-dashboard:80` |
+| `react.stevenluu.com` | | `react-dashboard:80` |
+| `ai-api.stevenluu.com` | | `ai-api:3001` |
+| `cpt-api.stevenluu.com` | | `cpt-api:3002` |
+| `icd-api.stevenluu.com` | | `icd-api:3003` |
+| `patients-api.stevenluu.com` | | `patients-api:3004` |
 
-If your DSM version's reverse-proxy UI doesn't support path-based routing for the
-4 API rows, fall back to 4 separate subdomains (`ai-api.stevenluu.com`, etc.) —
-just update `.env`'s `*_API_URL` values to match whichever scheme you use.
-
-**DDNS + certificates**: Control Panel → External Access → DDNS (register your
-hostname), then Control Panel → Security → Certificate → Add → Let's Encrypt (one
-cert per hostname above; renews automatically every 90 days). Assign each cert to
-its corresponding reverse-proxy rule.
-
-**Router port-forward**: forward external `443` and `80` (the `80` is required for
-the Let's Encrypt ACME HTTP-01 challenge) to the NAS's internal `443`/`80`. Easy to
-miss — reverse-proxy rules alone don't work without this.
+The tunnel token lives in the NAS `.env` as `CLOUDFLARE_TUNNEL_TOKEN` (gitignored).
+No DSM reverse proxy, DDNS, Let's Encrypt cert, or router port-forwarding is needed —
+Cloudflare handles public TLS at its edge, and the routes above create the matching
+proxied DNS records automatically.
 
 ## 4. Verify
 
-- Container Manager shows all 9 containers running (or exited-0 for `ollama-init`).
-- `https://portfolio.stevenluu.com`, `https://angular.stevenluu.com`, and
-  `https://react.stevenluu.com` all load over HTTPS with valid certs.
+- Container Manager shows all 10 containers running (or exited-0 for `ollama-init`),
+  and the tunnel shows **Healthy** in Cloudflare (Zero Trust → Networks → Tunnels).
+- `https://stevenluu.com`, `https://angular.stevenluu.com`, and
+  `https://react.stevenluu.com` all load over HTTPS with a valid Cloudflare cert.
 - On the live Angular site, open devtools → Network tab → confirm a request to
   `assets/config.json` returns real public API URLs (not `localhost`, not literal
   `${CPT_API_URL}` placeholder text — the latter means the nginx entrypoint script
@@ -90,9 +92,9 @@ miss — reverse-proxy rules alone don't work without this.
   cross-container calls succeed with no CORS errors in the console. The AI field
   will be noticeably slower than on a dev machine (CPU-only inference on the
   Celeron J4125) — that's expected, not a bug.
-- Load everything from **outside** your home network (mobile data, not NAS-local
-  wifi) — the most common last-mile failure is a setup that only works from
-  inside the house due to a missed port-forward or DDNS misconfiguration.
+- Load everything from **outside** your home network (mobile data) to confirm the
+  public path. With the tunnel, home-wifi access works too — there's no NAT
+  hairpinning, since DNS now resolves to Cloudflare rather than your home IP.
 
 ## Notes on the `ollama` service
 

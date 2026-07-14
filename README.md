@@ -88,6 +88,9 @@ docker compose down -v   # stop and also wipe the model cache
 ## Deployment
 
 Production runs on a Synology DS423+ NAS pulling pre-built images from GitHub
-Container Registry — the NAS never compiles anything. See
-[deploy/synology/README.md](deploy/synology/README.md) for the full runbook
-(image build/push, Container Manager setup, reverse proxy, DDNS, TLS).
+Container Registry — the NAS never compiles anything. It's published to the
+internet through a **Cloudflare Tunnel** (outbound-only, no open ports, IP hidden).
+See [deploy/synology/README.md](deploy/synology/README.md) for the full runbook
+(image build/push, Container Manager setup) and
+[deploy/synology/cloudflare-tunnel.md](deploy/synology/cloudflare-tunnel.md) for the
+tunnel + DNS migration.

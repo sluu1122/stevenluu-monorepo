@@ -14,6 +14,23 @@ x-logging: &default-logging
     max-file: "3"
 
 services:
+  # Cloudflare Tunnel: makes an OUTBOUND connection to Cloudflare's edge, so the
+  # public DNS points at Cloudflare (hiding the home IP) and no inbound router
+  # ports need to be open. Shares appnet, so it routes to each app by its Docker
+  # service name — see the public-hostname table in cloudflare-tunnel.md.
+  # The token is a secret; it lives in .env on the NAS, never committed.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    networks: [appnet]
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    # Force HTTP2 transport (TCP) instead of the default QUIC (UDP 7844), which the
+    # home router chain drops — otherwise the connector never registers ("Inactive").
+    environment:
+      - TUNNEL_TRANSPORT_PROTOCOL=http2
+    mem_limit: 256m
+    logging: *default-logging
+
   portfolio:
     image: ghcr.io/sluu1122/portfolio:latest
     restart: unless-stopped
