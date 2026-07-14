@@ -1,7 +1,6 @@
+// Local-dev fallback values; in a container these are overlaid at bootstrap
+// from assets/config.json — see src/app/runtime-config.ts.
 export const environment = {
-  // Replace with your Anthropic API key to enable the AI payer ID assistant.
-  // Get one at https://console.anthropic.com/
-  anthropicApiKey: '',
   cptApiUrl:      'http://localhost:3002',
   icdApiUrl:      'http://localhost:3003',
   aiApiUrl:       'http://localhost:3001',

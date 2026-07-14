@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build context: repo root. Build with:
-#   docker buildx build --platform linux/amd64 -f apps/healthcare/cpt-api/Dockerfile -t ghcr.io/sluu123/cpt-api:latest .
+#   docker buildx build --platform linux/amd64 -f apps/healthcare/cpt-api/Dockerfile -t ghcr.io/sluu1122/cpt-api:latest .
 FROM node:24-slim AS base
 
 FROM base AS pruner

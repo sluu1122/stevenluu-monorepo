@@ -9,12 +9,12 @@ the DS423+'s low-power CPU out of the build path entirely.
 
 ```powershell
 $sha = (git rev-parse --short HEAD)
-docker login ghcr.io -u <your-github-username>
+docker login ghcr.io -u sluu1122
 
 foreach ($svc in "portfolio","react-dashboard","angular-dashboard","ai-api","cpt-api","icd-api","patients-api") {
   docker buildx build --platform linux/amd64 `
     -f "apps/**/$svc/Dockerfile" `
-    -t "ghcr.io/<your-github-username>/$svc:latest" -t "ghcr.io/<your-github-username>/$svc:$sha" `
+    -t "ghcr.io/sluu1122/$svc:latest" -t "ghcr.io/sluu1122/$svc:$sha" `
     --push .
 }
 ```
@@ -27,9 +27,9 @@ arch mismatch is the most common "works here, fails on the NAS" failure mode.
 
 ```powershell
 docker buildx build --platform linux/amd64 -f apps/portfolio/Dockerfile `
-  --build-arg NEXT_PUBLIC_ANGULAR_SANDBOX_URL=https://angular.yourdomain.com `
-  --build-arg NEXT_PUBLIC_REACT_SANDBOX_URL=https://react.yourdomain.com `
-  -t ghcr.io/<your-github-username>/portfolio:latest --push .
+  --build-arg NEXT_PUBLIC_ANGULAR_SANDBOX_URL=https://angular.stevenluu.com `
+  --build-arg NEXT_PUBLIC_REACT_SANDBOX_URL=https://react.stevenluu.com `
+  -t ghcr.io/sluu1122/portfolio:latest --push .
 ```
 
 If `docker buildx build` complains about a missing builder instance, run once:
@@ -56,16 +56,16 @@ one HTTPS rule per hostname, all pointing at `localhost:<published-port>`:
 
 | Hostname | → | NAS port |
 |---|---|---|
-| `portfolio.yourdomain.com` | | `3000` |
-| `react.yourdomain.com` | | `8081` |
-| `angular.yourdomain.com` | | `8082` |
-| `healthcare-api.yourdomain.com/ai` | | `3001` |
-| `healthcare-api.yourdomain.com/cpt` | | `3002` |
-| `healthcare-api.yourdomain.com/icd` | | `3003` |
-| `healthcare-api.yourdomain.com/patients` | | `3004` |
+| `portfolio.stevenluu.com` | | `3000` |
+| `react.stevenluu.com` | | `8081` |
+| `angular.stevenluu.com` | | `8082` |
+| `healthcare-api.stevenluu.com/ai` | | `3001` |
+| `healthcare-api.stevenluu.com/cpt` | | `3002` |
+| `healthcare-api.stevenluu.com/icd` | | `3003` |
+| `healthcare-api.stevenluu.com/patients` | | `3004` |
 
 If your DSM version's reverse-proxy UI doesn't support path-based routing for the
-4 API rows, fall back to 4 separate subdomains (`ai-api.yourdomain.com`, etc.) —
+4 API rows, fall back to 4 separate subdomains (`ai-api.stevenluu.com`, etc.) —
 just update `.env`'s `*_API_URL` values to match whichever scheme you use.
 
 **DDNS + certificates**: Control Panel → External Access → DDNS (register your
@@ -80,8 +80,8 @@ miss — reverse-proxy rules alone don't work without this.
 ## 4. Verify
 
 - Container Manager shows all 9 containers running (or exited-0 for `ollama-init`).
-- `https://portfolio.yourdomain.com`, `https://angular.yourdomain.com`, and
-  `https://react.yourdomain.com` all load over HTTPS with valid certs.
+- `https://portfolio.stevenluu.com`, `https://angular.stevenluu.com`, and
+  `https://react.stevenluu.com` all load over HTTPS with valid certs.
 - On the live Angular site, open devtools → Network tab → confirm a request to
   `assets/config.json` returns real public API URLs (not `localhost`, not literal
   `${CPT_API_URL}` placeholder text — the latter means the nginx entrypoint script

@@ -16,12 +16,6 @@ x-logging: &default-logging
 services:
   portfolio:
     image: ghcr.io/sluu1122/portfolio:latest
-    build:
-      context: .
-      dockerfile: apps/portfolio/Dockerfile
-      args:
-        NEXT_PUBLIC_ANGULAR_SANDBOX_URL: ${NEXT_PUBLIC_ANGULAR_SANDBOX_URL:-http://localhost:8082}
-        NEXT_PUBLIC_REACT_SANDBOX_URL: ${NEXT_PUBLIC_REACT_SANDBOX_URL:-http://localhost:8081}
     restart: unless-stopped
     networks: [appnet]
     ports: ["3000:3000"]
@@ -30,9 +24,6 @@ services:
 
   react-dashboard:
     image: ghcr.io/sluu1122/react-dashboard:latest
-    build:
-      context: .
-      dockerfile: apps/finance/react-dashboard/Dockerfile
     restart: unless-stopped
     networks: [appnet]
     ports: ["8081:80"]
@@ -41,9 +32,6 @@ services:
 
   angular-dashboard:
     image: ghcr.io/sluu1122/angular-dashboard:latest
-    build:
-      context: .
-      dockerfile: apps/healthcare/angular-dashboard/Dockerfile
     restart: unless-stopped
     networks: [appnet]
     ports: ["8082:80"]
@@ -58,9 +46,6 @@ services:
 
   ai-api:
     image: ghcr.io/sluu1122/ai-api:latest
-    build:
-      context: .
-      dockerfile: apps/healthcare/ai-api/Dockerfile
     restart: unless-stopped
     networks: [appnet]
     ports: ["3001:3001"]
@@ -80,9 +65,6 @@ services:
 
   cpt-api:
     image: ghcr.io/sluu1122/cpt-api:latest
-    build:
-      context: .
-      dockerfile: apps/healthcare/cpt-api/Dockerfile
     restart: unless-stopped
     networks: [appnet]
     ports: ["3002:3002"]
@@ -99,9 +81,6 @@ services:
 
   icd-api:
     image: ghcr.io/sluu1122/icd-api:latest
-    build:
-      context: .
-      dockerfile: apps/healthcare/icd-api/Dockerfile
     restart: unless-stopped
     networks: [appnet]
     ports: ["3003:3003"]
@@ -118,9 +97,6 @@ services:
 
   patients-api:
     image: ghcr.io/sluu1122/patients-api:latest
-    build:
-      context: .
-      dockerfile: apps/healthcare/patients-api/Dockerfile
     restart: unless-stopped
     networks: [appnet]
     ports: ["3004:3004"]

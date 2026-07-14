@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build context: repo root. Build with:
-#   docker buildx build --platform linux/amd64 -f apps/healthcare/angular-dashboard/Dockerfile -t ghcr.io/sluu123/angular-dashboard:latest .
+#   docker buildx build --platform linux/amd64 -f apps/healthcare/angular-dashboard/Dockerfile -t ghcr.io/sluu1122/angular-dashboard:latest .
 FROM node:24-slim AS base
 
 FROM base AS pruner

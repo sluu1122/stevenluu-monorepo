@@ -237,7 +237,7 @@ export const IntakeWizardStore = signalStore(
           next:  results => patchState(store, { mnResults: results, mnPending: false, mnRun: true }),
           error: (err: Error) => patchState(store, {
             mnError: err instanceof TimeoutError
-              ? 'Medical necessity check timed out (30 s) — try again'
+              ? 'Medical necessity check timed out — try again'
               : err.message || 'Medical necessity check failed',
             mnPending: false,
           }),

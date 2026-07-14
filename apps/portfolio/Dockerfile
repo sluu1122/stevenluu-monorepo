@@ -3,7 +3,7 @@
 #   docker buildx build --platform linux/amd64 -f apps/portfolio/Dockerfile \
 #     --build-arg NEXT_PUBLIC_ANGULAR_SANDBOX_URL=https://angular.yourdomain.com \
 #     --build-arg NEXT_PUBLIC_REACT_SANDBOX_URL=https://react.yourdomain.com \
-#     -t ghcr.io/sluu123/portfolio:latest .
+#     -t ghcr.io/sluu1122/portfolio:latest .
 FROM node:24-slim AS base
 
 FROM base AS pruner
