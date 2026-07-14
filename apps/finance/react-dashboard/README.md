@@ -2,7 +2,8 @@
 
 Finance sandbox dashboard — a personal investment portfolio tracker with a live-updating watchlist and trade simulator.
 
-**URL:** http://localhost:5173
+**Live:** https://react.stevenluu.com
+**Dev URL:** http://localhost:5173
 
 ## Features
 

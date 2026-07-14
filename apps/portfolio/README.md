@@ -2,7 +2,8 @@
 
 Personal portfolio and resume site.
 
-**URL:** http://localhost:3000
+**Live:** https://stevenluu.com
+**Dev URL:** http://localhost:3000
 
 ## Stack
 

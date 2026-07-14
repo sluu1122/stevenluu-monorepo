@@ -2,12 +2,13 @@
 
 Clinical operations dashboard built with Angular 22 and PrimeNG. Covers the core healthcare revenue-cycle workflow: patient intake, insurance authorization, and case management.
 
-**URL:** http://localhost:4200
+**Live:** https://angular.stevenluu.com
+**Dev URL:** http://localhost:4200
 
 ## Features
 
 - **Worklist** — Active operations queue with Status Filter tiles, status filtering, AI-powered case summaries streamed from `ai-api`, and a PrimeNG row action menu
-- **Patient Intake** — Multi-step wizard (patient info → procedure → insurance → review) with CPT/ICD typeahead, payer ID assistant, and medical necessity CDS check
+- **Patient Intake** — Multi-step wizard (patient info → procedure → insurance → review) with CPT/ICD typeahead and medical necessity CDS check
 - **Patient Search** — Facility-wide directory with search by name, MRN, DOB, or phone, plus payer and status filters
 
 ## Stack
@@ -24,9 +25,9 @@ Clinical operations dashboard built with Angular 22 and PrimeNG. Covers the core
 | `patients-api` | 3004 | Worklist patient data (loaded on init) |
 | `cpt-api` | 3002 | CPT code typeahead in the intake wizard |
 | `icd-api` | 3003 | ICD-10 typeahead in the intake wizard |
-| `ai-api` | 3001 | Payer ID assistant, medical necessity CDS, case summaries |
+| `ai-api` | 3001 | Medical necessity CDS, case summaries |
 
-`ai-api` requires [Ollama](https://ollama.com). Without it, the three AI features degrade gracefully — all other functionality remains available.
+`ai-api` requires [Ollama](https://ollama.com) (installed on the host for local dev, or the bundled container when running via Docker Compose). Without it, the AI features degrade gracefully — all other functionality remains available.
 
 ## Dev
 
