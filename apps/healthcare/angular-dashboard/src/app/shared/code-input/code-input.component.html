@@ -25,11 +25,12 @@
       autocomplete="off"
       role="combobox"
       [attr.aria-expanded]="showDropdown()"
+      [attr.aria-controls]="inputId + '-listbox'"
       aria-haspopup="listbox"
     >
   </div>
   @if (showDropdown()) {
-    <div class="wz__suggest-dropdown" role="listbox">
+    <div class="wz__suggest-dropdown" [attr.id]="inputId + '-listbox'" role="listbox">
       @for (s of suggestions(); track s.code; let i = $index) {
         <div class="wz__suggest-item"
           [class.wz__suggest-item--active]="activeIdx() === i"
