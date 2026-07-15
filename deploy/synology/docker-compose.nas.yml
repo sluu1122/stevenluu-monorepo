@@ -27,6 +27,34 @@ services:
     mem_limit: 256m
     logging: *default-logging
 
+  # Auto-updates the 7 labeled app services below when CI pushes a new image
+  # to ghcr.io — reuses Container Manager's existing ghcr.io registry login via
+  # the mounted Docker socket, no separate credentials needed. Deliberately not
+  # applied to ollama (large, never re-pushed) or cloudflared (infra we want to
+  # update deliberately, not on autopilot). See cloudflare-tunnel.md's neighbor,
+  # this file's own comments, and the root README's "Continuous deployment"
+  # section for the full picture.
+  #
+  # The HTTP API (port 8080) lets you force an immediate check instead of
+  # waiting out the poll interval — see deploy/synology/README.md for the curl
+  # command. It is NOT routed through the Cloudflare Tunnel and nothing
+  # forwards it on the router, so it's reachable only from the LAN.
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports: ["8080:8080"]
+    environment:
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=1800
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN}
+    mem_limit: 128m
+    logging: *default-logging
+
   portfolio:
     image: ghcr.io/sluu1122/portfolio:latest
     restart: unless-stopped
@@ -34,6 +62,7 @@ services:
     ports: ["3000:3000"]
     mem_limit: 512m
     logging: *default-logging
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
 
   react-dashboard:
     image: ghcr.io/sluu1122/react-dashboard:latest
@@ -42,6 +71,7 @@ services:
     ports: ["8081:80"]
     mem_limit: 128m
     logging: *default-logging
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
 
   angular-dashboard:
     image: ghcr.io/sluu1122/angular-dashboard:latest
@@ -50,6 +80,7 @@ services:
     ports: ["8082:80"]
     mem_limit: 128m
     logging: *default-logging
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - CPT_API_URL=${CPT_API_URL}
       - ICD_API_URL=${ICD_API_URL}
@@ -65,6 +96,7 @@ services:
     ports: ["3001:3001"]
     mem_limit: 512m
     logging: *default-logging
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - PORT=3001
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
@@ -84,6 +116,7 @@ services:
     ports: ["3002:3002"]
     mem_limit: 256m
     logging: *default-logging
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - PORT=3002
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
@@ -100,6 +133,7 @@ services:
     ports: ["3003:3003"]
     mem_limit: 256m
     logging: *default-logging
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - PORT=3003
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
@@ -116,6 +150,7 @@ services:
     ports: ["3004:3004"]
     mem_limit: 256m
     logging: *default-logging
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - PORT=3004
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}

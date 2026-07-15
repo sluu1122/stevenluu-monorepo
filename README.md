@@ -90,7 +90,10 @@ docker compose down -v   # stop and also wipe the model cache
 Production runs on a Synology DS423+ NAS pulling pre-built images from GitHub
 Container Registry — the NAS never compiles anything. It's published to the
 internet through a **Cloudflare Tunnel** (outbound-only, no open ports, IP hidden).
-See [deploy/synology/README.md](deploy/synology/README.md) for the full runbook
-(image build/push, Container Manager setup) and
+Deployment is CI-driven: pushing to `main` builds and pushes all images
+(`.github/workflows/deploy.yml`), and Watchtower on the NAS auto-updates the
+running containers — see [deploy/synology/README.md](deploy/synology/README.md)
+for the full runbook (image build/push, Container Manager setup, continuous
+deployment) and
 [deploy/synology/cloudflare-tunnel.md](deploy/synology/cloudflare-tunnel.md) for the
 tunnel + DNS migration.
