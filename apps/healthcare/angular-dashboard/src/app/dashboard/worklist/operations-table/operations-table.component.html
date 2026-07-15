@@ -108,9 +108,11 @@
           <!-- Provider -->
           <td class="wl__td wl__td--text">
             @if (p.assignee !== 'Unassigned') {
-              {{ p.assignee }}
+              <button class="wl__provider-name-btn" type="button" (click)="openAssign(p)" [title]="'Reassign ' + p.name">
+                {{ p.assignee }}
+              </button>
             } @else {
-              <button class="wl__assign-btn">
+              <button class="wl__assign-btn" type="button" (click)="openAssign(p)">
                 <span class="icon">person_add</span>Assign
               </button>
             }
@@ -146,4 +148,30 @@
 <!-- Intake modal -->
 @if (intake.isOpen()) {
   <app-intake-modal />
+}
+
+<!-- Assign provider modal -->
+@if (assignTarget(); as target) {
+  <app-pi-view-modal [title]="'Assign provider · ' + target.name" (closeModal)="closeAssign()">
+    <ul modalBody class="wl__provider-list">
+      @for (provider of reference.providers(); track provider) {
+        <li>
+          <button
+            class="wl__provider-option"
+            [class.wl__provider-option--current]="provider === target.assignee"
+            type="button"
+            (click)="choose(provider)"
+          >
+            <span class="icon wl__provider-icon" aria-hidden="true">person</span>{{ provider }}
+            @if (provider === target.assignee) {
+              <span class="wl__provider-current">Current</span>
+            }
+          </button>
+        </li>
+      } @empty {
+        <li class="wl__provider-empty">No providers available.</li>
+      }
+    </ul>
+    <button modalFooter pButton [text]="true" type="button" (click)="closeAssign()">Cancel</button>
+  </app-pi-view-modal>
 }

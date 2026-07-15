@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { ALL_PATIENTS, addPatient } from './data/patients.js';
+import { ALL_PATIENTS, addPatient, assignPatient } from './data/patients.js';
 import { DIRECTORY } from './data/directory.js';
 import { REFERENCE_DATA } from './data/reference.js';
 import { CURRENT_USER } from './data/current-user.js';
@@ -62,6 +62,21 @@ export function createServer() {
       insurances: buildNewPatientInsurances(resolvedPayer, insurances),
     });
     res.status(201).json(patient);
+  });
+
+  app.put('/api/patients/:id/assignee', (req, res) => {
+    const { assignee } = req.body ?? {};
+    if (typeof assignee !== 'string' || !assignee.trim()) {
+      return res.status(400).json({ error: 'assignee is required' });
+    }
+    if (!REFERENCE_DATA.providers.includes(assignee)) {
+      return res.status(400).json({ error: `assignee must be one of ${REFERENCE_DATA.providers.join(', ')}` });
+    }
+    const updated = assignPatient(req.params.id, assignee);
+    if (!updated) {
+      return res.status(404).json({ error: `patient ${req.params.id} not found` });
+    }
+    res.json(updated);
   });
 
   app.get('/api/me', (_req, res) => {

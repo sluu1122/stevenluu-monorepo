@@ -50,3 +50,10 @@ export function addPatient(input: NewPatientInput): Patient {
   ALL_PATIENTS.push(patient);
   return patient;
 }
+
+export function assignPatient(id: string, assignee: string): Patient | undefined {
+  const patient = ALL_PATIENTS.find(p => p.id === id);
+  if (!patient) return undefined;
+  patient.assignee = assignee;
+  return patient;
+}

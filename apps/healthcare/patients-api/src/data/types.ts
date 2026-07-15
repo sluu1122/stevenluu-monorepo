@@ -38,6 +38,7 @@ export interface ReferenceData {
   authTypes: string[];
   noteCategories: string[];
   insuranceRanks: InsuranceRank[];
+  providers: string[];
 }
 
 export interface Demographics {

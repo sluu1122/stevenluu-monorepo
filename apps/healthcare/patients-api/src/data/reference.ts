@@ -6,4 +6,5 @@ export const REFERENCE_DATA: ReferenceData = {
   authTypes: ['Inpatient', 'Outpatient', 'Telehealth'],
   noteCategories: ['Clinical', 'Administrative', 'Insurance', 'Follow-up'],
   insuranceRanks: ['Primary', 'Secondary', 'Tertiary'],
+  providers: ['Dr. A. Soto', 'Dr. K. Lin', 'Dr. M. Okafor', 'Dr. R. Patel', 'Dr. J. Nguyen'],
 };

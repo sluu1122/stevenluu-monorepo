@@ -29,4 +29,10 @@ export class PatientService {
       .post<Patient>(`${this.baseUrl}/api/patients`, input)
       .pipe(timeout(TIMEOUT_MS));
   }
+
+  assignPatient(id: string, assignee: string): Observable<Patient> {
+    return this.http
+      .put<Patient>(`${this.baseUrl}/api/patients/${id}/assignee`, { assignee })
+      .pipe(timeout(TIMEOUT_MS));
+  }
 }

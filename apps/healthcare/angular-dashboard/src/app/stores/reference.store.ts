@@ -10,6 +10,7 @@ interface ReferenceState {
   authTypes: AuthType[];
   noteCategories: string[];
   insuranceRanks: InsuranceRank[];
+  providers: string[];
   loading: boolean;
   error: string;
 }
@@ -20,6 +21,7 @@ const initialState: ReferenceState = {
   authTypes: [],
   noteCategories: [],
   insuranceRanks: [],
+  providers: [],
   loading: false,
   error: '',
 };

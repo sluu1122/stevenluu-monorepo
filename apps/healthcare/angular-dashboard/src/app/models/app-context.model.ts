@@ -12,4 +12,5 @@ export interface ReferenceData {
   authTypes: AuthType[];
   noteCategories: string[];
   insuranceRanks: InsuranceRank[];
+  providers: string[];
 }

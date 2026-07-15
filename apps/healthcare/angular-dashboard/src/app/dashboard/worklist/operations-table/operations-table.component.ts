@@ -7,9 +7,11 @@ import { MenuItem } from 'primeng/api';
 import { DashboardStore } from '../../../stores/dashboard.store';
 import { IntakeWizardStore } from '../../../stores/intake-wizard.store';
 import { IntakeCaseStore } from '../../../stores/intake-case.store';
+import { ReferenceStore } from '../../../stores/reference.store';
 import { AiAssistantService, createAiField } from '../../../services/ai-assistant.service';
 import { IntakeModalComponent } from '../../intake-modal/intake-modal.component';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
+import { PiViewModalComponent } from '../../../shared/pi-view-modal/pi-view-modal.component';
 import type { Patient, PatientStatus } from '../../../models/patient.model';
 
 const CASE_SUMMARY_SYSTEM =
@@ -19,7 +21,7 @@ const CASE_SUMMARY_SYSTEM =
 @Component({
   selector: 'app-wl-operations-table',
   standalone: true,
-  imports: [FormsModule, TableModule, ButtonModule, MenuModule, IntakeModalComponent, StatusBadgeComponent],
+  imports: [FormsModule, TableModule, ButtonModule, MenuModule, IntakeModalComponent, StatusBadgeComponent, PiViewModalComponent],
   templateUrl: './operations-table.component.html',
   styleUrl: './operations-table.component.scss',
 })
@@ -27,6 +29,7 @@ export class OperationsTableComponent {
   protected readonly store      = inject(DashboardStore);
   protected readonly intake     = inject(IntakeWizardStore);
   protected readonly intakeCase = inject(IntakeCaseStore);
+  protected readonly reference  = inject(ReferenceStore);
   protected readonly ai         = inject(AiAssistantService);
 
   @ViewChild('rowMenu') rowMenu!: Menu;
@@ -40,6 +43,23 @@ export class OperationsTableComponent {
   protected openPatient(p: Patient): void {
     this.intakeCase.selectPatient(p.id);
     this.store.setNav('Patient Intake');
+  }
+
+  // ── Assign provider ───────────────────────────────────────────────────────
+  protected readonly assignTarget = signal<Patient | null>(null);
+
+  protected openAssign(p: Patient): void {
+    this.assignTarget.set(p);
+  }
+
+  protected closeAssign(): void {
+    this.assignTarget.set(null);
+  }
+
+  protected choose(provider: string): void {
+    const target = this.assignTarget();
+    if (target) this.store.assignProvider(target.id, provider);
+    this.closeAssign();
   }
 
   // ── Row context menu ─────────────────────────────────────────────────────
