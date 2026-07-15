@@ -67,13 +67,28 @@
         </button> -->
 
         @if (session.user(); as user) {
-          <div class="dashboard__user">
+          <button
+            type="button"
+            class="dashboard__user"
+            (click)="openUserPopover($event)"
+            aria-haspopup="true"
+            aria-label="User menu"
+          >
             <p-avatar [label]="session.userInitials()" shape="circle" styleClass="dashboard__avatar" />
             <div class="dashboard__user-info">
               <span class="dashboard__user-name">{{ user.name }}</span>
               <span class="dashboard__user-role">{{ user.role }}</span>
             </div>
-          </div>
+          </button>
+          <p-popover #userPopover styleClass="dashboard__user-popover">
+            <div class="dashboard__user-popover-body">
+              <span class="dashboard__user-popover-email">{{ user.email }}</span>
+              <p-avatar [label]="session.userInitials()" shape="circle" styleClass="dashboard__avatar dashboard__user-popover-avatar" />
+              <button pButton [outlined]="true" type="button" class="dashboard__user-popover-btn" (click)="goToPortfolio()">
+                <span class="icon" aria-hidden="true">arrow_back</span>Return to Portfolio
+              </button>
+            </div>
+          </p-popover>
         }
       </div>
     </header>

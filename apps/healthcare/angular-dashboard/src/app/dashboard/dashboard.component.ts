@@ -1,12 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ViewChild } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
+import { Popover, PopoverModule } from 'primeng/popover';
 import { DashboardStore } from '../stores/dashboard.store';
 import { SessionStore } from '../stores/session.store';
 import { IntakeCaseStore } from '../stores/intake-case.store';
 import { WorklistComponent } from './worklist/worklist.component';
 import { PatientIntakeComponent } from './patient-intake/patient-intake.component';
 import { PatientSearchComponent } from './patient-search/patient-search.component';
+import { environment } from '../../environments/environment';
 import type { NavView } from '../models/patient.model';
 
 interface NavDef { label: NavView; icon: string; }
@@ -20,7 +22,7 @@ const NAV_DEFS: NavDef[] = [
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [ButtonModule, AvatarModule, WorklistComponent, PatientIntakeComponent, PatientSearchComponent],
+  imports: [ButtonModule, AvatarModule, PopoverModule, WorklistComponent, PatientIntakeComponent, PatientSearchComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -32,5 +34,16 @@ export class DashboardComponent {
 
   protected isNavDisabled(label: NavView): boolean {
     return label === 'Patient Intake' && !this.intakeCase.currentPatientId();
+  }
+
+  // ── User popover ──────────────────────────────────────────────────────────
+  @ViewChild('userPopover') userPopover!: Popover;
+
+  protected openUserPopover(event: Event): void {
+    this.userPopover.toggle(event);
+  }
+
+  protected goToPortfolio(): void {
+    window.location.href = environment.portfolioUrl;
   }
 }

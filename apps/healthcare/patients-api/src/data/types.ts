@@ -28,6 +28,7 @@ export interface CurrentUser {
   id: string;
   name: string;
   role: string;
+  email: string;
 }
 
 export type InsuranceRank = 'Primary' | 'Secondary' | 'Tertiary';

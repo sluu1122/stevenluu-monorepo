@@ -24,10 +24,6 @@ services:
     restart: unless-stopped
     networks: [appnet]
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
-    # Force HTTP2 transport (TCP) instead of the default QUIC (UDP 7844), which the
-    # home router chain drops — otherwise the connector never registers ("Inactive").
-    environment:
-      - TUNNEL_TRANSPORT_PROTOCOL=http2
     mem_limit: 256m
     logging: *default-logging
 
@@ -59,6 +55,7 @@ services:
       - ICD_API_URL=${ICD_API_URL}
       - AI_API_URL=${AI_API_URL}
       - PATIENTS_API_URL=${PATIENTS_API_URL}
+      - PORTFOLIO_URL=${PORTFOLIO_URL}
     depends_on: [ai-api, cpt-api, icd-api, patients-api]
 
   ai-api:

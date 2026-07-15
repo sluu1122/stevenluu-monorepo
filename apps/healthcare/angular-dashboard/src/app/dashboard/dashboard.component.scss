@@ -204,6 +204,17 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    border: none;
+    background: transparent;
+    padding: 4px 6px;
+    margin: -4px -6px;
+    border-radius: var(--radius-md);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover { background: #f8f9fb; }
   }
 
   &__user-info {
@@ -221,6 +232,50 @@
   &__user-role {
     font-size: 11px;
     color: var(--muted);
+  }
+
+  // ── User account popover ───────────────────────
+  &__user-popover-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 32px 40px;
+    min-width: 280px;
+  }
+
+  &__user-popover-email {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  &__user-popover-avatar {
+    // !important: same specificity as the shared &__avatar rule (both are single
+    // classes on the same p-avatar host), so source order alone can't be relied
+    // on to win this override.
+    width: 96px !important;
+    height: 96px !important;
+    font-size: 32px !important;
+  }
+
+  &__user-popover-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    font-family: inherit;
+
+    .icon { font-size: 17px; }
   }
 
   // ── Shared avatar ──────────────────────────────

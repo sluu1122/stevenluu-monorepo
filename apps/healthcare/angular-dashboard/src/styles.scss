@@ -207,6 +207,11 @@ input, select, button, textarea { font-family: inherit; margin: 0; }
   padding: 8px 12px;
 }
 
+// User account popover (dashboard header) — hide PrimeNG's default arrow/caret
+.dashboard__user-popover {
+  &::before, &::after { display: none !important; }
+}
+
 // ─── Screen-reader only ──────────────────────────────────────────
 .sr-only {
   position: absolute;

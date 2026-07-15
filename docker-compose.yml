@@ -54,6 +54,7 @@ services:
       - ICD_API_URL=${ICD_API_URL}
       - AI_API_URL=${AI_API_URL}
       - PATIENTS_API_URL=${PATIENTS_API_URL}
+      - PORTFOLIO_URL=${PORTFOLIO_URL:-http://localhost:3000}
     depends_on: [ai-api, cpt-api, icd-api, patients-api]
 
   ai-api:

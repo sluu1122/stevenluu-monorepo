@@ -5,4 +5,5 @@ export const environment = {
   icdApiUrl:      'http://localhost:3003',
   aiApiUrl:       'http://localhost:3001',
   patientsApiUrl: 'http://localhost:3004',
+  portfolioUrl:   'http://localhost:3000',
 };

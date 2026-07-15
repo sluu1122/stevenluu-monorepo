@@ -1,6 +1,6 @@
 import { environment } from '../environments/environment';
 
-type RuntimeConfig = Pick<typeof environment, 'cptApiUrl' | 'icdApiUrl' | 'aiApiUrl' | 'patientsApiUrl'>;
+type RuntimeConfig = Pick<typeof environment, 'cptApiUrl' | 'icdApiUrl' | 'aiApiUrl' | 'patientsApiUrl' | 'portfolioUrl'>;
 
 /**
  * Fetches assets/config.json (envsubst'd from the container's ALLOWED_ORIGINS-style

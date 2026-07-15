@@ -4,6 +4,7 @@ export interface CurrentUser {
   id: string;
   name: string;
   role: string;
+  email: string;
 }
 
 export interface ReferenceData {
