@@ -10,11 +10,6 @@
       <span class="wl__card-count">
         Showing {{ store.filteredPatients().length }} of {{ store.worklistTab() === 'In Progress' ? store.inProgressPatients().length : store.completedPatients().length }}
       </span>
-      @if (store.worklistTab() === 'In Progress') {
-        <span class="wl__live-badge">
-          <span class="wl__live-dot"></span>LIVE
-        </span>
-      }
     </div>
     <div class="wl__card-head-right">
       @if (store.worklistTab() === 'In Progress') {
