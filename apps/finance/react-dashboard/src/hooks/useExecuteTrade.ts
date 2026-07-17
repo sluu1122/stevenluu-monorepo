@@ -9,7 +9,7 @@ import type {
   TradeResult,
 } from '../lib/mockMarketDB';
 
-type TradeSide = 'buy' | 'sell';
+export type TradeSide = 'buy' | 'sell';
 
 export interface UseExecuteTradeResult {
   // Portfolio data (kept in sync with ['portfolio-balance'] cache)

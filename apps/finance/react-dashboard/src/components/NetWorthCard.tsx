@@ -2,6 +2,9 @@ import { useMemo } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
+import { Badge } from '@repo/ui/components/badge';
+import { DashCard } from './DashCard';
+import { cn } from '../lib/utils';
 import { useMarketFeed, usePortfolioBalance } from '../hooks/useMarketFeed';
 
 const fmt = (n: number) =>
@@ -26,7 +29,7 @@ export function NetWorthCard() {
   const isUp = sessionChange >= 0;
 
   return (
-    <div className="dash-card">
+    <DashCard>
       <p className="dash-label mb-1">Total Net Worth</p>
 
       {/* Balance row */}
@@ -34,11 +37,12 @@ export function NetWorthCard() {
         <span className="text-[30px] sm:text-[38px] font-extrabold tracking-[-0.04em] text-ink tabular-nums leading-[1.05]">
           {fmt(nw)}
         </span>
-        <span className={`inline-flex items-center gap-1 px-[9px] py-[3px] rounded-full text-[12px] font-semibold font-mono mb-1.5 ${
-          isUp ? 'bg-gain-bg text-gain-dark' : 'bg-loss-bg text-loss-dark'
-        }`}>
+        <Badge className={cn(
+          'gap-1 px-[9px] py-[3px] rounded-full text-[12px] font-semibold font-mono mb-1.5 border-transparent',
+          isUp ? 'bg-gain-bg text-gain-dark hover:bg-gain-bg' : 'bg-loss-bg text-loss-dark hover:bg-loss-bg',
+        )}>
           {isUp ? '▲' : '▼'} {isUp ? '+' : ''}{sessionPct}%
-        </span>
+        </Badge>
       </div>
 
       {/* 30-day area chart */}
@@ -92,6 +96,6 @@ export function NetWorthCard() {
           </p>
         </div>
       </div>
-    </div>
+    </DashCard>
   );
 }

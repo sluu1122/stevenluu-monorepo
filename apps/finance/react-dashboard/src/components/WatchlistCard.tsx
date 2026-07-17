@@ -1,4 +1,5 @@
 import { LineChart, Line, YAxis, ResponsiveContainer } from 'recharts';
+import { DashCard } from './DashCard';
 import { useMarketFeed } from '../hooks/useMarketFeed';
 import type { Ticker } from '../hooks/useMarketFeed';
 
@@ -61,13 +62,13 @@ export function WatchlistCard() {
   const { tickers } = useMarketFeed();
 
   return (
-    <div className="dash-card">
+    <DashCard>
       <p className="dash-label mb-4">Live Watchlist</p>
       <div className="flex flex-col">
         {tickers.map((t, idx) => (
           <WatchlistRow key={t.sym} ticker={t} isLast={idx === tickers.length - 1} />
         ))}
       </div>
-    </div>
+    </DashCard>
   );
 }

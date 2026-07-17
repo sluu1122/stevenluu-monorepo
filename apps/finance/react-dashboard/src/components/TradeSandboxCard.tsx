@@ -1,5 +1,15 @@
+import { Badge } from '@repo/ui/components/badge';
+import { Button } from '@repo/ui/components/button';
+import { Input } from '@repo/ui/components/input';
+import { Label } from '@repo/ui/components/label';
+import { Tabs, TabsList, TabsTrigger } from '@repo/ui/components/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@repo/ui/components/toggle-group';
+import { Alert, AlertDescription } from '@repo/ui/components/alert';
+import { DashCard } from './DashCard';
+import { cn } from '../lib/utils';
 import { useMarketFeed } from '../hooks/useMarketFeed';
 import { useExecuteTrade } from '../hooks/useExecuteTrade';
+import type { TradeSide } from '../hooks/useExecuteTrade';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
@@ -21,63 +31,69 @@ export function TradeSandboxCard() {
   const canSubmit = amtNum > 0 && !isOver && !isPending && !isSuccess;
 
   return (
-    <div className="dash-card">
+    <DashCard>
       {/* Header */}
       <div className="flex items-center justify-between mb-[18px]">
         <p className="dash-label">Trade Sandbox</p>
-        <span className="text-[9.5px] font-bold tracking-[0.08em] text-indigo bg-indigo-bg px-2 py-[3px] rounded-full font-mono">
+        <Badge className="text-[9.5px] font-bold tracking-[0.08em] text-indigo bg-indigo-bg hover:bg-indigo-bg px-2 py-[3px] rounded-full font-mono border-transparent">
           OPTIMISTIC UI
-        </span>
+        </Badge>
       </div>
 
       {/* Buy / Sell toggle */}
-      <div className="flex bg-surface-pressed rounded-[10px] p-[3px] mb-4 gap-[3px]">
-        {(['buy', 'sell'] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => setSide(s)}
-            className={`flex-1 py-2 rounded-lg border-none text-[13px] font-semibold cursor-pointer transition-all ${
-              side === s
-                ? `bg-surface shadow-sm ${s === 'buy' ? 'text-gain-dark' : 'text-loss-dark'}`
-                : 'bg-transparent text-dim'
-            }`}
+      <Tabs value={side} onValueChange={(v: string) => setSide(v as TradeSide)} className="mb-4">
+        <TabsList className="flex w-full h-auto bg-surface-pressed rounded-[10px] p-[3px] gap-[3px]">
+          <TabsTrigger
+            value="buy"
+            className="flex-1 py-2 rounded-lg text-[13px] font-semibold text-dim data-[state=active]:bg-surface data-[state=active]:shadow-sm data-[state=active]:text-gain-dark"
           >
-            {s === 'buy' ? 'Buy' : 'Sell'}
-          </button>
-        ))}
-      </div>
+            Buy
+          </TabsTrigger>
+          <TabsTrigger
+            value="sell"
+            className="flex-1 py-2 rounded-lg text-[13px] font-semibold text-dim data-[state=active]:bg-surface data-[state=active]:shadow-sm data-[state=active]:text-loss-dark"
+          >
+            Sell
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Asset chips */}
-      <div className="flex flex-wrap gap-1.5 mb-4">
+      <ToggleGroup
+        type="single"
+        value={selectedSym}
+        onValueChange={(v: string) => { if (v) selectAsset(v); }}
+        className="flex-wrap justify-start gap-1.5 mb-4"
+      >
         {tickers.map((t) => (
-          <button
+          <ToggleGroupItem
             key={t.sym}
-            onClick={() => selectAsset(t.sym)}
-            className={`px-3 py-[5px] rounded-lg border text-[12.5px] font-semibold cursor-pointer font-mono transition-all ${
-              selectedSym === t.sym
-                ? 'border-indigo bg-indigo-bg text-indigo'
-                : 'border-edge text-slate bg-surface'
-            }`}
+            value={t.sym}
+            className="h-auto px-3 py-[5px] rounded-lg border border-edge bg-surface text-slate text-[12.5px] font-semibold font-mono hover:bg-surface hover:text-slate data-[state=on]:border-indigo data-[state=on]:bg-indigo-bg data-[state=on]:text-indigo"
           >
             {t.sym}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
 
       {/* Amount input */}
       <div className="mb-2.5">
-        <label className="dash-label block mb-1.5 tracking-[0.04em]">Amount (USD)</label>
-        <div className={`flex items-center rounded-[10px] bg-surface-muted overflow-hidden transition-colors border ${
-          isOver ? 'border-[#F87171]' : 'border-edge'
-        }`}>
-          <span className="px-3 text-dim text-[15px] font-medium shrink-0">$</span>
-          <input
+        <Label htmlFor="trade-amount" className="dash-label text-[11.5px] block mb-1.5 tracking-[0.04em]">
+          Amount (USD)
+        </Label>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-dim text-[15px] font-medium pointer-events-none">$</span>
+          <Input
+            id="trade-amount"
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
             min={0}
-            className="flex-1 border-none outline-none bg-transparent text-[15px] font-semibold text-ink py-[10px] pr-3 font-mono tabular-nums"
+            className={cn(
+              'h-auto rounded-[10px] bg-surface-muted pl-7 pr-3 py-[10px] text-[15px] md:text-[15px] font-semibold text-ink font-mono tabular-nums',
+              isOver ? 'border-[#F87171]' : 'border-edge',
+            )}
           />
         </div>
         {isOver && (
@@ -90,13 +106,14 @@ export function TradeSandboxCard() {
       {/* Quick fills */}
       <div className="flex gap-1.5 mb-4">
         {QUICK_FILLS.map((v) => (
-          <button
+          <Button
             key={v}
+            variant="outline"
             onClick={() => setQuick(v)}
-            className="flex-1 py-1.5 rounded-[7px] border border-edge bg-surface text-slate text-[11.5px] font-medium cursor-pointer font-mono"
+            className="flex-1 h-auto py-1.5 px-2 rounded-[7px] border-edge bg-surface text-slate text-[11.5px] font-medium font-mono"
           >
             ${v >= 1000 ? `${v / 1000}k` : v}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -111,17 +128,19 @@ export function TradeSandboxCard() {
       <div className="relative">
         {/* Success banner */}
         {isSuccess && lastFilled && (
-          <div
+          <Alert
             role="status"
             aria-live="polite"
-            className="flex items-center gap-2 px-3.5 py-2.5 bg-gain-bg border border-gain-border rounded-[10px] text-[13px] font-semibold text-gain-dark font-mono mb-2.5"
+            className="bg-gain-bg border-gain-border rounded-[10px] px-3.5 py-2.5 mb-2.5"
             style={{ animation: 'bannerIn 0.25s ease forwards' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            {lastFilled}
-          </div>
+            <AlertDescription className="flex items-center gap-2 text-[13px] font-semibold text-gain-dark font-mono">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              {lastFilled}
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Loading skeleton */}
@@ -143,18 +162,18 @@ export function TradeSandboxCard() {
         )}
 
         {/* Submit button */}
-        <button
+        <Button
           onClick={submitTrade}
           disabled={!canSubmit}
-          className={`w-full py-[13px] rounded-[12px] border-none text-[14px] font-bold tracking-[-0.01em] transition-all ${
-            canSubmit
-              ? `cursor-pointer text-white shadow-sm ${side === 'buy' ? 'bg-ink' : 'bg-[#7F1D1D]'}`
-              : 'cursor-not-allowed text-dim bg-edge'
-          }`}
+          className={cn(
+            'w-full h-auto py-[13px] rounded-[12px] text-[14px] font-bold tracking-[-0.01em] shadow-sm text-white',
+            side === 'buy' ? 'bg-ink hover:bg-ink/90' : 'bg-[#7F1D1D] hover:bg-[#7F1D1D]/90',
+            !canSubmit && 'disabled:opacity-100 bg-edge text-dim shadow-none hover:bg-edge hover:text-dim',
+          )}
         >
           {side === 'buy' ? 'Place Buy Order' : 'Place Sell Order'}
-        </button>
+        </Button>
       </div>
-    </div>
+    </DashCard>
   );
 }

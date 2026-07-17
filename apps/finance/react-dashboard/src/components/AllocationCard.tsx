@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { DashCard } from './DashCard';
 import { useMarketFeed, usePortfolioBalance } from '../hooks/useMarketFeed';
 
 const fmt = (n: number) =>
@@ -22,7 +23,7 @@ export function AllocationCard() {
   const total = alloc.reduce((s, a) => s + a.value, 0);
 
   return (
-    <div className="dash-card">
+    <DashCard>
       <p className="dash-label mb-4">Asset Allocation</p>
 
       {/* Donut */}
@@ -77,6 +78,6 @@ export function AllocationCard() {
           );
         })}
       </div>
-    </div>
+    </DashCard>
   );
 }
