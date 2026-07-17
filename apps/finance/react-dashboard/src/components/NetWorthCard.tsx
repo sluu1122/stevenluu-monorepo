@@ -30,8 +30,8 @@ export function NetWorthCard() {
       <p className="dash-label mb-1">Total Net Worth</p>
 
       {/* Balance row */}
-      <div className="flex items-end gap-3 mb-5">
-        <span className="text-[38px] font-extrabold tracking-[-0.04em] text-ink tabular-nums leading-[1.05]">
+      <div className="flex flex-wrap items-end gap-3 mb-5">
+        <span className="text-[30px] sm:text-[38px] font-extrabold tracking-[-0.04em] text-ink tabular-nums leading-[1.05]">
           {fmt(nw)}
         </span>
         <span className={`inline-flex items-center gap-1 px-[9px] py-[3px] rounded-full text-[12px] font-semibold font-mono mb-1.5 ${

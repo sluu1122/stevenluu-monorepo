@@ -14,7 +14,7 @@ function WatchlistRow({ ticker: t, isLast }: { ticker: Ticker; isLast: boolean }
   const sparkData = t.history.map((v, i) => ({ i, v }));
 
   return (
-    <div className={`grid grid-cols-[1fr_auto_auto] items-center gap-4 px-2 py-3 rounded-lg ${!isLast ? 'border-b border-edge-soft' : ''}`}>
+    <div className={`grid grid-cols-[1fr_auto_auto] items-center gap-3 sm:gap-4 px-2 py-3 rounded-lg ${!isLast ? 'border-b border-edge-soft' : ''}`}>
       {/* Ticker info */}
       <div className="flex items-center gap-2.5 min-w-0">
         <div
@@ -47,7 +47,7 @@ function WatchlistRow({ ticker: t, isLast }: { ticker: Ticker; isLast: boolean }
       </div>
 
       {/* Price + change */}
-      <div className="text-right min-w-[90px]">
+      <div className="text-right min-w-[80px] sm:min-w-[90px]">
         <p className="text-[14px] font-bold text-ink font-mono tabular-nums m-0">{fmtPrice(t.price)}</p>
         <p className={`text-[11.5px] font-semibold font-mono mt-0.5 m-0 ${isUp ? 'text-gain' : 'text-loss'}`}>
           {isUp ? '+' : ''}{changePct}%
