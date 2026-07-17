@@ -5,7 +5,7 @@ export function ProfileSection() {
   const { personalInfo } = resumeData;
 
   return (
-    <section className="flex items-center justify-between gap-8">
+    <section className="flex flex-col-reverse items-start gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
       <div className="flex-1 min-w-0">
         <Reveal delay={0}>
           <div>
@@ -48,9 +48,9 @@ export function ProfileSection() {
       </div>
 
       <Reveal delay={60} className="shrink-0">
-        <div className="relative w-[118px] h-[118px] rounded-full p-1 shadow-[0_12px_30px_-10px_rgba(15,23,42,0.18)]" style={{ background: 'conic-gradient(from 220deg, #EDEFFF, #F4F1FF, #E9F7FF, #EDEFFF)' }}>
+        <div className="relative w-[92px] h-[92px] sm:w-[118px] sm:h-[118px] rounded-full p-1 shadow-[0_12px_30px_-10px_rgba(15,23,42,0.18)]" style={{ background: 'conic-gradient(from 220deg, #EDEFFF, #F4F1FF, #E9F7FF, #EDEFFF)' }}>
           <div className="w-full h-full rounded-full flex items-center justify-center border border-white/80" style={{ background: 'linear-gradient(160deg, #F8FAFF, #EFF1F8)' }}>
-            <span className="font-mono text-[30px] font-semibold tracking-[0.02em] text-accent">SL</span>
+            <span className="font-mono text-[24px] sm:text-[30px] font-semibold tracking-[0.02em] text-accent">SL</span>
           </div>
           <span className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-status-green" style={{ border: '3px solid var(--color-page-bg)' }} />
         </div>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -29,6 +29,11 @@ export const metadata: Metadata = {
     description:
       "Portfolio of Steven Luu — Frontend-focused Software Engineer with 19 years of experience building responsive, scalable web applications.",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

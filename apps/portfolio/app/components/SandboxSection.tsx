@@ -33,14 +33,14 @@ const ArrowIcon = () => (
 
 export function SandboxSection() {
   return (
-    <section className="mt-21">
+    <section className="mt-16 sm:mt-21">
       <Reveal delay={0} className="text-center mb-[34px]">
         <span className="font-mono inline-flex items-center gap-[7px] px-3 py-[5px] rounded-full bg-accent-bg text-accent text-label tracking-[0.08em] uppercase font-semibold">Live Sandboxes</span>
         <h2 className="mt-4 mb-2 text-sandbox-h2 font-semibold tracking-[-0.03em] text-ink-darkest">Engineering Showcases</h2>
         <p className="m-0 mx-auto text-[16px] leading-[1.6] text-ink-tertiary max-w-[46ch]">Two production-grade playgrounds exploring opposite ends of the modern frontend spectrum.</p>
       </Reveal>
 
-      <div className="grid grid-cols-2 gap-[18px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-[18px]">
         {sandboxes.map((s) => (
           <Reveal key={s.href} delay={s.delay} className="flex flex-col">
             <a

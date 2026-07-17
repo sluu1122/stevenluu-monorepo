@@ -11,7 +11,7 @@ export default function Home() {
     <div className="relative min-h-screen bg-page-bg overflow-hidden">
       <div className="dot-grid" />
       <div className="top-glow" />
-      <main className="relative z-10 max-w-[720px] mx-auto px-7 pt-24 pb-18">
+      <main className="relative z-10 max-w-[720px] mx-auto px-5 sm:px-7 pt-16 sm:pt-24 pb-14 sm:pb-18">
         <ProfileSection />
         <AboutSection />
         <ExperienceSection />
