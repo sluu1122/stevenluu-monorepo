@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { resumeData } from '@repo/resume-data';
 import { Avatar, AvatarFallback } from '@repo/ui/components/avatar';
 import { Button } from '@repo/ui/components/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/popover';
 import { Sheet, SheetContent, SheetTitle } from '@repo/ui/components/sheet';
 import { cn } from '../lib/utils';
 
@@ -13,6 +14,10 @@ const NAV_LINKS = [
 ];
 
 const BRAND_GRADIENT = 'linear-gradient(135deg, #5B5BD6 0%, #6E6AF0 100%)';
+
+// Mirrors the Angular dashboard's portfolioUrl default (localhost:3000 in dev,
+// the live site in prod). No runtime env plumbing needed for a static build.
+const PORTFOLIO_URL = import.meta.env.DEV ? 'http://localhost:3000' : 'https://stevenluu.com';
 
 interface SidebarProps {
   /** Drawer visibility below lg; ignored at lg+ where the rail is always shown. */
@@ -65,20 +70,59 @@ function SidebarContent({ onNavigate }: { onNavigate: () => void }) {
         <p className="text-[11px] text-dim font-mono tracking-[0.03em] leading-[1.5] m-0">
           Mock data only — no real positions
         </p>
-        <div className="flex items-center gap-[9px]">
-          <Avatar className="w-[30px] h-[30px]">
-            <AvatarFallback
-              className="text-[12px] font-bold text-white"
-              style={{ background: BRAND_GRADIENT }}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label="Account menu"
+              className="flex items-center gap-[9px] w-full text-left -mx-1.5 px-1.5 py-1 rounded-[9px] transition-colors hover:bg-surface-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo/40"
             >
-              SL
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="text-[13px] font-semibold text-ink tracking-[-0.01em] m-0">{resumeData.personalInfo.name}</p>
-            <p className="text-[11px] text-dim m-0">Portfolio Mode</p>
-          </div>
-        </div>
+              <Avatar className="w-[30px] h-[30px]">
+                <AvatarFallback
+                  className="text-[12px] font-bold text-white"
+                  style={{ background: BRAND_GRADIENT }}
+                >
+                  SL
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-[13px] font-semibold text-ink tracking-[-0.01em] m-0 truncate">{resumeData.personalInfo.name}</p>
+                <p className="text-[11px] text-dim m-0">Portfolio Mode</p>
+              </div>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            side="top"
+            align="start"
+            sideOffset={10}
+            collisionPadding={12}
+            className="w-auto min-w-[280px] flex flex-col items-center gap-5 px-10 py-8 bg-surface border-edge rounded-2xl shadow-[0_12px_40px_-8px_rgba(15,23,42,0.22)]"
+          >
+            <span className="max-w-full truncate text-[13px] font-medium text-ink-mid">
+              {resumeData.personalInfo.email}
+            </span>
+            <Avatar className="w-24 h-24">
+              <AvatarFallback
+                className="text-3xl font-bold text-white"
+                style={{ background: BRAND_GRADIENT }}
+              >
+                SL
+              </AvatarFallback>
+            </Avatar>
+            <Button
+              asChild
+              variant="outline"
+              className="rounded-full h-auto gap-2 px-[18px] py-2.5 text-[13px] font-semibold border-edge text-ink hover:bg-surface-pressed hover:text-ink"
+            >
+              <a href={PORTFOLIO_URL} onClick={onNavigate}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M9.5 3.5 5 8l4.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Return to Portfolio
+              </a>
+            </Button>
+          </PopoverContent>
+        </Popover>
       </div>
     </>
   );
