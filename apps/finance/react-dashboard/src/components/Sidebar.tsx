@@ -145,6 +145,22 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     return () => mq.removeEventListener('change', onChange);
   }, [open, onClose]);
 
+  // Safety net: while the drawer is open, Radix's modal layer locks the page by
+  // setting `body { pointer-events: none }`, released on unmount. If a browser
+  // quirk ever leaves that lock stuck after close, every tap on the app dies.
+  // Once the drawer is closed, verify the lock was actually released and clear
+  // it if not. With the synchronous-unmount fix in @repo/ui's SheetContent this
+  // should never fire — it exists so this class of bug can never recur.
+  useEffect(() => {
+    if (open) return;
+    const id = window.setTimeout(() => {
+      if (document.body.style.pointerEvents === 'none') {
+        document.body.style.pointerEvents = '';
+      }
+    }, 500);
+    return () => window.clearTimeout(id);
+  }, [open]);
+
   return (
     <>
       {/* Static rail at lg+ */}
