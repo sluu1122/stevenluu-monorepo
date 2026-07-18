@@ -1,0 +1,18 @@
+// Shared responsive breakpoints for the dashboard.
+// Consumed via `@use 'breakpoints' as bp;` (resolved through the
+// stylePreprocessorOptions.includePaths = ["src/styles"] build option).
+
+$bp-lg: 1024px; // main mobile/tablet boundary: drawer nav, card tables, stacked forms
+$bp-sm: 560px;  // fine tweaks: hide header name/role, shrink wizard stepper labels
+
+@mixin lg-down {
+  @media (max-width: $bp-lg) {
+    @content;
+  }
+}
+
+@mixin sm-down {
+  @media (max-width: $bp-sm) {
+    @content;
+  }
+}

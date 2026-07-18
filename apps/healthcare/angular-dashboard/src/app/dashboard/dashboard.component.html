@@ -1,7 +1,7 @@
 <div class="dashboard">
 
   <!-- ── Left nav rail ── -->
-  <aside class="dashboard__nav">
+  <aside class="dashboard__nav" [class.dashboard__nav--open]="navOpen()">
     <div class="dashboard__logo">
       <span class="icon">vital_signs</span>
     </div>
@@ -12,7 +12,7 @@
           class="dashboard__nav-btn"
           [class.dashboard__nav-btn--active]="store.activeNav() === item.label"
           [disabled]="isNavDisabled(item.label)"
-          (click)="store.setNav(item.label)"
+          (click)="selectNav(item.label)"
           [attr.aria-label]="item.label"
           [attr.aria-current]="store.activeNav() === item.label ? 'page' : null"
           [attr.aria-disabled]="isNavDisabled(item.label) || null"
@@ -33,12 +33,26 @@
     </div> -->
   </aside>
 
+  <!-- Mobile drawer backdrop -->
+  @if (navOpen()) {
+    <div class="dashboard__nav-backdrop" (click)="closeNav()" aria-hidden="true"></div>
+  }
+
   <!-- ── Main column ── -->
   <main class="dashboard__main">
 
     <!-- Top header -->
     <header class="dashboard__header">
-      <div class="dashboard__header-left">
+      <div class="dashboard__header-lead">
+        <button
+          type="button"
+          class="dashboard__hamburger"
+          (click)="toggleNav()"
+          aria-label="Open navigation"
+        >
+          <span class="icon" aria-hidden="true">menu</span>
+        </button>
+        <div class="dashboard__header-left">
         @let nav = store.activeNav();
         <div class="dashboard__header-title-row">
           <h1 class="dashboard__header-title">
@@ -58,6 +72,7 @@
           }
           @else { Facility-wide patient directory }
         </p>
+        </div>
       </div>
 
       <div class="dashboard__header-right">

@@ -1,4 +1,4 @@
-import { Component, inject, ViewChild } from '@angular/core';
+import { Component, HostListener, inject, signal, ViewChild } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { Popover, PopoverModule } from 'primeng/popover';
@@ -34,6 +34,28 @@ export class DashboardComponent {
 
   protected isNavDisabled(label: NavView): boolean {
     return label === 'Patient Intake' && !this.intakeCase.currentPatientId();
+  }
+
+  // ── Mobile nav drawer ─────────────────────────────────────────────────────
+  protected readonly navOpen = signal(false);
+
+  protected toggleNav(): void {
+    this.navOpen.update((open) => !open);
+  }
+
+  protected closeNav(): void {
+    this.navOpen.set(false);
+  }
+
+  /** Switch views and dismiss the drawer (a no-op close on desktop). */
+  protected selectNav(label: NavView): void {
+    this.store.setNav(label);
+    this.closeNav();
+  }
+
+  @HostListener('document:keydown.escape')
+  protected onEscape(): void {
+    this.closeNav();
   }
 
   // ── User popover ──────────────────────────────────────────────────────────

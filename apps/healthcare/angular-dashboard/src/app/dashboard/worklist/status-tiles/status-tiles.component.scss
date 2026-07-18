@@ -1,9 +1,14 @@
+@use 'breakpoints' as bp;
+
 .wl {
   &__statuses {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
     margin-bottom: 22px;
+
+    // 4-up would overflow (and get clipped by the shell) on a phone.
+    @include bp.sm-down { grid-template-columns: repeat(2, 1fr); }
   }
 
   &__status-tile {

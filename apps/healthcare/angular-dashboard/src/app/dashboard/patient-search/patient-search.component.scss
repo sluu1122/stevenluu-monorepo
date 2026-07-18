@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 .ps {
   max-width: 1180px;
 
@@ -255,5 +257,71 @@
     transition: all 0.15s;
 
     &:hover { background: #f7faff; border-color: var(--blue-border); }
+  }
+
+  // ── Mobile stacked cards ─────────────────────────────
+  &__table-wrap { display: block; }
+  &__cards { display: none; margin: 0; padding: 0; }
+
+  @include bp.lg-down {
+    &__table-wrap { display: none; }
+    &__cards { display: flex; flex-direction: column; }
+    &__results-head { flex-wrap: wrap; gap: 4px 12px; }
+  }
+
+  &__card-row {
+    list-style: none;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-row);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    &:last-child { border-bottom: none; }
+  }
+
+  &__card-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  &__patient-block { min-width: 0; }
+
+  &__card-row-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  &__card-meta {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+
+    > div { min-width: 0; }
+
+    dt {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    dd {
+      margin: 0;
+      font-size: 13px;
+      color: var(--ink-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      &.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--ink-3); }
+    }
   }
 }

@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 .wz-overlay {
   position: fixed;
   inset: 0;
@@ -7,6 +9,8 @@
   align-items: center;
   justify-content: center;
   padding: 40px;
+
+  @include bp.lg-down { padding: 12px; }
 }
 
 .wz {
@@ -14,6 +18,8 @@
   max-width: 680px;
   max-height: 90vh;
   background: #fff;
+
+  @include bp.lg-down { max-height: 92dvh; }
   border-radius: 16px;
   box-shadow: 0 24px 64px rgba(15, 23, 42, 0.30);
   display: flex;
@@ -153,6 +159,9 @@
 
     &--active { color: #0f172a; font-weight: 600; }
     &--done   { color: #0f172a; font-weight: 500; }
+
+    // Too cramped for 5 labels on a phone — keep just the numbered circles.
+    @include bp.sm-down { display: none; }
   }
 
   // ── Body ──────────────────────────────────────────────
@@ -254,6 +263,8 @@
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 14px;
+
+    @include bp.lg-down { grid-template-columns: 1fr; }
   }
 
   &__label {
@@ -441,6 +452,8 @@
     min-width: 150px;
     border: none;
     outline: none;
+
+    @include bp.lg-down { min-width: 0; }
     background: transparent;
     font-size: 13px;
     color: #0f172a;
@@ -721,12 +734,16 @@
     justify-content: space-between;
     gap: 14px;
     background: #fcfdfe;
+
+    @include bp.lg-down { flex-wrap: wrap; }
   }
 
   &__footer-right {
     display: flex;
     align-items: center;
     gap: 10px;
+
+    @include bp.lg-down { width: 100%; flex-wrap: wrap; justify-content: flex-end; }
   }
 
   &__step-count {

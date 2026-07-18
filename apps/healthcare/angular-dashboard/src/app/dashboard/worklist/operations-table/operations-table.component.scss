@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 .wl {
   // ── Card ────────────────────────────────────────
   &__card {
@@ -400,6 +402,87 @@
   @keyframes wlCursorBlink {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0; }
+  }
+
+  // ── Mobile stacked cards ─────────────────────────────
+  // Desktop shows the table; the card list is dormant (display:none) so its
+  // styles never affect the desktop layout. The lg-down block swaps them.
+  &__table-wrap { display: block; }
+  &__cards { display: none; margin: 0; padding: 0; }
+
+  @include bp.lg-down {
+    &__table-wrap { display: none; }
+    &__cards { display: flex; flex-direction: column; }
+
+    // Filter select + search stack full-width beneath the title
+    &__card-head-right { width: 100%; }
+    &__select-wrap, &__search-wrap { flex: 1; }
+    &__select, &__search { width: 100%; }
+  }
+
+  &__card-row {
+    list-style: none;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-row);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    &:last-child { border-bottom: none; }
+  }
+
+  &__card-row-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  &__card-identity {
+    border: none;
+    background: transparent;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    min-width: 0;
+    font-family: inherit;
+
+    &:hover .wl__patient-name { color: var(--blue-text); text-decoration: underline; }
+  }
+
+  &__card-row-status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  &__card-meta {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+
+    > div { min-width: 0; }
+
+    dt {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    dd {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   }
 
 }

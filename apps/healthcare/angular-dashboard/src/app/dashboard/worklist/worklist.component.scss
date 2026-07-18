@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 .wl {
   // ── Toolbar ─────────────────────────────────────
   &__toolbar {
@@ -5,6 +7,11 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 20px;
+
+    @include bp.lg-down {
+      flex-wrap: wrap;
+      gap: 12px;
+    }
   }
 
   &__tabs {
@@ -66,5 +73,10 @@
     &:hover { background: var(--blue-dark); }
 
     .icon { font-size: 18px; }
+
+    @include bp.lg-down {
+      width: 100%;
+      justify-content: center;
+    }
   }
 }

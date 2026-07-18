@@ -69,6 +69,7 @@
         <button pButton [text]="true" type="button" (click)="store.loadDirectory()">Retry</button>
       </div>
     } @else if (results().length > 0) {
+      <div class="ps__table-wrap">
       <p-table
         [value]="results()"
         dataKey="mrn"
@@ -109,6 +110,35 @@
           </tr>
         </ng-template>
       </p-table>
+      </div>
+
+      <!-- Stacked cards (mobile) -->
+      <ul class="ps__cards">
+        @for (r of results(); track r.mrn) {
+          <li class="ps__card-row">
+            <div class="ps__card-row-top">
+              <div class="ps__patient-cell">
+                <app-avatar [name]="r.name" [tintName]="r.payer" tintBy="payer" cssClass="ps__avatar" />
+                <div class="ps__patient-block">
+                  <div class="ps__patient-name">{{ r.name }}</div>
+                  <div class="ps__patient-meta">{{ r.sex }} · {{ r.unit }}</div>
+                </div>
+              </div>
+              <button pButton [text]="true" type="button" class="ps__open-btn" title="Start new intake" (click)="openIntake(r)">
+                <span class="icon">arrow_forward</span>
+              </button>
+            </div>
+            <div class="ps__card-row-status">
+              <app-status-badge [status]="r.status" />
+            </div>
+            <dl class="ps__card-meta">
+              <div><dt>MRN</dt><dd class="mono">{{ r.mrn }}</dd></div>
+              <div><dt>DOB</dt><dd class="mono">{{ r.dob }}</dd></div>
+              <div><dt>Payer</dt><dd>{{ r.payer }}</dd></div>
+            </dl>
+          </li>
+        }
+      </ul>
     } @else {
       <div class="ps__empty">
         <span class="icon ps__empty-icon">person_search</span>

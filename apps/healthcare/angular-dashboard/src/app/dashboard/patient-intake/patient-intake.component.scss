@@ -1,8 +1,64 @@
+@use 'breakpoints' as bp;
+
+:host {
+  min-height: 660px;
+
+  @include bp.lg-down { min-height: 0; }
+}
+
 .pi-view {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
+
+  // ── Mobile: flatten the animated grid workspace into a plain vertical
+  //    stack, and neutralise the expand/collapse hiding so every card stays
+  //    visible and the page simply scrolls. ──
+  @include bp.lg-down {
+    &__workspace,
+    &__workspace--has-expanded {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      grid-template-rows: none;
+    }
+
+    &__top-half {
+      flex-direction: column;
+      overflow: visible;
+
+      &--hidden { opacity: 1; transform: none; pointer-events: auto; }
+    }
+
+    &__bottom-half,
+    &__bottom-half--tracker-gone {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      grid-template-columns: none;
+    }
+
+    &__right-col {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      grid-template-rows: none;
+    }
+
+    &__card {
+      &--patient,
+      &--insurance { flex: none; }
+
+      &--tracker.is-collapsing,
+      &--notes.is-collapsing,
+      &--history.is-collapsing {
+        opacity: 1;
+        transform: none;
+        pointer-events: auto;
+      }
+    }
+  }
 
   // ── Workspace layout ────────────────────────────
   &__workspace {

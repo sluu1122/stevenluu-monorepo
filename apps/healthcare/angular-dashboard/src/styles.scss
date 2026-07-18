@@ -1,3 +1,5 @@
+@use 'breakpoints' as bp;
+
 // ─── Design tokens ───────────────────────────────────────────────
 :root {
   --bg:          #f6f7f9;
@@ -235,12 +237,16 @@ input, select, button, textarea { font-family: inherit; margin: 0; }
   align-items: center;
   justify-content: center;
   padding: 40px;
+
+  @include bp.lg-down { padding: 12px; }
 }
 
 .pi-view-modal {
   width: 100%;
   max-width: 580px;
   max-height: 86vh;
+
+  @include bp.lg-down { max-height: 92dvh; }
   background: var(--surface);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-modal);
@@ -281,6 +287,10 @@ input, select, button, textarea { font-family: inherit; margin: 0; }
 
   &__grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
   &__grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+
+  @include bp.lg-down {
+    &__grid-2, &__grid-3 { grid-template-columns: 1fr; }
+  }
 
   &__label {
     display: block;

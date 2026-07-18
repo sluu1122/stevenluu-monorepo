@@ -72,8 +72,9 @@
     </div>
   }
 
-  <!-- p-table -->
+  <!-- p-table (desktop) -->
   @if (!store.loading() && !store.error()) {
+    <div class="wl__table-wrap">
     <p-table
       [value]="store.filteredPatients()"
       dataKey="id"
@@ -135,6 +136,45 @@
         </tr>
       </ng-template>
     </p-table>
+    </div>
+
+    <!-- Stacked cards (mobile) -->
+    <ul class="wl__cards">
+      @for (p of store.filteredPatients(); track p.id) {
+        <li class="wl__card-row">
+          <div class="wl__card-row-top">
+            <button class="wl__card-identity" type="button" (click)="openPatient(p)">
+              <span class="wl__patient-name">{{ p.name }}</span>
+              <span class="wl__patient-meta mono">{{ p.id }} · {{ p.age }}{{ p.sex }}</span>
+            </button>
+            <button pButton [text]="true" type="button" class="wl__action-btn" title="More actions" (click)="openRowMenu($event, p)">
+              <span class="icon">more_horiz</span>
+            </button>
+          </div>
+          <div class="wl__card-row-status">
+            <app-status-badge [status]="p.status" />
+            @if (p.assignee !== 'Unassigned') {
+              <button class="wl__provider-name-btn" type="button" (click)="openAssign(p)" [title]="'Reassign ' + p.name">{{ p.assignee }}</button>
+            } @else {
+              <button class="wl__assign-btn" type="button" (click)="openAssign(p)">
+                <span class="icon">person_add</span>Assign
+              </button>
+            }
+          </div>
+          <dl class="wl__card-meta">
+            <div><dt>Insurance</dt><dd>{{ p.payer }}</dd></div>
+            <div><dt>Facility</dt><dd class="wl__td--dim">{{ p.facility }}</dd></div>
+          </dl>
+        </li>
+      } @empty {
+        <li class="wl__empty">
+          <span class="icon wl__empty-icon">search_off</span>
+          <div class="wl__empty-title">No matching records</div>
+          <div class="wl__empty-sub">No patients match the current filters.</div>
+          <button pButton type="button" severity="secondary" [outlined]="true" class="wl__clear-btn" (click)="store.clearFilters()">Clear filters</button>
+        </li>
+      }
+    </ul>
   }
 </section>
 
