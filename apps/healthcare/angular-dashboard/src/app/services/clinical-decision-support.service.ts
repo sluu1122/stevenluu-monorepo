@@ -7,7 +7,7 @@ import { MN_TIMEOUT_MS } from '../constants';
 
 export interface MnResult {
   procId:    string;
-  payerId:   string;
+  payorId:   string;
   pass:      boolean;
   rationale: string;
 }
@@ -15,7 +15,7 @@ export interface MnResult {
 export interface MnRequest {
   procedures: { id: string; cpts: string[]; text?: string }[];
   diagnosis:  { icds: string[]; text?: string };
-  insurances: { id: string; payer: string; scope: string }[];
+  insurances: { id: string; payor: string; scope: string }[];
 }
 
 @Injectable({ providedIn: 'root' })

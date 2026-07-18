@@ -4,8 +4,8 @@ import { config } from './config';
 import { streamChat, completeChat, type ChatMessage } from './ollama';
 
 const DEFAULT_SYSTEM =
-  'You are a healthcare billing expert. When asked for an electronic payer ID, ' +
-  'respond with ONLY the numeric payer ID — no text, punctuation, or explanation. ' +
+  'You are a healthcare billing expert. When asked for an electronic payor ID, ' +
+  'respond with ONLY the numeric payor ID — no text, punctuation, or explanation. ' +
   'Example: 60054';
 
 interface CdsProcedure {
@@ -21,13 +21,13 @@ interface CdsDiagnosis {
 
 interface CdsInsurance {
   id:    string;
-  payer: string;
+  payor: string;
   scope: string;
 }
 
 export interface MnResult {
   procId:    string;
-  payerId:   string;
+  payorId:   string;
   pass:      boolean;
   rationale: string;
 }
@@ -43,7 +43,7 @@ function isMnResult(v: unknown): v is MnResult {
   const r = v as Record<string, unknown>;
   return (
     typeof r['procId']    === 'string' &&
-    typeof r['payerId']   === 'string' &&
+    typeof r['payorId']   === 'string' &&
     typeof r['pass']      === 'boolean' &&
     typeof r['rationale'] === 'string'
   );
@@ -154,11 +154,11 @@ export function createServer(): express.Application {
       `- ID: ${p.id}, CPTs: ${p.cpts.join(', ')}${p.text ? `, Description: ${p.text}` : ''}`
     ).join('\n');
 
-    const payerList = insurances.map(ins =>
-      `- ID: ${ins.id}, Payer: ${ins.payer}, Scope: ${ins.scope}`
+    const payorList = insurances.map(ins =>
+      `- ID: ${ins.id}, Payor: ${ins.payor}, Scope: ${ins.scope}`
     ).join('\n');
 
-    const prompt = `You are a clinical medical necessity reviewer. Evaluate the following procedures against each insurance payer.
+    const prompt = `You are a clinical medical necessity reviewer. Evaluate the following procedures against each insurance payor.
 
 DIAGNOSIS:
 ICD-10 codes: ${diagnosis.icds.join(', ')}${diagnosis.text ? `\nClinical description: ${diagnosis.text}` : ''}
@@ -166,12 +166,12 @@ ICD-10 codes: ${diagnosis.icds.join(', ')}${diagnosis.text ? `\nClinical descrip
 PROCEDURES:
 ${procList}
 
-INSURANCE PAYERS:
-${payerList}
+INSURANCE PAYORS:
+${payorList}
 
-For each combination of procedure ID and payer ID, return a JSON array with this exact shape:
+For each combination of procedure ID and payor ID, return a JSON array with this exact shape:
 [
-  { "procId": "<procedure id>", "payerId": "<payer id>", "pass": true|false, "rationale": "<one sentence>" }
+  { "procId": "<procedure id>", "payorId": "<payor id>", "pass": true|false, "rationale": "<one sentence>" }
 ]
 
 Rules:
@@ -195,11 +195,11 @@ Rules:
         return;
       }
 
-      const validPayerIds = new Set(insurances.map(i => i.id));
+      const validPayorIds = new Set(insurances.map(i => i.id));
       const parsed: unknown[] = JSON.parse(jsonMatch[0]);
       const results = parsed
         .filter(isMnResult)
-        .filter(r => validPayerIds.has(r.payerId));
+        .filter(r => validPayorIds.has(r.payorId));
 
       if (results.length === 0) {
         res.status(502).json({ error: 'Model returned no valid result entries' });

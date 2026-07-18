@@ -9,7 +9,7 @@ Clinical operations dashboard built with Angular 22 and PrimeNG. Covers the core
 
 - **Worklist** — Active operations queue with Status Filter tiles, status filtering, AI-powered case summaries streamed from `ai-api`, and a PrimeNG row action menu
 - **Patient Intake** — Multi-step wizard (patient info → procedure → insurance → review) with CPT/ICD typeahead and medical necessity CDS check
-- **Patient Search** — Facility-wide directory with search by name, MRN, DOB, or phone, plus payer and status filters
+- **Patient Search** — Facility-wide directory with search by name, MRN, DOB, or phone, plus payor and status filters
 
 ## Stack
 

@@ -40,7 +40,7 @@ export const DashboardStore = signalStore(
       return pool.filter(p => {
         const okStatus = isCompleted || sf === 'All' || p.status === sf;
         const okSearch = !q || p.id.toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
-          || p.facility.toLowerCase().includes(q) || p.payer.toLowerCase().includes(q);
+          || p.facility.toLowerCase().includes(q) || p.payor.toLowerCase().includes(q);
         return okStatus && okSearch;
       });
     }),

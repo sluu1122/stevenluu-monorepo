@@ -1,6 +1,6 @@
 # ai-api
 
-LLM proxy for the clinical dashboard. Wraps a local [Ollama](https://ollama.com) model and exposes streaming chat, payer ID lookup, and medical necessity CDS endpoints.
+LLM proxy for the clinical dashboard. Wraps a local [Ollama](https://ollama.com) model and exposes streaming chat, payor ID lookup, and medical necessity CDS endpoints.
 
 **URL:** http://localhost:3001
 
@@ -9,8 +9,8 @@ LLM proxy for the clinical dashboard. Wraps a local [Ollama](https://ollama.com)
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/health` | Returns `{ status, model }` |
-| POST | `/api/suggest` | Streaming SSE chat — payer ID lookup and general AI suggestions |
-| POST | `/api/cds/medical-necessity` | Non-streaming CDS check — returns pass/fail + rationale per procedure/payer pair |
+| POST | `/api/suggest` | Streaming SSE chat — payor ID lookup and general AI suggestions |
+| POST | `/api/cds/medical-necessity` | Non-streaming CDS check — returns pass/fail + rationale per procedure/payor pair |
 
 ## Configuration
 

@@ -15,7 +15,7 @@ export interface Insurance {
   rank: InsuranceRank;
   provider: string;
   planType: string;
-  payerId: string;
+  payorId: string;
   groupNumber: string;
   memberId: string;
   authType: AuthType;

@@ -15,10 +15,10 @@
       </div>
 
       <div class="wz__field">
-        <label class="wz__label" [attr.for]="'wz-payer-' + w.id">Insurance Payer</label>
+        <label class="wz__label" [attr.for]="'wz-payor-' + w.id">Insurance Payor</label>
         <div class="wz__select-wrap">
-          <select class="wz__select" [id]="'wz-payer-' + w.id" formControlName="payer">
-            @for (p of PAYERS(); track p) { <option>{{ p }}</option> }
+          <select class="wz__select" [id]="'wz-payor-' + w.id" formControlName="payor">
+            @for (p of PAYORS(); track p) { <option>{{ p }}</option> }
           </select>
           <span class="icon wz__select-caret" aria-hidden="true">expand_more</span>
         </div>
@@ -88,11 +88,11 @@
         <span class="icon icon--filled wz__mn-results-icon" aria-hidden="true">verified</span>
         <span class="wz__mn-results-title">Medical Necessity Results</span>
       </div>
-      @for (r of mnResultRows(); track r.proc + r.payer) {
+      @for (r of mnResultRows(); track r.proc + r.payor) {
         <div class="wz__mn-row">
           <div style="flex: 1; min-width: 0;">
             <div class="wz__mn-proc">{{ r.proc }}</div>
-            <div class="wz__mn-payer">{{ r.payer }}</div>
+            <div class="wz__mn-payor">{{ r.payor }}</div>
             @if (r.rationale) {
               <div class="wz__mn-rationale">{{ r.rationale }}</div>
             }

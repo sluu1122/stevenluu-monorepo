@@ -1,5 +1,4 @@
 export type PatientStatus = 'Pending' | 'Received' | 'Accepted' | 'Scheduled' | 'Completed';
-export type DirStatus = 'Active' | 'Admitted' | 'Discharged';
 export type Sex = 'M' | 'F' | 'O';
 
 export interface Patient {
@@ -9,12 +8,12 @@ export interface Patient {
   sex: Sex;
   status: PatientStatus;
   assignee: string;
-  payer: string;
+  payor: string;
   facility: string;
 }
 
 export interface NewPatientInsuranceInput {
-  payer: string;
+  payor: string;
 }
 
 export interface NewPatientInput {
@@ -24,7 +23,7 @@ export interface NewPatientInput {
   mrn: string;
   phone: string;
   email: string;
-  payer: string;
+  payor: string;
   insurances: NewPatientInsuranceInput[];
 }
 
@@ -35,8 +34,8 @@ export interface DirectoryRecord {
   dob: string;
   sex: Sex;
   phone: string;
-  payer: string;
-  status: DirStatus;
+  payor: string;
+  plan: string;
   unit: string;
   last: string;
 }

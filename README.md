@@ -15,7 +15,7 @@ A personal full-stack monorepo built with Turborepo. Contains a Next.js portfoli
 | `angular-dashboard` | Clinical operations dashboard — worklist, patient intake wizard, patient search | 4200 | Angular 22, PrimeNG, NgRx Signals |
 | `react-dashboard` | Finance sandbox — net worth tracker, watchlist, trade simulator | 5173 | React 19, Vite, TanStack Query, Recharts |
 | `portfolio` | Personal portfolio and resume site | 3000 | Next.js 16, Tailwind CSS |
-| `ai-api` | LLM proxy — streaming chat, payer ID lookup, medical necessity CDS | 3001 | Express, Ollama |
+| `ai-api` | LLM proxy — streaming chat, payor ID lookup, medical necessity CDS | 3001 | Express, Ollama |
 | `cpt-api` | CPT medical procedure code search | 3002 | Express |
 | `icd-api` | ICD-10 diagnosis code search | 3003 | Express |
 | `patients-api` | Patient data API for the clinical dashboard | 3004 | Express |

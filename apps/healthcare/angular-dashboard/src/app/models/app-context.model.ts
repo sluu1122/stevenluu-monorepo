@@ -8,7 +8,7 @@ export interface CurrentUser {
 }
 
 export interface ReferenceData {
-  payers: string[];
+  payors: string[];
   planTypes: string[];
   authTypes: AuthType[];
   noteCategories: string[];

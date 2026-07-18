@@ -10,13 +10,13 @@ import type { InsuranceInput, InsuranceRank } from './data/types.js';
 const ALLOWED_ORIGINS = (process.env['ALLOWED_ORIGINS'] ?? 'http://localhost:4200,http://localhost:4300').split(',');
 const VALID_RANKS: InsuranceRank[] = REFERENCE_DATA.insuranceRanks;
 
-function buildNewPatientInsurances(payer: string, rawInsurances: unknown): InsuranceInput[] {
+function buildNewPatientInsurances(payor: string, rawInsurances: unknown): InsuranceInput[] {
   const entries = Array.isArray(rawInsurances) ? rawInsurances : [];
   return entries.map((ins, i) => ({
     rank:           VALID_RANKS[i] ?? VALID_RANKS[VALID_RANKS.length - 1],
-    provider:       (ins as { payer?: string })?.payer || payer,
+    provider:       (ins as { payor?: string })?.payor || payor,
     planType:       'PPO — Preferred',
-    payerId:        '',
+    payorId:        '',
     groupNumber:    '',
     memberId:       '',
     authType:       'Inpatient',
@@ -26,15 +26,15 @@ function buildNewPatientInsurances(payer: string, rawInsurances: unknown): Insur
 }
 
 function validateInsurancePayload(body: unknown): { error: string } | { value: InsuranceInput } {
-  const { rank, provider, planType, payerId, groupNumber, memberId, authType, effectiveDate, expirationDate } =
+  const { rank, provider, planType, payorId, groupNumber, memberId, authType, effectiveDate, expirationDate } =
     (body ?? {}) as Record<string, unknown>;
-  if (!provider || !payerId) {
-    return { error: 'provider and payerId are required' };
+  if (!provider || !payorId) {
+    return { error: 'provider and payorId are required' };
   }
   if (!VALID_RANKS.includes(rank as InsuranceRank)) {
     return { error: `rank must be one of ${VALID_RANKS.join(', ')}` };
   }
-  return { value: { rank, provider, planType, payerId, groupNumber, memberId, authType, effectiveDate, expirationDate } as InsuranceInput };
+  return { value: { rank, provider, planType, payorId, groupNumber, memberId, authType, effectiveDate, expirationDate } as InsuranceInput };
 }
 
 export function createServer() {
@@ -49,17 +49,17 @@ export function createServer() {
   });
 
   app.post('/api/patients', (req, res) => {
-    const { name, dob, sex, mrn, phone, email, payer, insurances } = req.body ?? {};
+    const { name, dob, sex, mrn, phone, email, payor, insurances } = req.body ?? {};
     if (!name || !dob) {
       return res.status(400).json({ error: 'name and dob are required' });
     }
-    const resolvedPayer = payer || 'Aetna';
-    const patient = addPatient({ name, dob, sex: sex || 'O', payer: resolvedPayer });
+    const resolvedPayor = payor || 'Aetna';
+    const patient = addPatient({ name, dob, sex: sex || 'O', payor: resolvedPayor });
     addCaseForPatient(patient, {
       mrn:   mrn   || '',
       phone: phone || '',
       email: email || '',
-      insurances: buildNewPatientInsurances(resolvedPayer, insurances),
+      insurances: buildNewPatientInsurances(resolvedPayor, insurances),
     });
     res.status(201).json(patient);
   });

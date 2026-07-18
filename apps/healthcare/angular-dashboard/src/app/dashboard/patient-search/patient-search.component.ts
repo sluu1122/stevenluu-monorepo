@@ -2,17 +2,15 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
-import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
-import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { DirectoryStore } from '../../stores/directory.store';
 import { IntakeWizardStore } from '../../stores/intake-wizard.store';
 import { DashboardStore } from '../../stores/dashboard.store';
-import type { DirectoryRecord, DirStatus } from '../../models/patient.model';
+import type { DirectoryRecord } from '../../models/patient.model';
 
 @Component({
   selector: 'app-patient-search',
   standalone: true,
-  imports: [FormsModule, TableModule, ButtonModule, StatusBadgeComponent, AvatarComponent],
+  imports: [FormsModule, TableModule, ButtonModule],
   templateUrl: './patient-search.component.html',
   styleUrl: './patient-search.component.scss',
 })
@@ -21,41 +19,46 @@ export class PatientSearchComponent {
   protected readonly intake = inject(IntakeWizardStore);
   private readonly dashboard = inject(DashboardStore);
 
-  protected query  = signal('');
-  protected status = signal<DirStatus | 'All'>('All');
-  protected payer  = signal('All');
-
-  protected readonly STATUS_OPTIONS: (DirStatus | 'All')[] = ['All', 'Active', 'Admitted', 'Discharged'];
+  protected query = signal('');
+  protected payor = signal('All');
 
   protected readonly results = computed(() => {
     const q  = this.query().trim().toLowerCase();
-    const st = this.status();
-    const py = this.payer();
+    const py = this.payor();
 
     return this.store.records().filter(r => {
-      const okStatus = st === 'All' || r.status === st;
-      const okPayer  = py === 'All' || r.payer === py;
+      const okPayor  = py === 'All' || r.payor === py;
       const okSearch = !q
         || r.name.toLowerCase().includes(q)
         || r.mrn.toLowerCase().includes(q)
         || r.dob.includes(q)
         || r.phone.includes(q);
-      return okStatus && okPayer && okSearch;
+      return okPayor && okSearch;
     });
   });
 
   protected readonly hasFilters = computed(() =>
-    this.query().trim() !== '' || this.status() !== 'All' || this.payer() !== 'All'
+    this.query().trim() !== '' || this.payor() !== 'All'
   );
 
   protected clearFilters(): void {
     this.query.set('');
-    this.status.set('All');
-    this.payer.set('All');
+    this.payor.set('All');
   }
 
   protected openIntake(r: DirectoryRecord): void {
     this.intake.open(r);
     this.dashboard.setNav('Worklist');
+  }
+
+  protected ageFromDob(dob: string): number {
+    const birth = new Date(dob);
+    const now = new Date();
+    let age = now.getFullYear() - birth.getFullYear();
+    const hadBirthdayThisYear =
+      now.getMonth() > birth.getMonth() ||
+      (now.getMonth() === birth.getMonth() && now.getDate() >= birth.getDate());
+    if (!hadBirthdayThisYear) age--;
+    return age;
   }
 }

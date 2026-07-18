@@ -7,7 +7,7 @@ export interface Patient {
   sex: Sex;
   status: string;
   assignee: string;
-  payer: string;
+  payor: string;
   facility: string;
 }
 
@@ -18,8 +18,8 @@ export interface DirectoryRecord {
   dob: string;
   sex: Sex;
   phone: string;
-  payer: string;
-  status: string;
+  payor: string;
+  plan: string;
   unit: string;
   last: string;
 }
@@ -34,7 +34,7 @@ export interface CurrentUser {
 export type InsuranceRank = 'Primary' | 'Secondary' | 'Tertiary';
 
 export interface ReferenceData {
-  payers: string[];
+  payors: string[];
   planTypes: string[];
   authTypes: string[];
   noteCategories: string[];
@@ -57,7 +57,7 @@ export interface Insurance {
   rank: InsuranceRank;
   provider: string;
   planType: string;
-  payerId: string;
+  payorId: string;
   groupNumber: string;
   memberId: string;
   authType: string;

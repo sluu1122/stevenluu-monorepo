@@ -26,7 +26,7 @@ export class PatientInsuranceComponent {
   protected readonly insuranceForm = new FormGroup({
     provider: new FormControl(''),
     planType: new FormControl(''),
-    payerId:  new FormControl('', Validators.required),
+    payorId:  new FormControl('', Validators.required),
     group:    new FormControl(''),
     member:   new FormControl(''),
     authType: new FormControl<AuthType>('Inpatient'),
@@ -47,8 +47,8 @@ export class PatientInsuranceComponent {
     `${this.editing() ? 'Edit' : 'Add'} ${this.rank()} Insurance`
   );
 
-  protected get payerIdInvalid(): boolean {
-    const ctrl = this.insuranceForm.get('payerId')!;
+  protected get payorIdInvalid(): boolean {
+    const ctrl = this.insuranceForm.get('payorId')!;
     return ctrl.invalid && (ctrl.touched || ctrl.dirty);
   }
 
@@ -59,9 +59,9 @@ export class PatientInsuranceComponent {
     const rankVal: InsuranceRank = ins?.rank ?? this.reference.insuranceRanks()[0] ?? 'Primary';
 
     this.insuranceForm.reset({
-      provider: ins?.provider ?? this.reference.payers()[0] ?? '',
+      provider: ins?.provider ?? this.reference.payors()[0] ?? '',
       planType: ins?.planType ?? this.reference.planTypes()[0] ?? '',
-      payerId:  ins?.payerId ?? '',
+      payorId:  ins?.payorId ?? '',
       group:    ins?.groupNumber ?? '',
       member:   ins?.memberId ?? '',
       authType: authVal,
@@ -81,7 +81,7 @@ export class PatientInsuranceComponent {
       rank:           v.rank ?? 'Primary',
       provider:       v.provider ?? '',
       planType:       v.planType ?? '',
-      payerId:        v.payerId ?? '',
+      payorId:        v.payorId ?? '',
       groupNumber:    v.group ?? '',
       memberId:       v.member ?? '',
       authType:       v.authType ?? 'Inpatient',

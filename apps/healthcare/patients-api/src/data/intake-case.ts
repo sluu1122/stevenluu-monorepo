@@ -22,17 +22,17 @@ const DANIEL_CASE: IntakeCase = {
   insurances: [
     {
       id: 'ins-1', rank: 'Primary', provider: 'Aetna', planType: 'PPO — Preferred',
-      payerId: '', groupNumber: 'GRP-44120', memberId: 'W8842100123',
+      payorId: '', groupNumber: 'GRP-44120', memberId: 'W8842100123',
       authType: 'Inpatient', effectiveDate: '2026-06-01', expirationDate: '2027-05-31',
     },
     {
       id: 'ins-2', rank: 'Secondary', provider: 'Medicare', planType: 'Part B',
-      payerId: '', groupNumber: '', memberId: 'W8842100123',
+      payorId: '', groupNumber: '', memberId: 'W8842100123',
       authType: 'Inpatient', effectiveDate: '2026-06-01', expirationDate: '2027-05-31',
     },
   ],
   notes: [
-    { id: 'note-1', author: 'Avery Chen',    avatarTint: 'blue',   time: '09:51', category: 'Insurance', text: 'Patient reports prior authorization on file with previous provider. Awaiting payer ID from referring office to confirm.' },
+    { id: 'note-1', author: 'Avery Chen',    avatarTint: 'blue',   time: '09:51', category: 'Insurance', text: 'Patient reports prior authorization on file with previous provider. Awaiting payor ID from referring office to confirm.' },
     { id: 'note-2', author: 'Dr. M. Okafor', avatarTint: 'purple', time: '09:46', category: 'Clinical',  text: 'No acute distress on initial assessment. Hold for insurance clearance before triage routing.' },
   ],
   documents: [
@@ -43,7 +43,7 @@ const DANIEL_CASE: IntakeCase = {
     {
       date: 'Today · Jun 15',
       events: [
-        { text: 'Eligibility check initiated. Payer ID missing — action required.', time: '09:51', actor: 'System',        dot: '#d68a2c' },
+        { text: 'Eligibility check initiated. Payor ID missing — action required.', time: '09:51', actor: 'System',        dot: '#d68a2c' },
         { text: 'Primary insurance added: Aetna PPO · GRP-44120.',                  time: '09:48', actor: 'Avery Chen',    dot: '#1aa564' },
         { text: 'Patient demographics captured and verified against MPI.',           time: '09:46', actor: 'Avery Chen',    dot: '#1aa564' },
         { text: 'Intake record created. Provisional ID assigned.',                   time: '09:45', actor: 'System',        dot: '#2a6fdb' },
@@ -66,7 +66,7 @@ const DANIEL_CASE: IntakeCase = {
   trackerSteps: [
     { n: 1, label: 'Pending',    sub: 'Identity verified',    done: true,  active: false },
     { n: 2, label: 'Received',   sub: 'Eligibility pending',  done: false, active: true  },
-    { n: 3, label: 'Accepted',   sub: 'Awaiting payer',       done: false, active: false },
+    { n: 3, label: 'Accepted',   sub: 'Awaiting payor',       done: false, active: false },
     { n: 4, label: 'Scheduled',  sub: 'Financial clearance',  done: false, active: false },
     { n: 5, label: 'Completed',  sub: 'Case closed',          done: false, active: false },
   ],
@@ -75,7 +75,7 @@ const DANIEL_CASE: IntakeCase = {
 const STEP_DEFS = [
   { n: 1, label: 'Pending',    sub: 'Identity verified' },
   { n: 2, label: 'Received',   sub: 'Eligibility pending' },
-  { n: 3, label: 'Accepted',   sub: 'Awaiting payer' },
+  { n: 3, label: 'Accepted',   sub: 'Awaiting payor' },
   { n: 4, label: 'Scheduled',  sub: 'Financial clearance' },
   { n: 5, label: 'Completed',  sub: 'Case closed' },
 ];
@@ -90,18 +90,18 @@ function trackerFor(status: string): TrackerStep[] {
 }
 
 const STATUS_NOTE: Record<string, (p: Patient) => string> = {
-  Pending:   (p) => `Patient registered and identity verified against MPI. Awaiting eligibility check with ${p.payer}.`,
-  Received:  (p) => `Eligibility check initiated with ${p.payer}. Payer ID confirmation pending before authorization can proceed.`,
-  Accepted:  (p) => `Prior authorization confirmed with ${p.payer}. Case cleared for scheduling.`,
-  Scheduled: (p) => `Payment posted and reconciled with ${p.payer}. Financial clearance complete.`,
+  Pending:   (p) => `Patient registered and identity verified against MPI. Awaiting eligibility check with ${p.payor}.`,
+  Received:  (p) => `Eligibility check initiated with ${p.payor}. Payor ID confirmation pending before authorization can proceed.`,
+  Accepted:  (p) => `Prior authorization confirmed with ${p.payor}. Case cleared for scheduling.`,
+  Scheduled: (p) => `Payment posted and reconciled with ${p.payor}. Financial clearance complete.`,
   Completed: () => 'Case closed. All documentation finalized and archived.',
 };
 
 const STATUS_HISTORY: Record<string, (p: Patient) => string> = {
   Pending:   (p) => `Intake record created for ${p.name}. Identity verified against MPI.`,
-  Received:  (p) => `Eligibility check initiated with ${p.payer}.`,
-  Accepted:  (p) => `Prior authorization confirmed with ${p.payer}. Case cleared for scheduling.`,
-  Scheduled: (p) => `Payment posted and reconciled with ${p.payer}.`,
+  Received:  (p) => `Eligibility check initiated with ${p.payor}.`,
+  Accepted:  (p) => `Prior authorization confirmed with ${p.payor}. Case cleared for scheduling.`,
+  Scheduled: (p) => `Payment posted and reconciled with ${p.payor}.`,
   Completed: () => 'Case closed and archived. All documentation finalized.',
 };
 
@@ -121,7 +121,7 @@ function notesFor(p: Patient): IntakeNote[] {
       avatarTint: 'blue',
       time: '10:05',
       category: 'Insurance',
-      text: `Coverage verified with ${p.payer}. No outstanding documentation required at this time.`,
+      text: `Coverage verified with ${p.payor}. No outstanding documentation required at this time.`,
     });
   }
 
@@ -167,8 +167,8 @@ function generateCase(p: Patient): IntakeCase {
     },
     insurances: [
       {
-        id: 'ins-1', rank: 'Primary', provider: p.payer, planType: 'PPO — Preferred',
-        payerId: '', groupNumber: `GRP-${suffix}`, memberId: `MEM-${suffix}`,
+        id: 'ins-1', rank: 'Primary', provider: p.payor, planType: 'PPO — Preferred',
+        payorId: '', groupNumber: `GRP-${suffix}`, memberId: `MEM-${suffix}`,
         authType: 'Inpatient', effectiveDate: '2026-06-01', expirationDate: '2027-05-31',
       },
     ],

@@ -38,7 +38,7 @@ export class StepReviewComponent {
       return {
         id:    w.id,
         rank:  RANK_NAMES[i] ?? `Insurance ${i + 1}`,
-        payer: w.payer,
+        payor: w.payor,
         scope,
       };
     });
@@ -72,7 +72,7 @@ export class StepReviewComponent {
         variant: 'warning' as const,
         icon:  'warning',
         title: `${flagged} of ${total} checks need review`,
-        sub:   'Some procedure/payer combinations require manual medical-necessity review.',
+        sub:   'Some procedure/payor combinations require manual medical-necessity review.',
       };
     }
 
@@ -80,7 +80,7 @@ export class StepReviewComponent {
       variant: 'success' as const,
       icon:  'verified',
       title: `All ${total} checks meet criteria`,
-      sub:   'Every procedure satisfies medical-necessity requirements for the selected payers.',
+      sub:   'Every procedure satisfies medical-necessity requirements for the selected payors.',
     };
   });
 }

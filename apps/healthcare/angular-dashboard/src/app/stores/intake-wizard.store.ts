@@ -20,7 +20,7 @@ export interface IntakeProcedure {
 
 export interface IntakeInsurance {
   id: string;
-  payer: string;
+  payor: string;
   scopeAll: boolean;
   procIds: string[];
 }
@@ -56,7 +56,7 @@ const initialState: IntakeState = {
   name: '', dob: '', sex: '', mrn: '', phone: '', email: '',
   dxIcds: [], dxText: '',
   procedures: [{ id: 'p1', text: '', cpts: [] }],
-  insurances: [{ id: 'w1', payer: 'Aetna', scopeAll: true, procIds: [] }],
+  insurances: [{ id: 'w1', payor: 'Aetna', scopeAll: true, procIds: [] }],
   mnRun: false,
   mnPending: false,
   mnResults: [],
@@ -114,7 +114,7 @@ export const IntakeWizardStore = signalStore(
           email: '',
           dxText: '', dxIcds: [],
           procedures: [{ id: 'p1', text: '', cpts: [] }],
-          insurances: [{ id: 'w1', payer: prefill?.payer ?? 'Aetna', scopeAll: true, procIds: [] }],
+          insurances: [{ id: 'w1', payor: prefill?.payor ?? 'Aetna', scopeAll: true, procIds: [] }],
         });
       },
       close()                { patchState(store, { isOpen: false }); },
@@ -127,8 +127,8 @@ export const IntakeWizardStore = signalStore(
           mrn:   store.mrn(),
           phone: store.phone(),
           email: store.email(),
-          payer: store.insurances()[0]?.payer ?? 'Aetna',
-          insurances: store.insurances().map(w => ({ payer: w.payer })),
+          payor: store.insurances()[0]?.payor ?? 'Aetna',
+          insurances: store.insurances().map(w => ({ payor: w.payor })),
         };
         return patientService.addPatient(input).pipe(
           tap(patient => dashboardStore.upsertPatient(patient)),
@@ -176,16 +176,16 @@ export const IntakeWizardStore = signalStore(
       // Step 4
       addInsurance() {
         patchState(store, {
-          insurances: [...store.insurances(), { id: uid('w'), payer: 'Aetna', scopeAll: true, procIds: [] }],
+          insurances: [...store.insurances(), { id: uid('w'), payor: 'Aetna', scopeAll: true, procIds: [] }],
           mnRun: false,
         });
       },
       removeInsurance(id: string) {
         patchState(store, { insurances: store.insurances().filter(w => w.id !== id) });
       },
-      setInsurancePayer(id: string, payer: string) {
+      setInsurancePayor(id: string, payor: string) {
         patchState(store, {
-          insurances: store.insurances().map(w => w.id === id ? { ...w, payer } : w),
+          insurances: store.insurances().map(w => w.id === id ? { ...w, payor } : w),
           mnRun: false, mnResults: [],
         });
       },
@@ -228,7 +228,7 @@ export const IntakeWizardStore = signalStore(
           },
           insurances: store.insurances().map(w => ({
             id:    w.id,
-            payer: w.payer,
+            payor: w.payor,
             scope: w.scopeAll ? 'all' : w.procIds.length ? w.procIds.join(',') : 'none',
           })),
         };

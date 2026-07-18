@@ -81,7 +81,7 @@ export class OperationsTableComponent {
     this.ai.fill(
       this.summaryAi,
       `Patient: ${p.name} (${p.id}), Age: ${p.age}${p.sex}, Status: ${p.status}, ` +
-      `Payer: ${p.payer}, Provider: ${p.assignee !== 'Unassigned' ? p.assignee : 'unassigned'}, ` +
+      `Payor: ${p.payor}, Provider: ${p.assignee !== 'Unassigned' ? p.assignee : 'unassigned'}, ` +
       `Facility: ${p.facility}. Summarize their current case status for shift handoff.`,
       { system: CASE_SUMMARY_SYSTEM },
     );

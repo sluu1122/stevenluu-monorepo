@@ -13,7 +13,7 @@ import { ReferenceStore } from '../../../../stores/reference.store';
 })
 export class StepInsuranceComponent {
   protected readonly store  = inject(IntakeWizardStore);
-  protected readonly PAYERS = inject(ReferenceStore).payers;
+  protected readonly PAYORS = inject(ReferenceStore).payors;
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -54,24 +54,24 @@ export class StepInsuranceComponent {
       return m;
     }, {} as Record<string, string>);
 
-    const payerLabels = insurances.reduce((m, w) => {
-      m[w.id] = w.payer;
+    const payorLabels = insurances.reduce((m, w) => {
+      m[w.id] = w.payor;
       return m;
     }, {} as Record<string, string>);
 
     return this.store.mnResults().map(r => ({
       proc:      procLabels[r.procId]  ?? r.procId,
-      payer:     payerLabels[r.payerId] ?? r.payerId,
+      payor:     payorLabels[r.payorId] ?? r.payorId,
       pass:      r.pass,
       rationale: r.rationale,
     }));
   });
 
   private makeInsGroup(w: IntakeInsurance): FormGroup {
-    const g = this.fb.group({ payer: [w.payer] });
-    g.get('payer')!.valueChanges
+    const g = this.fb.group({ payor: [w.payor] });
+    g.get('payor')!.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(val => this.store.setInsurancePayer(w.id, val ?? ''));
+      .subscribe(val => this.store.setInsurancePayor(w.id, val ?? ''));
     return g;
   }
 

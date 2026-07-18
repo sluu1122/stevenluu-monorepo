@@ -21,8 +21,8 @@ export const DirectoryStore = signalStore(
   withState(initialState),
 
   withComputed((store) => ({
-    payerOptions: computed(() =>
-      ['All', ...[...new Set(store.records().map(r => r.payer))].sort()]
+    payorOptions: computed(() =>
+      ['All', ...[...new Set(store.records().map(r => r.payor))].sort()]
     ),
     total: computed(() => store.records().length),
   })),

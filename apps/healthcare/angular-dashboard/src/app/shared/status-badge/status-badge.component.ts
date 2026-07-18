@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import type { PatientStatus, DirStatus } from '../../models/patient.model';
+import type { PatientStatus } from '../../models/patient.model';
 
 interface StatusMeta { bg: string; bd: string; tx: string; dot: string; }
 
@@ -9,12 +9,9 @@ const STATUS_META: Record<string, StatusMeta> = {
   'Accepted':      { bg: '#eef3fe', bd: '#d6e2fb', tx: '#2a5fd0', dot: '#2a6fdb' },
   'Scheduled':     { bg: '#e6f6f4', bd: '#bfe7e0', tx: '#0c7c6c', dot: '#10a08a' },
   'Completed':     { bg: '#eafaf1', bd: '#cdeedd', tx: '#0f7a4f', dot: '#1aa564' },
-  'Active':        { bg: '#eef3fe', bd: '#d6e2fb', tx: '#2a5fd0', dot: '#2a6fdb' },
-  'Admitted':      { bg: '#eafaf1', bd: '#cdeedd', tx: '#0f7a4f', dot: '#1aa564' },
-  'Discharged':    { bg: '#f4f6f9', bd: '#e6eaf0', tx: '#64748b', dot: '#94a3b8' },
 };
 
-const FALLBACK: StatusMeta = STATUS_META['Discharged'];
+const FALLBACK: StatusMeta = { bg: '#f4f6f9', bd: '#e6eaf0', tx: '#64748b', dot: '#94a3b8' };
 
 @Component({
   selector: 'app-status-badge',
@@ -32,7 +29,7 @@ const FALLBACK: StatusMeta = STATUS_META['Discharged'];
   `,
 })
 export class StatusBadgeComponent {
-  readonly status = input.required<PatientStatus | DirStatus>();
+  readonly status = input.required<PatientStatus>();
 
   protected get meta(): StatusMeta {
     return STATUS_META[this.status()] ?? FALLBACK;

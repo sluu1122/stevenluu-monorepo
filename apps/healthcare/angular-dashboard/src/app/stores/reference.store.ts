@@ -5,7 +5,7 @@ import { errorMessage } from '../shared/api-error';
 import type { AuthType, InsuranceRank } from '../models/patient.model';
 
 interface ReferenceState {
-  payers: string[];
+  payors: string[];
   planTypes: string[];
   authTypes: AuthType[];
   noteCategories: string[];
@@ -16,7 +16,7 @@ interface ReferenceState {
 }
 
 const initialState: ReferenceState = {
-  payers: [],
+  payors: [],
   planTypes: [],
   authTypes: [],
   noteCategories: [],

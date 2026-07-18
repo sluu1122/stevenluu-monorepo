@@ -46,7 +46,7 @@
               <label class="pi-view-modal__label" for="ins-provider">Insurance Provider</label>
               <div class="pi-view-modal__select-wrap">
                 <select id="ins-provider" class="pi-view-modal__select" formControlName="provider">
-                  @for (p of reference.payers(); track p) {
+                  @for (p of reference.payors(); track p) {
                     <option [value]="p">{{ p }}</option>
                   }
                 </select>
@@ -67,21 +67,21 @@
           </div>
           <div class="pi-view-modal__grid-2">
             <div class="pi-view-modal__field">
-              <label class="pi-view-modal__label pi-view-modal__label--error" for="ins-payer-id">Payer ID <span aria-hidden="true">*</span><span class="sr-only">(required)</span></label>
+              <label class="pi-view-modal__label pi-view-modal__label--error" for="ins-payor-id">Payor ID <span aria-hidden="true">*</span><span class="sr-only">(required)</span></label>
               <input
-                id="ins-payer-id"
+                id="ins-payor-id"
                 class="pi-view-modal__input"
-                [class.pi-view-modal__input--error]="payerIdInvalid"
+                [class.pi-view-modal__input--error]="payorIdInvalid"
                 placeholder="e.g. 60054"
-                formControlName="payerId"
+                formControlName="payorId"
                 aria-required="true"
-                [attr.aria-invalid]="payerIdInvalid || null"
-                [attr.aria-describedby]="payerIdInvalid ? 'ins-payer-id-error' : null"
+                [attr.aria-invalid]="payorIdInvalid || null"
+                [attr.aria-describedby]="payorIdInvalid ? 'ins-payor-id-error' : null"
               >
-              @if (payerIdInvalid) {
-                <div id="ins-payer-id-error" class="pi-view-modal__error-msg" role="alert">
+              @if (payorIdInvalid) {
+                <div id="ins-payor-id-error" class="pi-view-modal__error-msg" role="alert">
                   <span class="icon icon--filled pi-view-modal__error-icon" aria-hidden="true">error</span>
-                  Payer ID is required for pre-authorization
+                  Payor ID is required for pre-authorization
                 </div>
               }
             </div>

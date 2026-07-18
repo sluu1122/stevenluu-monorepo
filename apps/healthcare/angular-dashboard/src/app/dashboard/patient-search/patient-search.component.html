@@ -17,23 +17,10 @@
       <div class="ps__select-wrap">
         <select
           class="ps__select"
-          [ngModel]="status()"
-          (ngModelChange)="status.set($event)"
+          [ngModel]="payor()"
+          (ngModelChange)="payor.set($event)"
         >
-          @for (opt of STATUS_OPTIONS; track opt) {
-            <option [value]="opt">{{ opt }}</option>
-          }
-        </select>
-        <span class="icon ps__select-caret">expand_more</span>
-      </div>
-
-      <div class="ps__select-wrap">
-        <select
-          class="ps__select"
-          [ngModel]="payer()"
-          (ngModelChange)="payer.set($event)"
-        >
-          @for (opt of store.payerOptions(); track opt) {
+          @for (opt of store.payorOptions(); track opt) {
             <option [value]="opt">{{ opt }}</option>
           }
         </select>
@@ -80,28 +67,21 @@
             <th class="ps__th">Patient</th>
             <th class="ps__th">MRN</th>
             <th class="ps__th">Date of Birth</th>
-            <th class="ps__th">Payer</th>
-            <th class="ps__th">Status</th>
+            <th class="ps__th">Payor</th>
+            <th class="ps__th">Plan</th>
             <th class="ps__th ps__th--right">Open</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-r>
           <tr class="ps__row">
             <td class="ps__td">
-              <div class="ps__patient-cell">
-                <app-avatar [name]="r.name" [tintName]="r.payer" tintBy="payer" cssClass="ps__avatar" />
-                <div>
-                  <div class="ps__patient-name">{{ r.name }}</div>
-                  <div class="ps__patient-meta">{{ r.sex }} · {{ r.unit }}</div>
-                </div>
-              </div>
+              <div class="ps__patient-name">{{ r.name }}</div>
+              <div class="ps__patient-meta">{{ ageFromDob(r.dob) }}{{ r.sex }} · {{ r.unit }}</div>
             </td>
             <td class="ps__td ps__td--mono">{{ r.mrn }}</td>
             <td class="ps__td ps__td--mono">{{ r.dob }}</td>
-            <td class="ps__td ps__td--text">{{ r.payer }}</td>
-            <td class="ps__td">
-              <app-status-badge [status]="r.status" />
-            </td>
+            <td class="ps__td ps__td--text">{{ r.payor }}</td>
+            <td class="ps__td ps__td--text">{{ r.plan }}</td>
             <td class="ps__td ps__td--actions">
               <button pButton [text]="true" type="button" class="ps__open-btn" title="Start new intake" (click)="openIntake(r)">
                 <span class="icon">arrow_forward</span>
@@ -117,24 +97,19 @@
         @for (r of results(); track r.mrn) {
           <li class="ps__card-row">
             <div class="ps__card-row-top">
-              <div class="ps__patient-cell">
-                <app-avatar [name]="r.name" [tintName]="r.payer" tintBy="payer" cssClass="ps__avatar" />
-                <div class="ps__patient-block">
-                  <div class="ps__patient-name">{{ r.name }}</div>
-                  <div class="ps__patient-meta">{{ r.sex }} · {{ r.unit }}</div>
-                </div>
+              <div class="ps__patient-block">
+                <div class="ps__patient-name">{{ r.name }}</div>
+                <div class="ps__patient-meta">{{ ageFromDob(r.dob) }}{{ r.sex }} · {{ r.unit }}</div>
               </div>
               <button pButton [text]="true" type="button" class="ps__open-btn" title="Start new intake" (click)="openIntake(r)">
                 <span class="icon">arrow_forward</span>
               </button>
             </div>
-            <div class="ps__card-row-status">
-              <app-status-badge [status]="r.status" />
-            </div>
             <dl class="ps__card-meta">
               <div><dt>MRN</dt><dd class="mono">{{ r.mrn }}</dd></div>
               <div><dt>DOB</dt><dd class="mono">{{ r.dob }}</dd></div>
-              <div><dt>Payer</dt><dd>{{ r.payer }}</dd></div>
+              <div><dt>Payor</dt><dd>{{ r.payor }}</dd></div>
+              <div><dt>Plan</dt><dd>{{ r.plan }}</dd></div>
             </dl>
           </li>
         }
