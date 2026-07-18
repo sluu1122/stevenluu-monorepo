@@ -1,4 +1,4 @@
-export type PatientStatus = 'Registered' | 'Pending' | 'Authorized' | 'Payment Posted' | 'Completed';
+export type PatientStatus = 'Pending' | 'Received' | 'Accepted' | 'Scheduled' | 'Completed';
 export type DirStatus = 'Active' | 'Admitted' | 'Discharged';
 export type Sex = 'M' | 'F' | 'O';
 

@@ -46,12 +46,12 @@ export const DashboardStore = signalStore(
     }),
 
     statusCounts: computed(() => {
-      const counts = { registered: 0, pending: 0, authorized: 0, payment: 0 };
+      const counts = { pending: 0, received: 0, accepted: 0, scheduled: 0 };
       for (const p of store.inProgressPatients()) {
-        if      (p.status === 'Registered')     counts.registered++;
-        else if (p.status === 'Pending')        counts.pending++;
-        else if (p.status === 'Authorized')     counts.authorized++;
-        else if (p.status === 'Payment Posted') counts.payment++;
+        if      (p.status === 'Pending')   counts.pending++;
+        else if (p.status === 'Received')  counts.received++;
+        else if (p.status === 'Accepted')  counts.accepted++;
+        else if (p.status === 'Scheduled') counts.scheduled++;
       }
       return counts;
     }),

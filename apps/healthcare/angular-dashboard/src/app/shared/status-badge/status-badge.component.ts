@@ -4,10 +4,10 @@ import type { PatientStatus, DirStatus } from '../../models/patient.model';
 interface StatusMeta { bg: string; bd: string; tx: string; dot: string; }
 
 const STATUS_META: Record<string, StatusMeta> = {
-  'Registered':    { bg: '#f4f6f9', bd: '#e6eaf0', tx: '#64748b', dot: '#94a3b8' },
-  'Pending':       { bg: '#fdf5e9', bd: '#f3e2c4', tx: '#9a6212', dot: '#d68a2c' },
-  'Authorized':    { bg: '#eef3fe', bd: '#d6e2fb', tx: '#2a5fd0', dot: '#2a6fdb' },
-  'Payment Posted':{ bg: '#e6f6f4', bd: '#bfe7e0', tx: '#0c7c6c', dot: '#10a08a' },
+  'Pending':       { bg: '#f4f6f9', bd: '#e6eaf0', tx: '#64748b', dot: '#94a3b8' },
+  'Received':      { bg: '#fdf5e9', bd: '#f3e2c4', tx: '#9a6212', dot: '#d68a2c' },
+  'Accepted':      { bg: '#eef3fe', bd: '#d6e2fb', tx: '#2a5fd0', dot: '#2a6fdb' },
+  'Scheduled':     { bg: '#e6f6f4', bd: '#bfe7e0', tx: '#0c7c6c', dot: '#10a08a' },
   'Completed':     { bg: '#eafaf1', bd: '#cdeedd', tx: '#0f7a4f', dot: '#1aa564' },
   'Active':        { bg: '#eef3fe', bd: '#d6e2fb', tx: '#2a5fd0', dot: '#2a6fdb' },
   'Admitted':      { bg: '#eafaf1', bd: '#cdeedd', tx: '#0f7a4f', dot: '#1aa564' },

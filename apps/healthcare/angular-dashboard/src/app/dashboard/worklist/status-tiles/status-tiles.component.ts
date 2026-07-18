@@ -24,10 +24,10 @@ export class StatusTilesComponent {
   protected readonly statusTiles = computed<StatusTile[]>(() => {
     const counts = this.store.statusCounts();
     return [
-      { label: 'Registered',    count: counts.registered, dot: '#94a3b8', status: 'Registered' },
-      { label: 'Pending',       count: counts.pending,    dot: '#d68a2c', status: 'Pending' },
-      { label: 'Authorized',    count: counts.authorized, dot: '#2a6fdb', status: 'Authorized' },
-      { label: 'Payment Posted',count: counts.payment,    dot: '#10a08a', status: 'Payment Posted' },
+      { label: 'Pending',   count: counts.pending,   dot: '#94a3b8', status: 'Pending' },
+      { label: 'Received',  count: counts.received,  dot: '#d68a2c', status: 'Received' },
+      { label: 'Accepted',  count: counts.accepted,  dot: '#2a6fdb', status: 'Accepted' },
+      { label: 'Scheduled', count: counts.scheduled, dot: '#10a08a', status: 'Scheduled' },
     ];
   });
 

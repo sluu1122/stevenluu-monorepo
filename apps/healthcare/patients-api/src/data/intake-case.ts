@@ -64,20 +64,20 @@ const DANIEL_CASE: IntakeCase = {
     },
   ],
   trackerSteps: [
-    { n: 1, label: 'Registered',     sub: 'Identity verified',    done: true,  active: false },
-    { n: 2, label: 'Pending',        sub: 'Eligibility pending',  done: false, active: true  },
-    { n: 3, label: 'Authorized',     sub: 'Awaiting payer',       done: false, active: false },
-    { n: 4, label: 'Payment Posted', sub: 'Financial clearance',  done: false, active: false },
-    { n: 5, label: 'Completed',      sub: 'Case closed',          done: false, active: false },
+    { n: 1, label: 'Pending',    sub: 'Identity verified',    done: true,  active: false },
+    { n: 2, label: 'Received',   sub: 'Eligibility pending',  done: false, active: true  },
+    { n: 3, label: 'Accepted',   sub: 'Awaiting payer',       done: false, active: false },
+    { n: 4, label: 'Scheduled',  sub: 'Financial clearance',  done: false, active: false },
+    { n: 5, label: 'Completed',  sub: 'Case closed',          done: false, active: false },
   ],
 };
 
 const STEP_DEFS = [
-  { n: 1, label: 'Registered',     sub: 'Identity verified' },
-  { n: 2, label: 'Pending',        sub: 'Eligibility pending' },
-  { n: 3, label: 'Authorized',     sub: 'Awaiting payer' },
-  { n: 4, label: 'Payment Posted', sub: 'Financial clearance' },
-  { n: 5, label: 'Completed',      sub: 'Case closed' },
+  { n: 1, label: 'Pending',    sub: 'Identity verified' },
+  { n: 2, label: 'Received',   sub: 'Eligibility pending' },
+  { n: 3, label: 'Accepted',   sub: 'Awaiting payer' },
+  { n: 4, label: 'Scheduled',  sub: 'Financial clearance' },
+  { n: 5, label: 'Completed',  sub: 'Case closed' },
 ];
 
 function trackerFor(status: string): TrackerStep[] {
@@ -90,19 +90,19 @@ function trackerFor(status: string): TrackerStep[] {
 }
 
 const STATUS_NOTE: Record<string, (p: Patient) => string> = {
-  Registered:       (p) => `Patient registered and identity verified against MPI. Awaiting eligibility check with ${p.payer}.`,
-  Pending:          (p) => `Eligibility check initiated with ${p.payer}. Payer ID confirmation pending before authorization can proceed.`,
-  Authorized:       (p) => `Prior authorization confirmed with ${p.payer}. Case cleared for scheduling.`,
-  'Payment Posted': (p) => `Payment posted and reconciled with ${p.payer}. Financial clearance complete.`,
-  Completed:        () => 'Case closed. All documentation finalized and archived.',
+  Pending:   (p) => `Patient registered and identity verified against MPI. Awaiting eligibility check with ${p.payer}.`,
+  Received:  (p) => `Eligibility check initiated with ${p.payer}. Payer ID confirmation pending before authorization can proceed.`,
+  Accepted:  (p) => `Prior authorization confirmed with ${p.payer}. Case cleared for scheduling.`,
+  Scheduled: (p) => `Payment posted and reconciled with ${p.payer}. Financial clearance complete.`,
+  Completed: () => 'Case closed. All documentation finalized and archived.',
 };
 
 const STATUS_HISTORY: Record<string, (p: Patient) => string> = {
-  Registered:       (p) => `Intake record created for ${p.name}. Identity verified against MPI.`,
-  Pending:          (p) => `Eligibility check initiated with ${p.payer}.`,
-  Authorized:       (p) => `Prior authorization confirmed with ${p.payer}. Case cleared for scheduling.`,
-  'Payment Posted': (p) => `Payment posted and reconciled with ${p.payer}.`,
-  Completed:        () => 'Case closed and archived. All documentation finalized.',
+  Pending:   (p) => `Intake record created for ${p.name}. Identity verified against MPI.`,
+  Received:  (p) => `Eligibility check initiated with ${p.payer}.`,
+  Accepted:  (p) => `Prior authorization confirmed with ${p.payer}. Case cleared for scheduling.`,
+  Scheduled: (p) => `Payment posted and reconciled with ${p.payer}.`,
+  Completed: () => 'Case closed and archived. All documentation finalized.',
 };
 
 function notesFor(p: Patient): IntakeNote[] {
@@ -114,7 +114,7 @@ function notesFor(p: Patient): IntakeNote[] {
     { id: 'note-1', author, avatarTint: tint, time: '09:46', category: 'Clinical', text: statusNote },
   ];
 
-  if (p.status !== 'Registered') {
+  if (p.status !== 'Pending') {
     notes.unshift({
       id: 'note-2',
       author: 'Avery Chen',

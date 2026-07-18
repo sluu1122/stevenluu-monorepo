@@ -36,7 +36,7 @@ export class OperationsTableComponent {
   protected menuItems = signal<MenuItem[]>([]);
 
   protected readonly STATUS_OPTIONS: (PatientStatus | 'All')[] = [
-    'All', 'Registered', 'Pending', 'Authorized', 'Payment Posted',
+    'All', 'Pending', 'Received', 'Accepted', 'Scheduled',
   ];
 
   // ── Row navigation ────────────────────────────────────────────────────────
