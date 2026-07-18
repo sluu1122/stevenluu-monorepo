@@ -19,7 +19,12 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      // No closed-state animate-out/fade-out: this backdrop is a full-viewport,
+      // pointer-events:auto layer whose unmount is gated on an `animationend`
+      // event firing. iOS WebKit can silently drop that event, leaving Radix's
+      // Presence state machine stuck and the backdrop permanently eating taps.
+      // Removing the exit animation makes it unmount immediately on close.
+      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=open]:fade-in-0",
       className
     )}
     {...props}

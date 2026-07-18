@@ -39,6 +39,7 @@ export function AllocationCard() {
               startAngle={90}
               endAngle={-270}
               strokeWidth={0}
+              isAnimationActive={false}
             >
               {alloc.map((entry) => (
                 <Cell key={entry.name} fill={entry.color} />
