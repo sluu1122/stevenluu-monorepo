@@ -8,7 +8,7 @@ export function ContactSection() {
     <Reveal delay={0} className="mt-22 pt-[34px] border-t border-border-divider text-center">
       <section>
         <h2 className="m-0 mb-2 text-contact-h2 font-semibold tracking-[-0.02em] text-ink-darkest">Let&apos;s build something solid.</h2>
-        <p className="m-0 mb-[22px] text-subtext text-ink-tertiary">Open to senior frontend &amp; UI platform roles.</p>
+        <p className="m-0 mb-[22px] text-subtext text-ink-tertiary">Open to senior software engineering roles.</p>
         <a
           href={`mailto:${personalInfo.email}`}
           className="inline-flex items-center gap-[9px] px-[22px] py-3 rounded-xl bg-ink-darkest text-white text-meta font-medium shadow-contact transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-contact-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"

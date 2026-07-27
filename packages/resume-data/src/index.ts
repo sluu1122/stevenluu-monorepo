@@ -14,9 +14,10 @@ export interface PersonalInfo {
 }
 
 export interface TechnicalSkills {
-  languagesAndFrameworks: string[];
-  infrastructureAndTools: string[];
-  aiAssistedDevelopment: string[];
+  frontendAndUi: string[];
+  backendAndDatabases: string[];
+  testing: string[];
+  toolingAndBuild: string[];
 }
 
 export interface ProjectHighlight {
@@ -62,39 +63,39 @@ export const resumeData: ResumeData = {
   },
 
   summary:
-    "Frontend-focused Software Engineer with 19 years of experience building responsive, scalable web applications. Expert in UI development, modernizing legacy systems, and mentoring engineering teams. Proven track record of leading frontend architecture and delivering high-quality, scalable applications.",
+    "Software Engineer with 19 years of experience building responsive, scalable web applications. Expert in UI development, modernizing legacy systems, and mentoring engineering teams. Proven track record of leading frontend architecture and delivering high-quality, scalable applications.",
 
   technicalSkills: {
-    languagesAndFrameworks: [
+    frontendAndUi: [
       "Angular",
       "React",
       "TypeScript",
       "JavaScript",
-      "TailwindCSS",
-      "Vite",
       "NgRx/Redux",
-      "PrimeNg",
+      "TailwindCSS",
+      "PrimeNG",
       "shadcn/ui",
       "HTML",
       "CSS/SCSS",
+      "Responsive Design",
+    ],
+    backendAndDatabases: [
       "Node.js",
       "C#",
       "VB.NET",
-    ],
-    infrastructureAndTools: [
-      "Mobile-First/Responsive Design",
-      "Figma",
-      "Monorepo/Turborepo",
-      "Docker",
-      "Capacitor",
-      "Jest",
-      "Jasmine",
-      "Vitest",
+      "Java",
       "SQL Server",
       "MySQL",
       "Oracle",
     ],
-    aiAssistedDevelopment: ["Copilot", "Claude Code"],
+    testing: ["Jest", "Jasmine", "Vitest"],
+    toolingAndBuild: [
+      "Vite",
+      "Turborepo",
+      "Docker",
+      "CI/CD (GitHub Actions)",
+      "Figma",
+    ],
   },
 
   experience: [
@@ -121,27 +122,27 @@ export const resumeData: ResumeData = {
         {
           title: "Provider Experience Application",
           description:
-            "Led UI development and state management architecture for a platform connecting providers and hospitals for patient care and referral management. Championed AI-assisted development with Copilot to accelerate feature delivery.",
+            "Built a platform that gives hospital staff a single place to manage physician orders, optimize scheduling, and handle insurance verification and prior authorizations, cutting claim denials.",
         },
         {
           title: "R1 Registrar Dashboard",
           description:
-            "Designed and implemented a patient intake and scheduling management dashboard with mobile-first, responsive design. Established a comprehensive unit testing suite and developed reusable UI components adopted as enterprise-wide standards.",
+            "Built a registration dashboard that gives hospital front-desk staff and patient access representatives a single place to search patient visits, monitor the real-time patient queue, and track patients through intake from pre-registration to check-in.",
         },
         {
           title: "Order Facilitator",
           description:
-            "Primary UI developer for a high-traffic, EMR-integrated referral and outpatient order management platform. Led major modernization efforts for this 20-year-old application, migrating legacy systems to modern architectures while maintaining database integrity and legacy support.",
+            "Primary UI developer for a web-based platform connecting physician offices with hospitals, letting them submit orders, capture e-signatures, and track status in real time. Continuously modernized the 20-year-old application, incrementally replacing legacy systems.",
         },
         {
-          title: "R1 Entri",
+          title: "Entri Self-Scheduling",
           description:
-            "Developed a patient self-scheduling platform for healthcare providers. Implemented complex rules-based booking and insurance verification logic to streamline the appointment process.",
+            "Developer for a patient-facing scheduling app that let patients book, reschedule, and cancel appointments online.",
         },
         {
           title: "Leadership",
           description:
-            "Onboarded and mentored junior developers, focusing on frontend best practices and modernization methodologies.",
+            "Onboarded and mentored junior developers on frontend best practices, guiding them through code reviews, component patterns, and day-to-day problem-solving.",
         },
       ],
     },
@@ -157,22 +158,22 @@ export const resumeData: ResumeData = {
         {
           title: "Raytheon Pasadena Portal",
           description:
-            "Led development of an internal financial insight portal, providing real-time data visualization and reporting for project leads.",
+            "Led development of an internal financial portal that gave project leads real-time reporting and data visualization.",
         },
         {
           title: "JPL Langley Integrated Financial Environment (LIFE)",
           description:
-            "Developed and maintained a comprehensive financial data management environment supporting the NASA Langley Research Center.",
+            "Built and maintained the financial data management environment used by NASA's Langley Research Center.",
         },
         {
           title: "WISDM Project",
           description:
-            "Engineered a personnel management module for the Weapon Information System and Data Management project using Java and JSP.",
+            "Built the personnel management module for the Weapon Information System and Data Management project for the US Navy.",
         },
         {
           title: "CMS Support",
           description:
-            "Enhanced and supported NASA and JPL content management systems, delivering custom modules to provide dynamic web experiences for researchers and administrators.",
+            "Maintained and extended NASA and JPL content management systems, building custom modules for researchers and administrators.",
         },
       ],
     },

@@ -17,7 +17,7 @@ export function ProfileSection() {
               {personalInfo.name}
             </h1>
             <p className="mb-6 text-tagline text-ink-secondary max-w-[30ch]">
-              Frontend Software Engineer turning sprawling legacy systems into robust, modern UI platforms.
+              Software Engineer with 19 years across enterprise systems and the modern web.
             </p>
           </div>
         </Reveal>
