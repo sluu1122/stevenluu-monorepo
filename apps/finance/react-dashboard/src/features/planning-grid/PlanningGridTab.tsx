@@ -9,6 +9,7 @@ import { generateId } from '../../engine/id';
 import { LedgerTable } from './LedgerTable';
 import { FormulaBreakdownSheet } from './FormulaBreakdownSheet';
 import { OverrideEditDialog } from './OverrideEditDialog';
+import { RetirementYearStepper } from './RetirementYearStepper';
 import type { LedgerYearRow } from '../../engine/types';
 
 export function PlanningGridTab() {
@@ -32,6 +33,15 @@ export function PlanningGridTab() {
 
   const existingOverride = overrideYear !== null ? overrides.find((o) => o.year === overrideYear && o.field === 'spendingNominal') : undefined;
   const plannedRow = overrideYear !== null ? rows.find((r) => r.year === overrideYear) : undefined;
+
+  // Narrowed to non-null here (see the guard above) - captured in a local so
+  // the nested function below doesn't lose that narrowing across the closure boundary.
+  const scenario = activeScenario;
+
+  function updatePersonRetirementYear(personId: string, year: number | null) {
+    const persons = scenario.household.persons.map((p) => (p.id === personId ? { ...p, retirementStartYear: year } : p));
+    saveScenario.mutate({ ...scenario, household: { persons }, updatedAt: new Date().toISOString() });
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -79,17 +89,22 @@ export function PlanningGridTab() {
       {!error && (
         <>
           <p className="text-[12.5px] text-dim">
-            Click a row to see its formula breakdown. Click a "Nominal" spending value to override it for that year. Pick "Retire" on the row you want to start decumulation.
+            Click a row to see its formula breakdown. Click a "Nominal" spending value to override it for that year.
           </p>
 
-          <LedgerTable
-            scenario={activeScenario}
-            rows={rows}
-            overrides={overrides}
-            onSelectRetirementYear={(year) => saveScenario.mutate({ ...activeScenario, retirementStartYear: year, updatedAt: new Date().toISOString() })}
-            onOpenAudit={setAuditRow}
-            onEditOverride={(row) => setOverrideYear(row.year)}
-          />
+          <div className="flex flex-wrap gap-x-6 gap-y-2">
+            {activeScenario.household.persons.map((person) => (
+              <RetirementYearStepper
+                key={person.id}
+                label={person.label}
+                value={person.retirementStartYear}
+                birthYear={person.birthYear}
+                onChange={(year) => updatePersonRetirementYear(person.id, year)}
+              />
+            ))}
+          </div>
+
+          <LedgerTable scenario={activeScenario} rows={rows} overrides={overrides} onOpenAudit={setAuditRow} onEditOverride={(row) => setOverrideYear(row.year)} />
         </>
       )}
 

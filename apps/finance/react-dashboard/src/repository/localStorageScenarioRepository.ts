@@ -1,6 +1,7 @@
 import { CURRENT_SCHEMA_VERSION, ExportBundleSchema } from '../engine/schema';
 import type { ExportBundle, GridOverride, Scenario } from '../engine/schema';
 import type { ScenarioRepository } from './types';
+import { generateId } from '../engine/id';
 
 const STORAGE_KEY = 'retirement-planner:v1';
 
@@ -8,10 +9,98 @@ function emptyBundle(): ExportBundle {
   return { schemaVersion: CURRENT_SCHEMA_VERSION, exportedAt: new Date().toISOString(), scenarios: [], overrides: [] };
 }
 
-/** No migrations exist yet - this is the seam for future CURRENT_SCHEMA_VERSION bumps. */
-function migrateStorageBlob(raw: unknown, fromVersion: number): unknown {
-  void fromVersion;
-  return raw;
+/**
+ * v1 -> v2: birthYear/planningEndAge/retirementStartYear/spouse (a single
+ * person plus one bolted-on second slot, income tagged owner:'self'|'spouse')
+ * become household.persons (any number of people, each with their own
+ * income). Detected structurally (no `household`, has a top-level
+ * `birthYear`) rather than trusted purely off the blob's declared
+ * schemaVersion, so it's a no-op (and safe to call unconditionally) on
+ * already-migrated data.
+ */
+function migrateScenarioV1ToV2(scenario: Record<string, unknown>): Record<string, unknown> {
+  if ('household' in scenario || typeof scenario.birthYear !== 'number') return scenario;
+
+  const old = scenario as Record<string, unknown> & {
+    birthYear: number;
+    planningEndAge: number;
+    retirementStartYear: number | null;
+    spouse?: { birthYear: number; retirementYear: number | null } | null;
+    incomeSources?: Array<Record<string, unknown>>;
+    benefits?: Array<Record<string, unknown>>;
+  };
+
+  const incomeSources = old.incomeSources ?? [];
+  const benefits = old.benefits ?? [];
+  const selfIncome = incomeSources.find((s) => (s.owner ?? 'self') === 'self');
+  const spouseIncome = incomeSources.find((s) => s.owner === 'spouse');
+
+  const person1Id = generateId('person');
+  const persons: Record<string, unknown>[] = [
+    {
+      id: person1Id,
+      label: 'Person 1',
+      birthYear: old.birthYear,
+      planningEndAge: old.planningEndAge,
+      retirementStartYear: old.retirementStartYear,
+      annualIncomeNominal: selfIncome?.annualAmountNominal ?? 0,
+      incomeGrowthRatePct: selfIncome?.growthRatePct ?? 0,
+    },
+  ];
+
+  let person2Id: string | null = null;
+  if (old.spouse) {
+    person2Id = generateId('person');
+    persons.push({
+      id: person2Id,
+      label: 'Person 2',
+      birthYear: old.spouse.birthYear,
+      // No per-person planningEndAge existed before this - Person 1's is the best available default.
+      planningEndAge: old.planningEndAge,
+      retirementStartYear: old.spouse.retirementYear,
+      annualIncomeNominal: spouseIncome?.annualAmountNominal ?? 0,
+      incomeGrowthRatePct: spouseIncome?.growthRatePct ?? 0,
+    });
+  }
+
+  // Any income source beyond the one absorbed into each person becomes plain
+  // unowned "Other Income Sources" - a one-time, acceptable lossiness: it no
+  // longer auto-stops at a retirement year, same as "Other Income" always meant.
+  const otherIncomeSources = incomeSources
+    .filter((s) => s !== selfIncome && s !== spouseIncome)
+    .map((s) => {
+      const copy = { ...s };
+      delete copy.owner;
+      return copy;
+    });
+
+  const migratedBenefits = benefits.map((b) => {
+    const copy = { ...b };
+    const personId = copy.owner === 'spouse' && person2Id ? person2Id : person1Id;
+    delete copy.owner;
+    return { ...copy, personId };
+  });
+
+  const migrated: Record<string, unknown> = { ...scenario };
+  delete migrated.birthYear;
+  delete migrated.planningEndAge;
+  delete migrated.retirementStartYear;
+  delete migrated.spouse;
+  migrated.household = { persons };
+  migrated.incomeSources = otherIncomeSources;
+  migrated.benefits = migratedBenefits;
+  return migrated;
+}
+
+/** Exported so the JSON-import path (exportImport.ts) can apply the same migration to an uploaded backup file, not just LocalStorage reads. */
+export function migrateStorageBlob(raw: unknown, fromVersion: number): unknown {
+  void fromVersion; // migration is structurally self-detecting, see migrateScenarioV1ToV2
+  if (typeof raw !== 'object' || raw === null || !('scenarios' in raw) || !Array.isArray((raw as { scenarios: unknown }).scenarios)) {
+    return raw;
+  }
+  const bundle = raw as { scenarios: unknown[] };
+  const migratedScenarios = bundle.scenarios.map((s) => (typeof s === 'object' && s !== null ? migrateScenarioV1ToV2(s as Record<string, unknown>) : s));
+  return { ...raw, scenarios: migratedScenarios, schemaVersion: CURRENT_SCHEMA_VERSION };
 }
 
 function readBlob(): ExportBundle {

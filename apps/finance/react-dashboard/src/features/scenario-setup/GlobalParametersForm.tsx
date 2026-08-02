@@ -14,6 +14,14 @@ export function GlobalParametersForm() {
     <DashCard>
       <h3 className="text-[15px] font-semibold text-ink mb-4">Global Parameters</h3>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="space-y-1.5">
+          <Label>Annual spending at retirement (real $)</Label>
+          <Controller
+            control={control}
+            name="annualSpendingRealAtRetirement"
+            render={({ field }) => <MoneyInput value={field.value} onChange={field.onChange} />}
+          />
+        </div>
         <div className="col-span-2 space-y-1.5">
           <Label>Scenario name</Label>
           <Input {...register('name')} />
@@ -25,47 +33,6 @@ export function GlobalParametersForm() {
         <div className="space-y-1.5">
           <Label>Currency</Label>
           <Input value={currency} disabled />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Birth year</Label>
-          <Input
-            type="number"
-            {...register('birthYear', {
-              setValueAs: (v) => (v === '' ? undefined : Math.round(Number(v))),
-            })}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Planning end age</Label>
-          <Input
-            type="number"
-            {...register('planningEndAge', {
-              setValueAs: (v) => (v === '' ? undefined : Math.round(Number(v))),
-            })}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Retirement start year</Label>
-          <Controller
-            control={control}
-            name="retirementStartYear"
-            render={({ field }) => (
-              <Input
-                type="number"
-                placeholder="Not set"
-                value={field.value ?? ''}
-                onChange={(e) => field.onChange(e.target.value === '' ? null : Math.round(Number(e.target.value)))}
-              />
-            )}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Annual spending at retirement (real $)</Label>
-          <Controller
-            control={control}
-            name="annualSpendingRealAtRetirement"
-            render={({ field }) => <MoneyInput value={field.value} onChange={field.onChange} />}
-          />
         </div>
         <div className="space-y-1.5">
           <Label>Exchange rate (USD → CAD)</Label>

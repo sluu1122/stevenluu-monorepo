@@ -5,6 +5,7 @@ import { useActiveScenario } from '../../hooks/useActiveScenario';
 import { useScenarios } from '../../hooks/useScenarios';
 import { useGridOverrides } from '../../hooks/useGridOverrides';
 import { useLedger } from '../../hooks/useLedger';
+import { getHouseholdRetirementStartYear } from '../../engine/household';
 import { SummaryKeyMetrics } from './SummaryKeyMetrics';
 import { SummaryPrintableTable } from './SummaryPrintableTable';
 
@@ -41,7 +42,7 @@ export function ClientSummaryTab() {
         </p>
       </div>
 
-      <SummaryKeyMetrics rows={rows} currency={activeScenario.currency} retirementStartYear={activeScenario.retirementStartYear} hasShortfall={warnings.length > 0} />
+      <SummaryKeyMetrics rows={rows} currency={activeScenario.currency} retirementStartYear={getHouseholdRetirementStartYear(activeScenario.household)} hasShortfall={warnings.length > 0} />
 
       {warnings.length > 0 && (
         <DashCard className="border-loss/30 bg-loss-bg py-3">

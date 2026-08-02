@@ -1,4 +1,4 @@
-import type { GridOverride, Scenario } from './schema';
+import type { GridOverride, Person, Scenario } from './schema';
 import type { AuditStep, EngineWarning, LedgerResult, LedgerYearRow } from './types';
 import { getInflationRateForYear } from './inflation';
 import { applyOasClawback, calculateBenefitForYear } from './benefits';
@@ -7,6 +7,7 @@ import { applyWithdrawal } from './waterfall';
 import { checkAndReplenish } from './cashBuffer';
 import { applyGrowth } from './growth';
 import { calculateMeltdownWithdrawal } from './meltdown';
+import { getHouseholdAge, getHouseholdRetirementStartYear, getProjectionHorizonEndYear } from './household';
 
 function findOverride(overrides: GridOverride[], year: number, field: string): GridOverride | undefined {
   return overrides.find((o) => o.year === year && o.field === field);
@@ -17,6 +18,13 @@ function activeIncomeAmount(source: Scenario['incomeSources'][number], year: num
   if (source.endYear !== undefined && year > source.endYear) return 0;
   const yearsElapsed = year - source.startYear;
   return source.annualAmountNominal * Math.pow(1 + source.growthRatePct / 100, yearsElapsed);
+}
+
+/** A person's income compounds from the projection's start year and stops the year their own retirement begins. */
+function activePersonIncome(person: Person, year: number, projectionStartYear: number): number {
+  if (person.retirementStartYear !== null && year >= person.retirementStartYear) return 0;
+  const yearsElapsed = year - projectionStartYear;
+  return person.annualIncomeNominal * Math.pow(1 + person.incomeGrowthRatePct / 100, yearsElapsed);
 }
 
 /**
@@ -37,7 +45,8 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
   }
 
   const startYear = new Date().getFullYear();
-  const retirementStartYear = scenario.retirementStartYear;
+  const retirementStartYear = getHouseholdRetirementStartYear(scenario.household);
+  const horizonEndYear = getProjectionHorizonEndYear(scenario.household);
 
   // Catch up the cumulative inflation factor if retirement already started
   // before the projection window begins, so the first row's nominal
@@ -57,7 +66,7 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
   // this is a forward-only projection with no pre-scenario income history).
   let previousYearTaxableIncome = 0;
 
-  for (let year = startYear, age = year - scenario.birthYear; age <= scenario.planningEndAge; year++, age++) {
+  for (let year = startYear, age = getHouseholdAge(scenario.household, year); year <= horizonEndYear; year++, age++) {
     const audit: AuditStep[] = [];
     const overriddenFields: string[] = [];
     const isRetired = retirementStartYear !== null && year >= retirementStartYear;
@@ -85,19 +94,22 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
     });
 
     // --- Incomes and benefits ---
-    const incomes = scenario.incomeSources.map((source) => ({
-      sourceId: source.id,
-      amount: activeIncomeAmount(source, year),
+    const personIncomes = scenario.household.persons.map((person) => ({
+      sourceId: person.id,
+      amount: activePersonIncome(person, year, startYear),
     }));
+    const incomes = [...personIncomes, ...scenario.incomeSources.map((source) => ({ sourceId: source.id, amount: activeIncomeAmount(source, year) }))];
     const totalIncomes = incomes.reduce((sum, i) => sum + i.amount, 0);
 
     const benefits: { type: string; amount: number }[] = [];
     let totalBenefits = 0;
     for (const benefit of scenario.benefits) {
-      // A spouse's benefit claim age resolves against their own birth year,
-      // not the primary person's age - each household member's timeline is
-      // independent even though the accounts they draw from are shared.
-      const personAge = benefit.owner === 'spouse' && scenario.spouse ? year - scenario.spouse.birthYear : age;
+      // Each household member's benefit claim age resolves against their own
+      // birth year, not necessarily the household's reference (Person 1's)
+      // age - their timeline is independent even though the accounts they
+      // draw from are shared.
+      const owner = scenario.household.persons.find((p) => p.id === benefit.personId);
+      const personAge = owner ? year - owner.birthYear : age;
       const { amount: grossAmount, steps } = calculateBenefitForYear(benefit, personAge);
       audit.push(...steps);
 

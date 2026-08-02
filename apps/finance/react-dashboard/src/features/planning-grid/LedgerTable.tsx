@@ -2,7 +2,6 @@ import { useState, type ReactNode } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/components/table';
 import { Pencil } from 'lucide-react';
 import { LedgerColumnGroupHeader } from './LedgerColumnGroupHeader';
-import { RetirementStartRadioGroup, RetirementStartRadioItem } from './RetirementStartRadio';
 import { CellOverrideBadge } from './CellOverrideBadge';
 import { cn } from '../../lib/utils';
 import { formatCurrency } from '../../lib/format';
@@ -31,12 +30,11 @@ interface LedgerTableProps {
   scenario: Scenario;
   rows: LedgerYearRow[];
   overrides: GridOverride[];
-  onSelectRetirementYear: (year: number) => void;
   onOpenAudit: (row: LedgerYearRow) => void;
   onEditOverride: (row: LedgerYearRow) => void;
 }
 
-export function LedgerTable({ scenario, rows, overrides, onSelectRetirementYear, onOpenAudit, onEditOverride }: LedgerTableProps) {
+export function LedgerTable({ scenario, rows, overrides, onOpenAudit, onEditOverride }: LedgerTableProps) {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const currency = scenario.currency;
 
@@ -168,77 +166,71 @@ export function LedgerTable({ scenario, rows, overrides, onSelectRetirementYear,
 
   return (
     <div className="border border-edge rounded-[14px] overflow-x-auto overflow-y-hidden bg-surface">
-      <RetirementStartRadioGroup value={scenario.retirementStartYear} onChange={onSelectRetirementYear}>
-        <Table className="text-[12.5px]">
-          <TableHeader className="bg-surface-raised">
-            <TableRow className="hover:bg-transparent">
-              <TableHead rowSpan={2} className="whitespace-nowrap text-center">
-                Retire
-              </TableHead>
-              <TableHead rowSpan={2} className="whitespace-nowrap">
-                Age
-              </TableHead>
-              <TableHead rowSpan={2} className="whitespace-nowrap">
-                Year
-              </TableHead>
-              <TableHead rowSpan={2} className="whitespace-nowrap">
-                Yrs to/in Ret.
-              </TableHead>
-              {groups.map((group, i) => (
-                <LedgerColumnGroupHeader
-                  key={group.key}
-                  label={group.label}
-                  colSpan={Math.max(1, visibleColumnsByGroup[i].length)}
-                  collapsed={!!collapsed[group.key]}
-                  onToggle={() => toggle(group.key)}
-                />
-              ))}
-              <TableHead rowSpan={2} className="whitespace-nowrap text-right">
-                Total Net Worth
-              </TableHead>
-            </TableRow>
-            <TableRow className="hover:bg-transparent">
+      <Table className="text-[12.5px]">
+        <TableHeader className="bg-surface-raised">
+          <TableRow className="hover:bg-transparent">
+            <TableHead rowSpan={2} className="whitespace-nowrap">
+              Age
+            </TableHead>
+            <TableHead rowSpan={2} className="whitespace-nowrap">
+              Year
+            </TableHead>
+            <TableHead rowSpan={2} className="whitespace-nowrap">
+              Yrs to/in Ret.
+            </TableHead>
+            {groups.map((group, i) => (
+              <LedgerColumnGroupHeader
+                key={group.key}
+                label={group.label}
+                colSpan={Math.max(1, visibleColumnsByGroup[i].length)}
+                collapsed={!!collapsed[group.key]}
+                onToggle={() => toggle(group.key)}
+              />
+            ))}
+            <TableHead rowSpan={2} className="whitespace-nowrap text-right">
+              Total Net Worth
+            </TableHead>
+          </TableRow>
+          <TableRow className="hover:bg-transparent">
+            {groups.flatMap((group, i) =>
+              collapsed[group.key]
+                ? [
+                    <TableHead key={`${group.key}-collapsed`} className="whitespace-nowrap border-l border-edge text-dim">
+                      …
+                    </TableHead>,
+                  ]
+                : visibleColumnsByGroup[i].map((col) => (
+                    <TableHead key={col.id} className="whitespace-nowrap border-l border-edge first:border-l-0">
+                      {col.header}
+                    </TableHead>
+                  )),
+            )}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.year} className="cursor-pointer" onClick={() => onOpenAudit(row)}>
+              <TableCell>{row.age}</TableCell>
+              <TableCell className="font-mono">{row.year}</TableCell>
+              <TableCell className="font-mono text-dim">{Number.isNaN(row.yearsToOrInRetirement) ? '—' : row.yearsToOrInRetirement}</TableCell>
               {groups.flatMap((group, i) =>
                 collapsed[group.key]
                   ? [
-                      <TableHead key={`${group.key}-collapsed`} className="whitespace-nowrap border-l border-edge text-dim">
+                      <TableCell key={`${group.key}-collapsed`} className="border-l border-edge text-dim">
                         …
-                      </TableHead>,
+                      </TableCell>,
                     ]
                   : visibleColumnsByGroup[i].map((col) => (
-                      <TableHead key={col.id} className="whitespace-nowrap border-l border-edge first:border-l-0">
-                        {col.header}
-                      </TableHead>
+                      <TableCell key={col.id} className="whitespace-nowrap border-l border-edge first:border-l-0 font-mono">
+                        {col.render(row)}
+                      </TableCell>
                     )),
               )}
+              <TableCell className="text-right font-mono font-semibold">{formatCurrency(row.totalNetWorth, currency)}</TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map((row) => (
-              <TableRow key={row.year} className="cursor-pointer" onClick={() => onOpenAudit(row)}>
-                <TableCell className="text-center">
-                  <RetirementStartRadioItem year={row.year} />
-                </TableCell>
-                <TableCell>{row.age}</TableCell>
-                <TableCell className="font-mono">{row.year}</TableCell>
-                <TableCell className="font-mono text-dim">{Number.isNaN(row.yearsToOrInRetirement) ? '—' : row.yearsToOrInRetirement}</TableCell>
-                {groups.flatMap((group, i) =>
-                  collapsed[group.key]
-                    ? [<TableCell key={`${group.key}-collapsed`} className="border-l border-edge text-dim">
-                        …
-                      </TableCell>]
-                    : visibleColumnsByGroup[i].map((col) => (
-                        <TableCell key={col.id} className="whitespace-nowrap border-l border-edge first:border-l-0 font-mono">
-                          {col.render(row)}
-                        </TableCell>
-                      )),
-                )}
-                <TableCell className="text-right font-mono font-semibold">{formatCurrency(row.totalNetWorth, currency)}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </RetirementStartRadioGroup>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

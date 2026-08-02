@@ -9,7 +9,7 @@ import { useScenarios, useSaveScenario } from '../../hooks/useScenarios';
 import { ScenarioSchema, type Scenario } from '../../engine/schema';
 import { createDefaultScenario } from '../../engine/defaults';
 import { GlobalParametersForm } from './GlobalParametersForm';
-import { SpouseForm } from './SpouseForm';
+import { PersonsForm } from './PersonsForm';
 import { AccountBucketsEditor } from './AccountBucketsEditor';
 import { TaxAssumptionsForm } from './TaxAssumptionsForm';
 import { WaterfallOrderEditor } from './WaterfallOrderEditor';
@@ -97,7 +97,7 @@ export function ScenarioSetupTab() {
           </Button>
         </div>
         <GlobalParametersForm />
-        <SpouseForm />
+        <PersonsForm />
         <AccountBucketsEditor />
         <TaxAssumptionsForm />
         <WaterfallOrderEditor />

@@ -38,12 +38,12 @@ function createCAAccountBuckets(): AccountBucket[] {
   return CA_ACCOUNT_KINDS.map(createSeededAccountBucket);
 }
 
-function createDefaultBenefits(country: 'US' | 'CA'): BenefitConfig[] {
+function createDefaultBenefits(country: 'US' | 'CA', personId: string): BenefitConfig[] {
   if (country === 'US') {
     return [
       {
         type: 'US_SOCIAL_SECURITY',
-        owner: 'self',
+        personId,
         claimAge: US_SOCIAL_SECURITY_2026.fullRetirementAge,
         monthlyBenefitAtClaimAge: 2_200,
         colaPct: US_SOCIAL_SECURITY_2026.colaPct,
@@ -53,14 +53,14 @@ function createDefaultBenefits(country: 'US' | 'CA'): BenefitConfig[] {
   return [
     {
       type: 'CA_CPP',
-      owner: 'self',
+      personId,
       claimAge: 65,
       monthlyBenefitAtClaimAge: Math.round(CA_CPP_2026.maxMonthlyBenefitAt65 * 0.6),
       colaPct: 2.8,
     },
     {
       type: 'CA_OAS',
-      owner: 'self',
+      personId,
       claimAge: 65,
       monthlyBenefitAtClaimAge: CA_OAS_2026.maxMonthlyBenefit65To74,
       colaPct: 2.8,
@@ -84,6 +84,16 @@ export function createDefaultScenario(country: 'US' | 'CA', name = 'New Scenario
     accountBucketId: bucket.id,
   }));
 
+  const person1 = {
+    id: generateId('person'),
+    label: 'Person 1',
+    birthYear: new Date().getFullYear() - 35,
+    planningEndAge: 95,
+    retirementStartYear: null,
+    annualIncomeNominal: 0,
+    incomeGrowthRatePct: 0,
+  };
+
   return {
     id: generateId('scenario'),
     name,
@@ -91,10 +101,7 @@ export function createDefaultScenario(country: 'US' | 'CA', name = 'New Scenario
     version: CURRENT_SCHEMA_VERSION,
     currency: country === 'US' ? 'USD' : 'CAD',
     exchangeRateUsdToCad: 1.35,
-    birthYear: new Date().getFullYear() - 35,
-    planningEndAge: 95,
-    retirementStartYear: null,
-    spouse: null,
+    household: { persons: [person1] },
     accountBuckets,
     waterfall,
     cashBufferRule: {
@@ -121,7 +128,7 @@ export function createDefaultScenario(country: 'US' | 'CA', name = 'New Scenario
       flatRatePct: 2.5,
     },
     incomeSources: [],
-    benefits: createDefaultBenefits(country),
+    benefits: createDefaultBenefits(country, person1.id),
     annualSpendingRealAtRetirement: 60_000,
     createdAt: now,
     updatedAt: now,

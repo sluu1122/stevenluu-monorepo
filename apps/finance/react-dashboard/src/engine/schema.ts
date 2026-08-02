@@ -89,16 +89,9 @@ export const InflationAssumptionSchema = z.object({
 });
 export type InflationAssumption = z.infer<typeof InflationAssumptionSchema>;
 
-// Which household member a given income source or benefit belongs to. Account
-// buckets stay one shared pool regardless - this only tags income/benefit
-// timing, which is genuinely per-person (claim ages, retirement dates).
-export const PersonOwnerSchema = z.enum(['self', 'spouse']);
-export type PersonOwner = z.infer<typeof PersonOwnerSchema>;
-
 export const IncomeSourceSchema = z.object({
   id: z.string(),
   label: z.string().min(1),
-  owner: PersonOwnerSchema.optional(),
   startYear: z.number().int(),
   endYear: z.number().int().optional(),
   annualAmountNominal: z.number().nonnegative(),
@@ -110,22 +103,32 @@ export const BenefitTypeSchema = z.enum(['US_SOCIAL_SECURITY', 'CA_CPP', 'CA_OAS
 export type BenefitType = z.infer<typeof BenefitTypeSchema>;
 export const BenefitConfigSchema = z.object({
   type: BenefitTypeSchema,
-  owner: PersonOwnerSchema.optional(),
+  personId: z.string(),
   claimAge: z.number().int().positive(),
   monthlyBenefitAtClaimAge: z.number().nonnegative(),
   colaPct: z.number(),
 });
 export type BenefitConfig = z.infer<typeof BenefitConfigSchema>;
 
-// A spouse's own birth year (their benefit claim ages resolve against it
-// independently of the primary person's age) and their own planned
-// retirement year (used to default when their income sources end). Account
-// buckets are never split per-person - this is timing-only.
-export const SpouseSchema = z.object({
+// A household member. Account buckets are never split per-person - they stay
+// one shared pool - but age/retirement timing genuinely is per-person: each
+// person's own birth year resolves their own benefit claim ages, and their
+// own income stops at their own retirement start year.
+export const PersonSchema = z.object({
+  id: z.string(),
+  label: z.string().min(1),
   birthYear: z.number().int(),
-  retirementYear: z.number().int().nullable(),
+  planningEndAge: z.number().int().positive(),
+  retirementStartYear: z.number().int().nullable(),
+  annualIncomeNominal: z.number().nonnegative(),
+  incomeGrowthRatePct: z.number(),
 });
-export type Spouse = z.infer<typeof SpouseSchema>;
+export type Person = z.infer<typeof PersonSchema>;
+
+export const HouseholdSchema = z.object({
+  persons: z.array(PersonSchema).min(1),
+});
+export type Household = z.infer<typeof HouseholdSchema>;
 
 // "Melting down" a tax-deferred account: deliberately withdrawing beyond the
 // spending need, up to a target taxable-income ceiling, during a window
@@ -169,10 +172,7 @@ export const ScenarioSchema = z.object({
   version: z.number().int().nonnegative(),
   currency: CurrencySchema,
   exchangeRateUsdToCad: z.number().positive(),
-  birthYear: z.number().int(),
-  planningEndAge: z.number().int().positive(),
-  retirementStartYear: z.number().int().nullable(),
-  spouse: SpouseSchema.nullable().optional(),
+  household: HouseholdSchema,
   accountBuckets: z.array(AccountBucketSchema),
   waterfall: WaterfallRuleSchema,
   cashBufferRule: CashBufferRuleSchema,
@@ -195,4 +195,4 @@ export const ExportBundleSchema = z.object({
 });
 export type ExportBundle = z.infer<typeof ExportBundleSchema>;
 
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;

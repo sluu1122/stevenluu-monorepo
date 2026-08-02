@@ -1,5 +1,6 @@
 import { ExportBundleSchema } from '../engine/schema';
 import type { ExportBundle } from '../engine/schema';
+import { migrateStorageBlob } from './localStorageScenarioRepository';
 
 export function downloadExport(bundle: ExportBundle): void {
   const filename = `retirement-planner-export-${new Date().toISOString().slice(0, 10)}.json`;
@@ -33,7 +34,10 @@ export async function parseImportFile(file: File): Promise<ImportParseResult> {
     return { ok: false, issues: ['File is not valid JSON.'] };
   }
 
-  const result = ExportBundleSchema.safeParse(json);
+  const versionGuess = typeof json === 'object' && json !== null && 'schemaVersion' in json ? Number((json as { schemaVersion: unknown }).schemaVersion) : 0;
+  const migrated = migrateStorageBlob(json, versionGuess);
+
+  const result = ExportBundleSchema.safeParse(migrated);
   if (!result.success) {
     return { ok: false, issues: result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`) };
   }
