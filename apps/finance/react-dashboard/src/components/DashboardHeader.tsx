@@ -2,10 +2,11 @@ import { Badge } from '@repo/ui/components/badge';
 import { Button } from '@repo/ui/components/button';
 
 interface DashboardHeaderProps {
+  title: string;
   onMenuClick: () => void;
 }
 
-export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
+export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
   const dateStr = new Date().toLocaleDateString('en-US', {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
   });
@@ -28,21 +29,14 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
           </svg>
         </Button>
         <div className="min-w-0">
-          <h1 className="m-0 text-[17px] font-bold tracking-[-0.02em] text-ink leading-none">Overview</h1>
+          <h1 className="m-0 text-[17px] font-bold tracking-[-0.02em] text-ink leading-none truncate">{title}</h1>
           <p className="m-0 text-[11.5px] text-dim font-mono mt-0.5">{dateStr}</p>
         </div>
       </div>
 
-      <Badge variant="outline" className="flex items-center gap-[7px] px-3 py-1.5 rounded-full border-gain-border bg-gain-bg shrink-0">
-        <span
-          className="w-[7px] h-[7px] rounded-full bg-gain inline-block"
-          style={{ animation: 'engine 2.2s ease-in-out infinite' }}
-        />
-        <span className="text-[11.5px] font-medium text-gain-dark font-mono tracking-[0.01em] whitespace-nowrap hidden md:inline">
-          Mock Market Engine: Active · Streaming via Web Memory
-        </span>
-        <span className="text-[11.5px] font-medium text-gain-dark font-mono tracking-[0.01em] whitespace-nowrap md:hidden">
-          Engine Active
+      <Badge variant="outline" className="hidden sm:flex items-center gap-[7px] px-3 py-1.5 rounded-full border-edge bg-surface-raised shrink-0">
+        <span className="text-[11.5px] font-medium text-slate font-mono tracking-[0.01em] whitespace-nowrap">
+          Local-only · nothing leaves your browser
         </span>
       </Badge>
     </header>

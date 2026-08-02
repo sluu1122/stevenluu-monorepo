@@ -4,15 +4,6 @@ import { Avatar, AvatarFallback } from '@repo/ui/components/avatar';
 import { Button } from '@repo/ui/components/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/popover';
 import { Sheet, SheetContent, SheetTitle } from '@repo/ui/components/sheet';
-import { cn } from '../lib/utils';
-
-const NAV_LINKS = [
-  { label: 'Overview', active: true },
-  { label: 'Sandbox Portfolio', active: false },
-  { label: 'Transactions', active: false },
-  { label: 'Market Stream', active: false },
-];
-
 const BRAND_GRADIENT = 'linear-gradient(135deg, #5B5BD6 0%, #6E6AF0 100%)';
 
 // Mirrors the Angular dashboard's portfolioUrl default (localhost:3000 in dev,
@@ -44,31 +35,12 @@ function SidebarContent({ onNavigate }: { onNavigate: () => void }) {
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex flex-col gap-0.5">
-        {NAV_LINKS.map((link) => (
-          <Button
-            key={link.label}
-            variant="ghost"
-            onClick={onNavigate}
-            className={cn(
-              'w-full h-auto justify-start gap-2.5 px-3 py-[9px] rounded-[9px] text-[13.5px] tracking-[-0.01em]',
-              link.active
-                ? 'font-semibold text-indigo bg-indigo-bg hover:bg-indigo-bg hover:text-indigo'
-                : 'font-normal text-slate hover:bg-surface-pressed hover:text-slate',
-            )}
-          >
-            {link.label}
-          </Button>
-        ))}
-      </nav>
-
       <div className="flex-1" />
 
       {/* Bottom */}
       <div className="border-t border-edge pt-4 flex flex-col gap-3">
         <p className="text-[11px] text-dim font-mono tracking-[0.03em] leading-[1.5] m-0">
-          Mock data only — no real positions
+          Local-only — nothing leaves your browser
         </p>
         <Popover>
           <PopoverTrigger asChild>
