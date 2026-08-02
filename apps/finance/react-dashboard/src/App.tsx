@@ -8,6 +8,7 @@ import { ScenarioSetupTab } from './features/scenario-setup/ScenarioSetupTab';
 import { PlanningGridTab } from './features/planning-grid/PlanningGridTab';
 import { ChartsAnalyticsTab } from './features/charts-analytics/ChartsAnalyticsTab';
 import { ClientSummaryTab } from './features/client-summary/ClientSummaryTab';
+import { useBodyPointerEventsWatchdog } from './hooks/useBodyPointerEventsWatchdog';
 
 const TABS = [
   { value: 'setup', label: 'Scenario Setup' },
@@ -19,6 +20,7 @@ const TABS = [
 type TabValue = (typeof TABS)[number]['value'];
 
 export default function App() {
+  useBodyPointerEventsWatchdog();
   const [navOpen, setNavOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabValue>('setup');
 
