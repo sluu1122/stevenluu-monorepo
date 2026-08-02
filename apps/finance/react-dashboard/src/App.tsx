@@ -7,6 +7,7 @@ import { ThemeProvider } from './providers/ThemeProvider';
 import { ActiveScenarioProvider } from './providers/ActiveScenarioProvider';
 import { ScenarioSetupTab } from './features/scenario-setup/ScenarioSetupTab';
 import { PlanningGridTab } from './features/planning-grid/PlanningGridTab';
+import { ChartsAnalyticsTab } from './features/charts-analytics/ChartsAnalyticsTab';
 
 const TABS = [
   { value: 'setup', label: 'Scenario Setup' },
@@ -49,7 +50,7 @@ export default function App() {
                   <PlanningGridTab />
                 </TabsContent>
                 <TabsContent value="charts">
-                  <DashCard>Charts & Analytics — coming up next.</DashCard>
+                  <ChartsAnalyticsTab />
                 </TabsContent>
                 <TabsContent value="summary">
                   <DashCard>Client Summary — coming up next.</DashCard>

@@ -61,6 +61,13 @@
   --brand-loss-bg: #FFE4E6;
   --brand-scrollbar-thumb: #DDE1EA;
   --brand-header-bg: rgba(247, 248, 250, 0.82);
+
+  /* Validated categorical chart palette (dataviz skill reference instance) -
+     fixed hue order, assigned by account-bucket position, never cycled. */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
 }
 
 .dark {
@@ -87,6 +94,11 @@
   --brand-loss-bg: #3F0A14;
   --brand-scrollbar-thumb: #262B36;
   --brand-header-bg: rgba(11, 13, 18, 0.82);
+
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
 }
 
 @theme {
