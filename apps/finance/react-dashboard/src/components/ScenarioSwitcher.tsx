@@ -1,24 +1,20 @@
 import { useState } from 'react';
-import { ChevronsUpDown, Copy, Pencil, Plus, Trash2 } from 'lucide-react';
+import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@repo/ui/components/button';
 import { Input } from '@repo/ui/components/input';
 import { Label } from '@repo/ui/components/label';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@repo/ui/components/dropdown-menu';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { useActiveScenario } from '../hooks/useActiveScenario';
 import { useDeleteScenario, useSaveScenario, useScenarios } from '../hooks/useScenarios';
 import { createDefaultScenario } from '../engine/defaults';
-import type { Country } from '../engine/schema';
+import type { Country, Scenario } from '../engine/schema';
 
 type DialogMode = null | 'new' | 'rename' | 'delete';
 
+// Rename/Delete/Duplicate act on whichever row's icon button was clicked,
+// not necessarily the active scenario - triggered from plain per-row
+// buttons rather than a DropdownMenu, which also sidesteps the documented
+// DropdownMenu -> Dialog pointerEvents composition bug for this component.
 export function ScenarioSwitcher() {
   const { data: scenarios = [] } = useScenarios();
   const { activeScenarioId, setActiveScenarioId } = useActiveScenario();
@@ -26,9 +22,8 @@ export function ScenarioSwitcher() {
   const deleteScenario = useDeleteScenario();
 
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
+  const [targetScenario, setTargetScenario] = useState<Scenario | null>(null);
   const [renameValue, setRenameValue] = useState('');
-
-  const activeScenario = scenarios.find((s) => s.id === activeScenarioId) ?? null;
 
   async function createScenario(country: Country) {
     const scenario = createDefaultScenario(country);
@@ -37,73 +32,108 @@ export function ScenarioSwitcher() {
     setDialogMode(null);
   }
 
-  async function duplicateActive() {
-    if (!activeScenario) return;
+  async function duplicateScenario(scenario: Scenario) {
     const now = new Date().toISOString();
-    const copy = { ...activeScenario, id: `scenario_${crypto.randomUUID()}`, name: `${activeScenario.name} (copy)`, createdAt: now, updatedAt: now };
+    const copy = { ...scenario, id: `scenario_${crypto.randomUUID()}`, name: `${scenario.name} (copy)`, createdAt: now, updatedAt: now };
     await saveScenario.mutateAsync(copy);
     setActiveScenarioId(copy.id);
   }
 
   async function submitRename() {
-    if (!activeScenario || !renameValue.trim()) return;
-    await saveScenario.mutateAsync({ ...activeScenario, name: renameValue.trim() });
+    if (!targetScenario || !renameValue.trim()) return;
+    await saveScenario.mutateAsync({ ...targetScenario, name: renameValue.trim() });
     setDialogMode(null);
   }
 
   async function confirmDelete() {
-    if (!activeScenario) return;
-    await deleteScenario.mutateAsync(activeScenario.id);
-    const remaining = scenarios.filter((s) => s.id !== activeScenario.id);
-    setActiveScenarioId(remaining[0]?.id ?? null);
+    if (!targetScenario) return;
+    await deleteScenario.mutateAsync(targetScenario.id);
+    if (targetScenario.id === activeScenarioId) {
+      const remaining = scenarios.filter((s) => s.id !== targetScenario.id);
+      setActiveScenarioId(remaining[0]?.id ?? null);
+    }
     setDialogMode(null);
   }
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="outline"
-            className="w-full h-auto justify-between gap-2 px-3 py-2 rounded-[9px] border-edge bg-surface text-[13px] font-medium text-ink hover:bg-surface-pressed hover:text-ink"
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between px-1">
+        <span className="text-[11px] font-semibold text-dim uppercase tracking-[0.04em]">Scenarios</span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-6 cursor-pointer"
+          onClick={() => setDialogMode('new')}
+          aria-label="Add new scenario"
+        >
+          <Plus className="size-3.5" />
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-0.5 max-h-[280px] overflow-y-auto">
+        {scenarios.length === 0 && <p className="px-2 py-1.5 text-[13px] text-dim">No scenarios yet</p>}
+        {scenarios.map((scenario) => (
+          <div
+            key={scenario.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => setActiveScenarioId(scenario.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') setActiveScenarioId(scenario.id);
+            }}
+            className={`group flex items-center justify-between gap-1 rounded-[9px] px-2 py-1.5 cursor-pointer text-[13px] transition-colors ${
+              scenario.id === activeScenarioId ? 'bg-surface-pressed font-semibold text-ink' : 'text-ink-mid hover:bg-surface-pressed'
+            }`}
           >
-            <span className="truncate">{activeScenario?.name ?? 'No scenario'}</span>
-            <ChevronsUpDown className="size-3.5 shrink-0 text-dim" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-[220px]">
-          <DropdownMenuLabel>Scenarios</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {scenarios.length === 0 && <div className="px-2 py-1.5 text-[13px] text-dim">No scenarios yet</div>}
-          {scenarios.map((scenario) => (
-            <DropdownMenuItem key={scenario.id} onSelect={() => setActiveScenarioId(scenario.id)} className={scenario.id === activeScenarioId ? 'font-semibold' : undefined}>
-              {scenario.name}
-            </DropdownMenuItem>
-          ))}
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setDialogMode('new')}>
-            <Plus /> New scenario
-          </DropdownMenuItem>
-          {activeScenario && (
-            <>
-              <DropdownMenuItem onSelect={duplicateActive}>
-                <Copy /> Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  setRenameValue(activeScenario.name);
+            <span className="truncate">{scenario.name}</span>
+            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 shrink-0">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-6 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  duplicateScenario(scenario);
+                }}
+                aria-label={`Duplicate ${scenario.name}`}
+              >
+                <Copy className="size-3" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-6 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTargetScenario(scenario);
+                  setRenameValue(scenario.name);
                   setDialogMode('rename');
                 }}
+                aria-label={`Rename ${scenario.name}`}
               >
-                <Pencil /> Rename
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setDialogMode('delete')} className="text-loss focus:text-loss">
-                <Trash2 /> Delete
-              </DropdownMenuItem>
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+                <Pencil className="size-3" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-6 cursor-pointer text-loss hover:text-loss"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTargetScenario(scenario);
+                  setDialogMode('delete');
+                }}
+                aria-label={`Delete ${scenario.name}`}
+              >
+                <Trash2 className="size-3" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
 
       <Dialog open={dialogMode === 'new'} onOpenChange={(open: boolean) => !open && setDialogMode(null)}>
         <DialogContent className="sm:max-w-sm">
@@ -139,7 +169,7 @@ export function ScenarioSwitcher() {
       <Dialog open={dialogMode === 'delete'} onOpenChange={(open: boolean) => !open && setDialogMode(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Delete "{activeScenario?.name}"?</DialogTitle>
+            <DialogTitle>Delete "{targetScenario?.name}"?</DialogTitle>
           </DialogHeader>
           <p className="text-[13px] text-dim">This also deletes any grid overrides saved for this scenario. This can't be undone.</p>
           <DialogFooter>
@@ -152,6 +182,6 @@ export function ScenarioSwitcher() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
