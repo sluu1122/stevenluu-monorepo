@@ -39,9 +39,9 @@ export default function App() {
               <DashboardHeader title={activeLabel} onMenuClick={() => setNavOpen(true)} />
             </div>
 
-            <main className="flex-1 pt-4 sm:pt-[26px] px-4 sm:px-6 lg:px-8 pb-10 max-w-[1240px] w-full print:p-0 print:max-w-none">
+            <main className="flex-1 pt-4 sm:pt-[26px] px-4 sm:px-6 lg:px-8 pb-10 print:p-0">
               <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as TabValue)}>
-                <TabsList className="mb-5 print:hidden w-full sm:w-auto justify-start overflow-x-auto">
+                <TabsList className="mb-5 print:hidden w-full sm:w-auto justify-start overflow-x-auto max-w-[1240px] mx-auto">
                   {TABS.map((tab) => (
                     <TabsTrigger key={tab.value} value={tab.value}>
                       {tab.label}
@@ -49,16 +49,16 @@ export default function App() {
                   ))}
                 </TabsList>
 
-                <TabsContent value="setup">
+                <TabsContent value="setup" className="max-w-[1240px] w-full mx-auto">
                   <ScenarioSetupTab />
                 </TabsContent>
                 <TabsContent value="grid">
                   <PlanningGridTab />
                 </TabsContent>
-                <TabsContent value="charts">
+                <TabsContent value="charts" className="max-w-[1240px] w-full mx-auto">
                   <ChartsAnalyticsTab />
                 </TabsContent>
-                <TabsContent value="summary">
+                <TabsContent value="summary" className="max-w-[1240px] w-full mx-auto print:max-w-none">
                   <ClientSummaryTab />
                 </TabsContent>
               </Tabs>

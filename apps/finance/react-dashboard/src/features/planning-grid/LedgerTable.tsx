@@ -167,7 +167,7 @@ export function LedgerTable({ scenario, rows, overrides, onSelectRetirementYear,
   const visibleColumnsByGroup = groups.map((group) => (collapsed[group.key] ? [] : group.columns));
 
   return (
-    <div className="border border-edge rounded-[14px] overflow-hidden bg-surface">
+    <div className="border border-edge rounded-[14px] overflow-x-auto overflow-y-hidden bg-surface">
       <RetirementStartRadioGroup value={scenario.retirementStartYear} onChange={onSelectRetirementYear}>
         <Table className="text-[12.5px]">
           <TableHeader className="bg-surface-raised">
