@@ -6,6 +6,7 @@ import { calculateTotalTax } from './calculateTax';
 import { applyWithdrawal } from './waterfall';
 import { checkAndReplenish } from './cashBuffer';
 import { applyGrowth } from './growth';
+import { calculateMeltdownWithdrawal } from './meltdown';
 
 function findOverride(overrides: GridOverride[], year: number, field: string): GridOverride | undefined {
   return overrides.find((o) => o.year === year && o.field === field);
@@ -137,9 +138,67 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
       balances[bucketId] -= amount;
     }
 
+    const contributions: Record<string, number> = {};
+
+    // --- Step 2b: optional meltdown - a discretionary extra withdrawal from
+    // tax-deferred buckets, beyond the spending need, up to a target taxable-
+    // income ceiling within a configured window - taxed at its own
+    // incremental rate (two calculateTotalTax calls, same two-pass shape as
+    // the spending/tax split above) and the after-tax surplus reinvested
+    // into a chosen destination bucket. ---
+    const meltdownResult = calculateMeltdownWithdrawal(scenario.meltdownRule, year, grossTaxableIncome, buckets, balances);
+    audit.push(...meltdownResult.steps);
+    for (const [bucketId, amount] of Object.entries(meltdownResult.withdrawals)) {
+      balances[bucketId] -= amount;
+    }
+
+    let meltdownTax = { federal: 0, stateOrProvincial: 0, total: 0 };
+    const meltdownTaxWithdrawal: Record<string, number> = {};
+    if (meltdownResult.totalWithdrawn > 0) {
+      const taxWithMeltdown = calculateTotalTax(grossTaxableIncome + meltdownResult.totalWithdrawn, scenario.taxConfig);
+      meltdownTax = {
+        federal: taxWithMeltdown.federal - taxResult.federal,
+        stateOrProvincial: taxWithMeltdown.stateOrProvincial - taxResult.stateOrProvincial,
+        total: taxWithMeltdown.total - taxResult.total,
+      };
+      audit.push({
+        label: 'Tax on meltdown withdrawal (incremental)',
+        formula: 'calculateTotalTax(grossTaxableIncome + meltdownWithdrawal) - calculateTotalTax(grossTaxableIncome)',
+        inputs: { grossTaxableIncome, meltdownWithdrawal: meltdownResult.totalWithdrawn },
+        result: meltdownTax.total,
+        relatedFields: ['taxesPaid.total'],
+      });
+
+      const meltdownTaxDraw = applyWithdrawal(meltdownTax.total, buckets, scenario.waterfall, balances, year);
+      audit.push(...meltdownTaxDraw.steps);
+      if (meltdownTaxDraw.warning) warnings.push(meltdownTaxDraw.warning);
+      for (const [bucketId, amount] of Object.entries(meltdownTaxDraw.withdrawals)) {
+        balances[bucketId] -= amount;
+        meltdownTaxWithdrawal[bucketId] = (meltdownTaxWithdrawal[bucketId] ?? 0) + amount;
+      }
+
+      const destinationId = scenario.meltdownRule?.destinationAccountBucketId;
+      const reinvestment = Math.max(0, meltdownResult.totalWithdrawn - meltdownTax.total);
+      if (destinationId && reinvestment > 0 && balances[destinationId] !== undefined) {
+        balances[destinationId] += reinvestment;
+        contributions[destinationId] = (contributions[destinationId] ?? 0) + reinvestment;
+        audit.push({
+          label: 'Meltdown reinvestment',
+          formula: 'meltdownWithdrawal - incrementalTax',
+          inputs: { meltdownWithdrawal: meltdownResult.totalWithdrawn, incrementalTax: meltdownTax.total },
+          result: reinvestment,
+          relatedFields: [`contributions.${destinationId}`],
+        });
+      }
+    }
+
     const withdrawals: Record<string, number> = {};
     for (const bucket of buckets) {
-      const total = (spendingWithdrawal.withdrawals[bucket.id] ?? 0) + (taxWithdrawal.withdrawals[bucket.id] ?? 0);
+      const total =
+        (spendingWithdrawal.withdrawals[bucket.id] ?? 0) +
+        (taxWithdrawal.withdrawals[bucket.id] ?? 0) +
+        (meltdownResult.withdrawals[bucket.id] ?? 0) +
+        (meltdownTaxWithdrawal[bucket.id] ?? 0);
       if (total > 0) withdrawals[bucket.id] = total;
     }
 
@@ -166,13 +225,12 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
     }
 
     // --- Step 5: end-of-year contribution (pre-retirement only) ---
-    const contributions: Record<string, number> = {};
     if (!isRetired) {
       for (const bucket of buckets) {
         const amount = bucket.annualContributionWhileWorking ?? 0;
         if (amount > 0) {
           balances[bucket.id] += amount;
-          contributions[bucket.id] = amount;
+          contributions[bucket.id] = (contributions[bucket.id] ?? 0) + amount;
         }
       }
     }
@@ -195,8 +253,12 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
       growth,
       accountEnd,
       cashBufferReplenishment,
-      meltdownWithdrawalTotal: 0,
-      taxesPaid: { federal: taxResult.federal, stateOrProvincial: taxResult.stateOrProvincial, total: taxResult.total },
+      meltdownWithdrawalTotal: meltdownResult.totalWithdrawn,
+      taxesPaid: {
+        federal: taxResult.federal + meltdownTax.federal,
+        stateOrProvincial: taxResult.stateOrProvincial + meltdownTax.stateOrProvincial,
+        total: taxResult.total + meltdownTax.total,
+      },
       totalNetWorth,
       overriddenFields,
       audit: { steps: audit },

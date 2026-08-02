@@ -108,6 +108,42 @@ describe('buildLedger', () => {
     expect(oasAmountYear2).toBeLessThan(oasAmountYear1); // year 2 pays for year 1's high income
   });
 
+  it('melts down a tax-deferred bucket up to the target ceiling only within the configured window, reinvesting after-tax surplus', () => {
+    const scenario = createDefaultScenario('CA');
+    const startYear = new Date().getFullYear();
+    scenario.retirementStartYear = startYear;
+    scenario.annualSpendingRealAtRetirement = 0; // isolate the meltdown's own effect from ordinary spending withdrawals
+
+    const rrsp = scenario.accountBuckets.find((b) => b.kind === 'CA_RRSP_RRIF')!;
+    const tfsa = scenario.accountBuckets.find((b) => b.kind === 'CA_TFSA')!;
+    scenario.meltdownRule = {
+      enabled: true,
+      sourceAccountBucketIds: [rrsp.id],
+      targetTaxableIncomeCeiling: 40_000,
+      startYear,
+      endYear: startYear + 1,
+      destinationAccountBucketId: tfsa.id,
+    };
+    scenario.planningEndAge = new Date().getFullYear() - scenario.birthYear + 4;
+
+    const { rows } = buildLedger(scenario, []);
+    const inWindow = rows.filter((r) => r.year <= startYear + 1);
+    const afterWindow = rows.filter((r) => r.year > startYear + 1);
+
+    expect(inWindow.every((r) => r.meltdownWithdrawalTotal > 0)).toBe(true);
+    expect(afterWindow.every((r) => r.meltdownWithdrawalTotal === 0)).toBe(true);
+
+    // The withdrawal must show up against the RRSP bucket and the after-tax
+    // surplus must land in the TFSA (contributions), not just vanish.
+    const firstWindowRow = inWindow[0];
+    expect(firstWindowRow.withdrawals[rrsp.id]).toBeGreaterThanOrEqual(firstWindowRow.meltdownWithdrawalTotal);
+    expect(firstWindowRow.contributions[tfsa.id]).toBeGreaterThan(0);
+    expect(firstWindowRow.contributions[tfsa.id]).toBeLessThan(firstWindowRow.meltdownWithdrawalTotal); // net of tax
+
+    // Melting down triggers real tax that wouldn't otherwise exist (spending is 0).
+    expect(firstWindowRow.taxesPaid.total).toBeGreaterThan(0);
+  });
+
   it('applies a GridOverride for spendingNominal without disturbing other years', () => {
     const scenario = createDefaultScenario('US');
     const startYear = new Date().getFullYear();

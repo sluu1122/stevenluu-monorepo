@@ -14,6 +14,7 @@ import { AccountBucketsEditor } from './AccountBucketsEditor';
 import { TaxAssumptionsForm } from './TaxAssumptionsForm';
 import { WaterfallOrderEditor } from './WaterfallOrderEditor';
 import { CashBufferRuleForm } from './CashBufferRuleForm';
+import { MeltdownRuleForm } from './MeltdownRuleForm';
 import { IncomeAndBenefitsForm } from './IncomeAndBenefitsForm';
 import { ImportExportPanel } from './ImportExportPanel';
 
@@ -101,6 +102,7 @@ export function ScenarioSetupTab() {
         <TaxAssumptionsForm />
         <WaterfallOrderEditor />
         <CashBufferRuleForm />
+        <MeltdownRuleForm />
         <IncomeAndBenefitsForm />
         <ImportExportPanel />
       </form>
