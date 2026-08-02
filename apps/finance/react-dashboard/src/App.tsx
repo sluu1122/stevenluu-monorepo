@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { DashboardHeader } from './components/DashboardHeader';
-import { DashCard } from './components/DashCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/tabs';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { ActiveScenarioProvider } from './providers/ActiveScenarioProvider';
 import { ScenarioSetupTab } from './features/scenario-setup/ScenarioSetupTab';
 import { PlanningGridTab } from './features/planning-grid/PlanningGridTab';
 import { ChartsAnalyticsTab } from './features/charts-analytics/ChartsAnalyticsTab';
+import { ClientSummaryTab } from './features/client-summary/ClientSummaryTab';
 
 const TABS = [
   { value: 'setup', label: 'Scenario Setup' },
@@ -28,14 +28,18 @@ export default function App() {
     <ThemeProvider>
       <ActiveScenarioProvider>
         <div className="flex min-h-dvh">
-          <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
+          <div className="print:hidden contents">
+            <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
+          </div>
 
           <div className="flex-1 min-w-0 flex flex-col">
-            <DashboardHeader title={activeLabel} onMenuClick={() => setNavOpen(true)} />
+            <div className="print:hidden contents">
+              <DashboardHeader title={activeLabel} onMenuClick={() => setNavOpen(true)} />
+            </div>
 
-            <main className="flex-1 pt-4 sm:pt-[26px] px-4 sm:px-6 lg:px-8 pb-10 max-w-[1240px] w-full">
+            <main className="flex-1 pt-4 sm:pt-[26px] px-4 sm:px-6 lg:px-8 pb-10 max-w-[1240px] w-full print:p-0 print:max-w-none">
               <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as TabValue)}>
-                <TabsList className="mb-5">
+                <TabsList className="mb-5 print:hidden">
                   {TABS.map((tab) => (
                     <TabsTrigger key={tab.value} value={tab.value}>
                       {tab.label}
@@ -53,7 +57,7 @@ export default function App() {
                   <ChartsAnalyticsTab />
                 </TabsContent>
                 <TabsContent value="summary">
-                  <DashCard>Client Summary — coming up next.</DashCard>
+                  <ClientSummaryTab />
                 </TabsContent>
               </Tabs>
             </main>
