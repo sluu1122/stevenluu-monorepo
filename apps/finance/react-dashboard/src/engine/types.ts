@@ -67,4 +67,5 @@ export interface LedgerYearRow {
 export interface LedgerResult {
   rows: LedgerYearRow[];
   warnings: EngineWarning[];
+  error?: { message: string; stack?: string };
 }

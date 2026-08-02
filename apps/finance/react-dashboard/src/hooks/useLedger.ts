@@ -8,6 +8,11 @@ const EMPTY_RESULT: LedgerResult = { rows: [], warnings: [] };
 export function useLedger(scenario: Scenario | null, overrides: GridOverride[]): LedgerResult {
   return useMemo(() => {
     if (!scenario) return EMPTY_RESULT;
-    return buildLedger(scenario, overrides);
+    try {
+      return buildLedger(scenario, overrides);
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error(String(e));
+      return { rows: [], warnings: [], error: { message: error.message, stack: error.stack } };
+    }
   }, [scenario, overrides]);
 }

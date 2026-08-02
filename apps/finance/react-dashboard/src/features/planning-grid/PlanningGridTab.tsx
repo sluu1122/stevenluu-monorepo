@@ -21,7 +21,7 @@ export function PlanningGridTab() {
   const saveOverride = useSaveOverride(activeScenario?.id);
   const deleteOverride = useDeleteOverride(activeScenario?.id);
 
-  const { rows, warnings } = useLedger(activeScenario, overrides);
+  const { rows, warnings, error } = useLedger(activeScenario, overrides);
 
   const [auditRow, setAuditRow] = useState<LedgerYearRow | null>(null);
   const [overrideYear, setOverrideYear] = useState<number | null>(null);
@@ -35,30 +35,63 @@ export function PlanningGridTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      {warnings.length > 0 && (
+      {error && (
         <DashCard className="border-loss/30 bg-loss-bg flex items-start gap-2.5 py-3">
           <AlertTriangle className="size-4 text-loss shrink-0 mt-0.5" />
-          <div className="text-[12.5px] text-loss-dark">
-            <p className="font-semibold mb-1">
-              {warnings.length} shortfall{warnings.length > 1 ? 's' : ''} in this plan
-            </p>
-            <p>{warnings[0].message}</p>
+          <div className="text-[12.5px] text-loss-dark w-full">
+            <p className="font-semibold mb-1">This scenario failed to calculate.</p>
+            <p className="mb-1.5">Something in the scenario's data is causing the engine to throw - check for a waterfall step or override pointing at a removed account.</p>
+            <details>
+              <summary className="cursor-pointer font-medium">Show details</summary>
+              <pre className="mt-1.5 whitespace-pre-wrap break-words text-[11.5px] bg-surface border border-loss/20 rounded-md p-2">
+                {error.message}
+                {error.stack ? `\n\n${error.stack}` : ''}
+              </pre>
+            </details>
           </div>
         </DashCard>
       )}
 
-      <p className="text-[12.5px] text-dim">
-        Click a row to see its formula breakdown. Click a "Nominal" spending value to override it for that year. Pick "Retire" on the row you want to start decumulation.
-      </p>
+      {!error && warnings.length > 0 && (
+        <DashCard className="border-loss/30 bg-loss-bg flex items-start gap-2.5 py-3">
+          <AlertTriangle className="size-4 text-loss shrink-0 mt-0.5" />
+          <div className="text-[12.5px] text-loss-dark w-full">
+            <p className="font-semibold mb-1">
+              {warnings.length} shortfall{warnings.length > 1 ? 's' : ''} in this plan
+            </p>
+            <p>{warnings[0].message}</p>
+            {warnings.length > 1 && (
+              <details className="mt-1">
+                <summary className="cursor-pointer font-medium">Show all {warnings.length} warnings</summary>
+                <ul className="mt-1.5 list-disc pl-4 space-y-0.5">
+                  {warnings.map((w, i) => (
+                    <li key={i}>
+                      {w.year}: {w.message}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        </DashCard>
+      )}
 
-      <LedgerTable
-        scenario={activeScenario}
-        rows={rows}
-        overrides={overrides}
-        onSelectRetirementYear={(year) => saveScenario.mutate({ ...activeScenario, retirementStartYear: year, updatedAt: new Date().toISOString() })}
-        onOpenAudit={setAuditRow}
-        onEditOverride={(row) => setOverrideYear(row.year)}
-      />
+      {!error && (
+        <>
+          <p className="text-[12.5px] text-dim">
+            Click a row to see its formula breakdown. Click a "Nominal" spending value to override it for that year. Pick "Retire" on the row you want to start decumulation.
+          </p>
+
+          <LedgerTable
+            scenario={activeScenario}
+            rows={rows}
+            overrides={overrides}
+            onSelectRetirementYear={(year) => saveScenario.mutate({ ...activeScenario, retirementStartYear: year, updatedAt: new Date().toISOString() })}
+            onOpenAudit={setAuditRow}
+            onEditOverride={(row) => setOverrideYear(row.year)}
+          />
+        </>
+      )}
 
       <FormulaBreakdownSheet row={auditRow} currency={activeScenario.currency} onClose={() => setAuditRow(null)} />
 
