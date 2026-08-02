@@ -36,13 +36,20 @@ export function ScenarioSetupTab() {
   }, [activeScenario?.id, activeScenario?.updatedAt]);
 
   // Sub-forms call watch() on array fields (accountBuckets, waterfall, ...)
-  // unconditionally. form.watch('id') is reactive - it re-renders this
-  // component once reset() above actually lands - so gating on it (rather
+  // unconditionally. form.watch() is reactive - it re-renders this component
+  // once reset() above actually lands - so gating on watchedValues.id (rather
   // than a separate setState-in-effect flag) holds off rendering children
   // until the form is populated for the current scenario, with no risk of
   // the render right after creating/switching a scenario seeing undefined
   // arrays and crashing.
-  const formScenarioId = form.watch('id');
+  const watchedValues = form.watch();
+  const formScenarioId = watchedValues.id;
+
+  // RHF's own formState.isDirty doesn't reliably clear after reset() on an
+  // object this large/nested (dirtyFields entries from before the reset can
+  // survive it) - comparing the live watched values against the last-known
+  // persisted scenario directly sidesteps that rather than fighting it.
+  const hasUnsavedChanges = JSON.stringify(watchedValues) !== JSON.stringify(activeScenario);
 
   async function createAndActivate(country: 'US' | 'CA') {
     const scenario = createDefaultScenario(country);
@@ -83,7 +90,7 @@ export function ScenarioSetupTab() {
               {invalidFieldCount} field{invalidFieldCount > 1 ? 's need' : ' needs'} attention before saving.
             </span>
           )}
-          <Button type="submit" disabled={saveScenario.isPending}>
+          <Button type="submit" disabled={saveScenario.isPending || !hasUnsavedChanges}>
             {saveScenario.isPending ? 'Saving…' : 'Save changes'}
           </Button>
         </div>
