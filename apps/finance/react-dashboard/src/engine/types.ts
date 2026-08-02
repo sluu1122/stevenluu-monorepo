@@ -7,6 +7,7 @@ export type {
   TaxConfig,
   AccountKind,
   AccountBucket,
+  TaxTreatment,
   WaterfallStep,
   WaterfallRule,
   CashBufferRule,

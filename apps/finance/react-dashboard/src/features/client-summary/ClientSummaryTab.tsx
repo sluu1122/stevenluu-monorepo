@@ -26,7 +26,7 @@ export function ClientSummaryTab() {
         <div>
           <h2 className="text-[17px] font-semibold text-ink">{activeScenario.name}</h2>
           <p className="text-[12.5px] text-dim">
-            {activeScenario.country === 'US' ? 'United States' : 'Canada'} · {activeScenario.currency}
+            Tax residency: {activeScenario.country === 'US' ? 'United States' : 'Canada'} · {activeScenario.currency}
           </p>
         </div>
         <Button variant="outline" onClick={() => window.print()}>
@@ -37,7 +37,7 @@ export function ClientSummaryTab() {
       <div className="hidden print:block">
         <h2 className="text-[18px] font-semibold text-ink mb-1">{activeScenario.name} - Retirement Plan Summary</h2>
         <p className="text-[12.5px] text-dim mb-4">
-          {activeScenario.country === 'US' ? 'United States' : 'Canada'} · {activeScenario.currency} · Generated {new Date().toLocaleDateString()}
+          Tax residency: {activeScenario.country === 'US' ? 'United States' : 'Canada'} · {activeScenario.currency} · Generated {new Date().toLocaleDateString()}
         </p>
       </div>
 

@@ -47,6 +47,7 @@ export const AccountKindSchema = z.union([USAccountKindSchema, CAAccountKindSche
 export type AccountKind = z.infer<typeof AccountKindSchema>;
 
 export const TaxTreatmentSchema = z.enum(['taxable', 'taxDeferred', 'taxFree']);
+export type TaxTreatment = z.infer<typeof TaxTreatmentSchema>;
 
 export const AccountBucketSchema = z.object({
   id: z.string(),

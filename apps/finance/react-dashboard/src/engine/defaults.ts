@@ -1,105 +1,41 @@
 import { generateId } from './id';
 import { getDefaultFederalTable } from './taxBrackets';
 import { US_SOCIAL_SECURITY_2026, CA_CPP_2026, CA_OAS_2026 } from './benefitDefaults';
+import { ACCOUNT_KIND_META, US_ACCOUNT_KINDS, CA_ACCOUNT_KINDS } from './accountKindMeta';
 import { CURRENT_SCHEMA_VERSION } from './schema';
-import type { AccountBucket, BenefitConfig, Scenario } from './schema';
+import type { AccountBucket, AccountKind, BenefitConfig, Scenario } from './schema';
+
+const SEED_AMOUNTS_BY_KIND: Record<AccountKind, { startingBalance: number; preRetirementReturnPct: number; postRetirementReturnPct: number; annualContributionWhileWorking?: number }> = {
+  US_CASH_HYSA: { startingBalance: 30_000, preRetirementReturnPct: 2, postRetirementReturnPct: 2 },
+  US_TAXABLE_BROKERAGE: { startingBalance: 200_000, preRetirementReturnPct: 7, postRetirementReturnPct: 5, annualContributionWhileWorking: 10_000 },
+  US_TRADITIONAL_401K_IRA: { startingBalance: 400_000, preRetirementReturnPct: 7, postRetirementReturnPct: 5, annualContributionWhileWorking: 24_500 },
+  US_ROTH_401K_IRA: { startingBalance: 100_000, preRetirementReturnPct: 7, postRetirementReturnPct: 5, annualContributionWhileWorking: 7_500 },
+  CA_CASH_POOL: { startingBalance: 30_000, preRetirementReturnPct: 2, postRetirementReturnPct: 2 },
+  CA_NON_REGISTERED: { startingBalance: 200_000, preRetirementReturnPct: 7, postRetirementReturnPct: 5, annualContributionWhileWorking: 10_000 },
+  CA_RRSP_RRIF: { startingBalance: 400_000, preRetirementReturnPct: 7, postRetirementReturnPct: 5, annualContributionWhileWorking: 32_490 },
+  CA_TFSA: { startingBalance: 100_000, preRetirementReturnPct: 7, postRetirementReturnPct: 5, annualContributionWhileWorking: 7_000 },
+};
+
+function createSeededAccountBucket(kind: AccountKind): AccountBucket {
+  const meta = ACCOUNT_KIND_META[kind];
+  const seed = SEED_AMOUNTS_BY_KIND[kind];
+  return {
+    id: generateId('bucket'),
+    label: meta.label,
+    country: meta.country,
+    kind,
+    taxTreatment: meta.taxTreatment,
+    isCashBuffer: meta.isCashBuffer,
+    ...seed,
+  };
+}
 
 function createUSAccountBuckets(): AccountBucket[] {
-  return [
-    {
-      id: generateId('bucket'),
-      label: 'Cash / HYSA',
-      country: 'US',
-      kind: 'US_CASH_HYSA',
-      taxTreatment: 'taxable',
-      startingBalance: 30_000,
-      preRetirementReturnPct: 2,
-      postRetirementReturnPct: 2,
-      isCashBuffer: true,
-    },
-    {
-      id: generateId('bucket'),
-      label: 'Taxable Brokerage',
-      country: 'US',
-      kind: 'US_TAXABLE_BROKERAGE',
-      taxTreatment: 'taxable',
-      startingBalance: 200_000,
-      preRetirementReturnPct: 7,
-      postRetirementReturnPct: 5,
-      annualContributionWhileWorking: 10_000,
-    },
-    {
-      id: generateId('bucket'),
-      label: 'Traditional 401(k)/IRA',
-      country: 'US',
-      kind: 'US_TRADITIONAL_401K_IRA',
-      taxTreatment: 'taxDeferred',
-      startingBalance: 400_000,
-      preRetirementReturnPct: 7,
-      postRetirementReturnPct: 5,
-      annualContributionWhileWorking: 24_500,
-    },
-    {
-      id: generateId('bucket'),
-      label: 'Roth 401(k)/IRA',
-      country: 'US',
-      kind: 'US_ROTH_401K_IRA',
-      taxTreatment: 'taxFree',
-      startingBalance: 100_000,
-      preRetirementReturnPct: 7,
-      postRetirementReturnPct: 5,
-      annualContributionWhileWorking: 7_500,
-    },
-  ];
+  return US_ACCOUNT_KINDS.map(createSeededAccountBucket);
 }
 
 function createCAAccountBuckets(): AccountBucket[] {
-  return [
-    {
-      id: generateId('bucket'),
-      label: 'Cash Pool',
-      country: 'CA',
-      kind: 'CA_CASH_POOL',
-      taxTreatment: 'taxable',
-      startingBalance: 30_000,
-      preRetirementReturnPct: 2,
-      postRetirementReturnPct: 2,
-      isCashBuffer: true,
-    },
-    {
-      id: generateId('bucket'),
-      label: 'Non-Registered',
-      country: 'CA',
-      kind: 'CA_NON_REGISTERED',
-      taxTreatment: 'taxable',
-      startingBalance: 200_000,
-      preRetirementReturnPct: 7,
-      postRetirementReturnPct: 5,
-      annualContributionWhileWorking: 10_000,
-    },
-    {
-      id: generateId('bucket'),
-      label: 'RRSP/RRIF',
-      country: 'CA',
-      kind: 'CA_RRSP_RRIF',
-      taxTreatment: 'taxDeferred',
-      startingBalance: 400_000,
-      preRetirementReturnPct: 7,
-      postRetirementReturnPct: 5,
-      annualContributionWhileWorking: 32_490,
-    },
-    {
-      id: generateId('bucket'),
-      label: 'TFSA',
-      country: 'CA',
-      kind: 'CA_TFSA',
-      taxTreatment: 'taxFree',
-      startingBalance: 100_000,
-      preRetirementReturnPct: 7,
-      postRetirementReturnPct: 5,
-      annualContributionWhileWorking: 7_000,
-    },
-  ];
+  return CA_ACCOUNT_KINDS.map(createSeededAccountBucket);
 }
 
 function createDefaultBenefits(country: 'US' | 'CA'): BenefitConfig[] {
