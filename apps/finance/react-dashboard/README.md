@@ -1,22 +1,25 @@
 # react-dashboard
 
-Finance sandbox dashboard — a personal investment portfolio tracker with a live-updating watchlist and trade simulator.
+A deterministic, dual-country (US/Canada) retirement and financial-scenario planning engine — year-by-year ledger projections with tax-aware withdrawal waterfalls, cash-buffer rules, cell-level overrides with a formula-audit trail, and scenario comparison. All calculation is pure TypeScript running locally in the browser; there is no AI/LLM involved in any projection.
 
 **Live:** https://react.stevenluu.com
 **Dev URL:** http://localhost:5173
 
 ## Features
 
-- **Net worth** — Total portfolio value with a 30-day history chart
-- **Watchlist** — Simulated real-time market feed with price ticks
-- **Asset allocation** — Breakdown by asset class with a donut chart
-- **Trade sandbox** — Buy/sell simulator with order confirmation
+- **Scenario Setup** — global parameters, account buckets (US: Taxable/401(k)/IRA/Roth/Cash; Canada: Non-Registered/RRSP-RRIF/TFSA/Cash), editable 2026 federal tax brackets, withdrawal waterfall ordering, cash-buffer rule, income sources, pensions/benefits, and JSON backup/restore
+- **Planning Grid** — full year-by-year ledger with collapsible column groups, a retirement-start selector, per-cell spending overrides, and a formula-breakdown audit sheet for every row
+- **Charts & Analytics** — net worth over time, balance by account bucket, and a side-by-side scenario comparison overlay
+- **Client Summary** — key metrics and a condensed printable summary
+
+All scenario and override data is stored in browser LocalStorage only (see `src/repository/`); a Drizzle/Postgres schema (`src/db/schema.ts`) exists as forward-looking scaffolding for a future backend, not a live connection.
 
 ## Stack
 
 - React 19, TypeScript
 - Vite
-- TanStack Query v5 (data fetching and caching)
+- TanStack Query v5 (repository read/write caching)
+- react-hook-form + Zod (forms and the single schema shared by validation, persistence, and import)
 - Recharts (charting)
 - Tailwind CSS
 - `@repo/ui` (shared shadcn/ui component library)

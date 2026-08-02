@@ -39,7 +39,15 @@ export function WaterfallOrderEditor() {
                 {index + 1}. {bucket?.label ?? step.accountBucketId}
               </span>
               <div className="flex gap-1">
-                <Button type="button" variant="ghost" size="icon" className="size-7" disabled={index === 0} onClick={() => move(index, -1)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="size-7"
+                  disabled={index === 0}
+                  onClick={() => move(index, -1)}
+                  aria-label={`Move ${bucket?.label ?? 'bucket'} earlier in the waterfall`}
+                >
                   <ArrowUp className="size-3.5" />
                 </Button>
                 <Button
@@ -49,6 +57,7 @@ export function WaterfallOrderEditor() {
                   className="size-7"
                   disabled={index === sorted.length - 1}
                   onClick={() => move(index, 1)}
+                  aria-label={`Move ${bucket?.label ?? 'bucket'} later in the waterfall`}
                 >
                   <ArrowDown className="size-3.5" />
                 </Button>

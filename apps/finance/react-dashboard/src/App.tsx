@@ -41,7 +41,7 @@ export default function App() {
 
             <main className="flex-1 pt-4 sm:pt-[26px] px-4 sm:px-6 lg:px-8 pb-10 max-w-[1240px] w-full print:p-0 print:max-w-none">
               <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as TabValue)}>
-                <TabsList className="mb-5 print:hidden">
+                <TabsList className="mb-5 print:hidden w-full sm:w-auto justify-start overflow-x-auto">
                   {TABS.map((tab) => (
                     <TabsTrigger key={tab.value} value={tab.value}>
                       {tab.label}
