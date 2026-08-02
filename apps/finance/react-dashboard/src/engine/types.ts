@@ -14,6 +14,9 @@ export type {
   InflationAssumption,
   IncomeSource,
   BenefitConfig,
+  PersonOwner,
+  Spouse,
+  MeltdownRule,
   GridOverride,
   Scenario,
   ExportBundle,
@@ -56,6 +59,7 @@ export interface LedgerYearRow {
   accountEnd: Record<string, number>;
 
   cashBufferReplenishment: number;
+  meltdownWithdrawalTotal: number;
 
   taxesPaid: { federal: number; stateOrProvincial: number; total: number };
 

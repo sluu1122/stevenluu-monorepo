@@ -89,9 +89,16 @@ export const InflationAssumptionSchema = z.object({
 });
 export type InflationAssumption = z.infer<typeof InflationAssumptionSchema>;
 
+// Which household member a given income source or benefit belongs to. Account
+// buckets stay one shared pool regardless - this only tags income/benefit
+// timing, which is genuinely per-person (claim ages, retirement dates).
+export const PersonOwnerSchema = z.enum(['self', 'spouse']);
+export type PersonOwner = z.infer<typeof PersonOwnerSchema>;
+
 export const IncomeSourceSchema = z.object({
   id: z.string(),
   label: z.string().min(1),
+  owner: PersonOwnerSchema.optional(),
   startYear: z.number().int(),
   endYear: z.number().int().optional(),
   annualAmountNominal: z.number().nonnegative(),
@@ -102,11 +109,46 @@ export type IncomeSource = z.infer<typeof IncomeSourceSchema>;
 export const BenefitTypeSchema = z.enum(['US_SOCIAL_SECURITY', 'CA_CPP', 'CA_OAS']);
 export const BenefitConfigSchema = z.object({
   type: BenefitTypeSchema,
+  owner: PersonOwnerSchema.optional(),
   claimAge: z.number().int().positive(),
   monthlyBenefitAtClaimAge: z.number().nonnegative(),
   colaPct: z.number(),
 });
 export type BenefitConfig = z.infer<typeof BenefitConfigSchema>;
+
+// A spouse's own birth year (their benefit claim ages resolve against it
+// independently of the primary person's age) and their own planned
+// retirement year (used to default when their income sources end). Account
+// buckets are never split per-person - this is timing-only.
+export const SpouseSchema = z.object({
+  birthYear: z.number().int(),
+  retirementYear: z.number().int().nullable(),
+});
+export type Spouse = z.infer<typeof SpouseSchema>;
+
+// "Melting down" a tax-deferred account: deliberately withdrawing beyond the
+// spending need, up to a target taxable-income ceiling, during a window
+// (e.g. the gap between retirement and RRIF/RMD age) to smooth taxable
+// income across lower-tax years instead of one huge forced withdrawal later.
+// After-tax surplus is reinvested into a chosen destination bucket.
+export const MeltdownRuleSchema = z.object({
+  enabled: z.boolean(),
+  sourceAccountBucketIds: z.array(z.string()),
+  targetTaxableIncomeCeiling: z.number().nonnegative(),
+  startYear: z.number().int().nullable(),
+  endYear: z.number().int().nullable(),
+  destinationAccountBucketId: z.string().nullable(),
+});
+export type MeltdownRule = z.infer<typeof MeltdownRuleSchema>;
+
+export const DEFAULT_MELTDOWN_RULE: MeltdownRule = {
+  enabled: false,
+  sourceAccountBucketIds: [],
+  targetTaxableIncomeCeiling: 0,
+  startYear: null,
+  endYear: null,
+  destinationAccountBucketId: null,
+};
 
 export const GridOverrideSchema = z.object({
   id: z.string(),
@@ -129,9 +171,11 @@ export const ScenarioSchema = z.object({
   birthYear: z.number().int(),
   planningEndAge: z.number().int().positive(),
   retirementStartYear: z.number().int().nullable(),
+  spouse: SpouseSchema.nullable().optional(),
   accountBuckets: z.array(AccountBucketSchema),
   waterfall: WaterfallRuleSchema,
   cashBufferRule: CashBufferRuleSchema,
+  meltdownRule: MeltdownRuleSchema.optional(),
   taxConfig: TaxConfigSchema,
   inflation: InflationAssumptionSchema,
   incomeSources: z.array(IncomeSourceSchema),

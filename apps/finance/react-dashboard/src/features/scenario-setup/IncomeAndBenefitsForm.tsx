@@ -35,6 +35,7 @@ export function IncomeAndBenefitsForm() {
               append({
                 id: generateId('income'),
                 label: 'New income',
+                owner: 'self',
                 startYear: new Date().getFullYear(),
                 annualAmountNominal: 0,
                 growthRatePct: 0,

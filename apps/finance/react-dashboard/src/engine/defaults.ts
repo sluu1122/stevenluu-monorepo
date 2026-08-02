@@ -43,6 +43,7 @@ function createDefaultBenefits(country: 'US' | 'CA'): BenefitConfig[] {
     return [
       {
         type: 'US_SOCIAL_SECURITY',
+        owner: 'self',
         claimAge: US_SOCIAL_SECURITY_2026.fullRetirementAge,
         monthlyBenefitAtClaimAge: 2_200,
         colaPct: US_SOCIAL_SECURITY_2026.colaPct,
@@ -52,12 +53,14 @@ function createDefaultBenefits(country: 'US' | 'CA'): BenefitConfig[] {
   return [
     {
       type: 'CA_CPP',
+      owner: 'self',
       claimAge: 65,
       monthlyBenefitAtClaimAge: Math.round(CA_CPP_2026.maxMonthlyBenefitAt65 * 0.6),
       colaPct: 2.8,
     },
     {
       type: 'CA_OAS',
+      owner: 'self',
       claimAge: 65,
       monthlyBenefitAtClaimAge: CA_OAS_2026.maxMonthlyBenefit65To74,
       colaPct: 2.8,
@@ -91,12 +94,21 @@ export function createDefaultScenario(country: 'US' | 'CA', name = 'New Scenario
     birthYear: new Date().getFullYear() - 35,
     planningEndAge: 95,
     retirementStartYear: null,
+    spouse: null,
     accountBuckets,
     waterfall,
     cashBufferRule: {
       enabled: true,
       targetMonthsOfSpending: 6,
       replenishmentOrder: orderedNonCash.map((b) => b.id),
+    },
+    meltdownRule: {
+      enabled: false,
+      sourceAccountBucketIds: [],
+      targetTaxableIncomeCeiling: 0,
+      startYear: null,
+      endYear: null,
+      destinationAccountBucketId: null,
     },
     taxConfig: {
       country,

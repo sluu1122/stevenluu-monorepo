@@ -174,6 +174,7 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
       growth,
       accountEnd,
       cashBufferReplenishment,
+      meltdownWithdrawalTotal: 0,
       taxesPaid: { federal: taxResult.federal, stateOrProvincial: taxResult.stateOrProvincial, total: taxResult.total },
       totalNetWorth,
       overriddenFields,
