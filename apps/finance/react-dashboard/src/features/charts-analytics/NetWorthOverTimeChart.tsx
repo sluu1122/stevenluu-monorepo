@@ -15,7 +15,24 @@ const chartConfig: ChartConfig = {
 };
 
 export function NetWorthOverTimeChart({ rows, currency }: NetWorthOverTimeChartProps) {
-  const data = rows.map((row) => ({ year: row.year, totalNetWorth: row.totalNetWorth }));
+  const data = rows.map((row) => ({ year: row.year, age: row.age, totalNetWorth: row.totalNetWorth }));
+
+  // The shared ChartTooltipContent resolves its header from the hovered
+  // series' config label whenever Recharts' own `label` isn't a string (true
+  // here - it's the numeric year), so read year/age straight off the raw
+  // data point instead of trusting the (wrongly-resolved) `value` this gets.
+  function renderTooltip(props: React.ComponentProps<typeof ChartTooltipContent>) {
+    return (
+      <ChartTooltipContent
+        {...props}
+        labelFormatter={(_value, payload) => {
+          const point = payload?.[0]?.payload as { year: number; age: number } | undefined;
+          return point ? `${point.year} (age ${point.age})` : '';
+        }}
+        formatter={(value) => formatCompactCurrency(Number(value), currency)}
+      />
+    );
+  }
 
   return (
     <ChartContainer config={chartConfig} className="aspect-auto h-[280px] w-full">
@@ -30,7 +47,7 @@ export function NetWorthOverTimeChart({ rows, currency }: NetWorthOverTimeChartP
         <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
         <YAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v) => formatCompactCurrency(v, currency)} />
         {/* @ts-expect-error - recharts@3.9.2's own Tooltip prop types intersect `content` with `string` for reasons unrelated to this (well-documented, standard) function-as-content usage. */}
-        <ChartTooltip content={(props) => <ChartTooltipContent {...props} formatter={(value) => formatCompactCurrency(Number(value), currency)} />} />
+        <ChartTooltip content={renderTooltip} />
         <Area type="monotone" dataKey="totalNetWorth" stroke="var(--chart-1)" strokeWidth={2} fill="url(#netWorthFill)" />
       </AreaChart>
     </ChartContainer>
