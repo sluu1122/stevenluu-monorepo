@@ -30,28 +30,87 @@
   --radius-lg: calc(var(--radius) + 2px);
 }
 
+/*
+ * Brand tokens as raw values, redefined in .dark below. The @theme block
+ * references these through var() indirection (the same pattern the
+ * @theme inline block above already uses for hsl(var(--background)) etc.)
+ * so every utility built from --color-ink, --color-surface, etc. flips
+ * automatically when the .dark class is toggled on <html>.
+ */
+:root {
+  --brand-page-bg: #F7F8FA;
+  --brand-page-fg: #0F172A;
+  --brand-ink: #0B1220;
+  --brand-ink-mid: #475569;
+  --brand-slate: #64748B;
+  --brand-dim: #94A3B8;
+  --brand-edge: #EAECF1;
+  --brand-edge-soft: #F1F5F9;
+  --brand-surface: #FFFFFF;
+  --brand-surface-muted: #FAFAFA;
+  --brand-surface-raised: #F8FAFC;
+  --brand-surface-pressed: #F4F5F8;
+  --brand-indigo: #5B5BD6;
+  --brand-indigo-bg: #F1F1FD;
+  --brand-gain: #16A34A;
+  --brand-gain-dark: #15803D;
+  --brand-gain-bg: #DCFCE7;
+  --brand-gain-border: #86EFAC;
+  --brand-loss: #E11D48;
+  --brand-loss-dark: #BE123C;
+  --brand-loss-bg: #FFE4E6;
+  --brand-scrollbar-thumb: #DDE1EA;
+  --brand-header-bg: rgba(247, 248, 250, 0.82);
+}
+
+.dark {
+  --brand-page-bg: #0B0D12;
+  --brand-page-fg: #E2E8F0;
+  --brand-ink: #F1F5F9;
+  --brand-ink-mid: #CBD5E1;
+  --brand-slate: #94A3B8;
+  --brand-dim: #64748B;
+  --brand-edge: #262B36;
+  --brand-edge-soft: #1B2029;
+  --brand-surface: #12151C;
+  --brand-surface-muted: #14181F;
+  --brand-surface-raised: #171B23;
+  --brand-surface-pressed: #1E232C;
+  --brand-indigo: #7A7CE0;
+  --brand-indigo-bg: #1E1B3A;
+  --brand-gain: #22C55E;
+  --brand-gain-dark: #4ADE80;
+  --brand-gain-bg: #052E1B;
+  --brand-gain-border: #14532D;
+  --brand-loss: #FB7185;
+  --brand-loss-dark: #FDA4AF;
+  --brand-loss-bg: #3F0A14;
+  --brand-scrollbar-thumb: #262B36;
+  --brand-header-bg: rgba(11, 13, 18, 0.82);
+}
+
 @theme {
   --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, monospace;
-  --color-ink: #0B1220;
-  --color-ink-mid: #475569;
-  --color-slate: #64748B;
-  --color-dim: #94A3B8;
-  --color-edge: #EAECF1;
-  --color-edge-soft: #F1F5F9;
-  --color-surface: #FFFFFF;
-  --color-surface-muted: #FAFAFA;
-  --color-surface-raised: #F8FAFC;
-  --color-surface-pressed: #F4F5F8;
-  --color-indigo: #5B5BD6;
-  --color-indigo-bg: #F1F1FD;
-  --color-gain: #16A34A;
-  --color-gain-dark: #15803D;
-  --color-gain-bg: #DCFCE7;
-  --color-gain-border: #86EFAC;
-  --color-loss: #E11D48;
-  --color-loss-dark: #BE123C;
-  --color-loss-bg: #FFE4E6;
+  --color-ink: var(--brand-ink);
+  --color-ink-mid: var(--brand-ink-mid);
+  --color-slate: var(--brand-slate);
+  --color-dim: var(--brand-dim);
+  --color-edge: var(--brand-edge);
+  --color-edge-soft: var(--brand-edge-soft);
+  --color-surface: var(--brand-surface);
+  --color-surface-muted: var(--brand-surface-muted);
+  --color-surface-raised: var(--brand-surface-raised);
+  --color-surface-pressed: var(--brand-surface-pressed);
+  --color-indigo: var(--brand-indigo);
+  --color-indigo-bg: var(--brand-indigo-bg);
+  --color-gain: var(--brand-gain);
+  --color-gain-dark: var(--brand-gain-dark);
+  --color-gain-bg: var(--brand-gain-bg);
+  --color-gain-border: var(--brand-gain-border);
+  --color-loss: var(--brand-loss);
+  --color-loss-dark: var(--brand-loss-dark);
+  --color-loss-bg: var(--brand-loss-bg);
 }
 
 @layer components {
@@ -59,7 +118,7 @@
   .dash-label {
     font-size: 11.5px;
     font-weight: 500;
-    color: #94A3B8;
+    color: var(--brand-dim);
     letter-spacing: 0.06em;
     text-transform: uppercase;
     font-family: 'Geist Mono', monospace;
@@ -68,8 +127,8 @@
 
 html, body, #root {
   min-height: 100dvh;
-  background: #F7F8FA;
-  color: #0F172A;
+  background: var(--brand-page-bg);
+  color: var(--brand-page-fg);
   font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -81,5 +140,5 @@ a { text-decoration: none; color: inherit; }
 ::selection { background: rgba(91, 91, 214, 0.16); }
 
 *::-webkit-scrollbar { width: 9px; height: 9px; }
-*::-webkit-scrollbar-thumb { background: #DDE1EA; border-radius: 9px; border: 2px solid #F7F8FA; }
+*::-webkit-scrollbar-thumb { background: var(--brand-scrollbar-thumb); border-radius: 9px; border: 2px solid var(--brand-page-bg); }
 

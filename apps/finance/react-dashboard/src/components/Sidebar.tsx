@@ -4,6 +4,8 @@ import { Avatar, AvatarFallback } from '@repo/ui/components/avatar';
 import { Button } from '@repo/ui/components/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/popover';
 import { Sheet, SheetContent, SheetTitle } from '@repo/ui/components/sheet';
+import { Separator } from '@repo/ui/components/separator';
+import { ThemeToggle } from './ThemeToggle';
 const BRAND_GRADIENT = 'linear-gradient(135deg, #5B5BD6 0%, #6E6AF0 100%)';
 
 // Mirrors the Angular dashboard's portfolioUrl default (localhost:3000 in dev,
@@ -39,6 +41,8 @@ function SidebarContent({ onNavigate }: { onNavigate: () => void }) {
 
       {/* Bottom */}
       <div className="border-t border-edge pt-4 flex flex-col gap-3">
+        <ThemeToggle />
+        <Separator className="bg-edge" />
         <p className="text-[11px] text-dim font-mono tracking-[0.03em] leading-[1.5] m-0">
           Local-only — nothing leaves your browser
         </p>

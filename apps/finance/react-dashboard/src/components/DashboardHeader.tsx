@@ -14,7 +14,7 @@ export function DashboardHeader({ title, onMenuClick }: DashboardHeaderProps) {
   return (
     <header
       className="sticky top-0 z-10 border-b border-edge h-[60px] flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8"
-      style={{ background: 'rgba(247,248,250,0.82)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
+      style={{ background: 'var(--brand-header-bg)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
     >
       <div className="flex items-center gap-3 min-w-0">
         <Button
