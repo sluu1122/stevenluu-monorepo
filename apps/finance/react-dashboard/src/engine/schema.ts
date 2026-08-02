@@ -3,6 +3,9 @@ import { z } from 'zod';
 export const CountrySchema = z.enum(['US', 'CA']);
 export const FilingStatusSchema = z.enum(['single', 'marriedFilingJointly']);
 export const CurrencySchema = z.enum(['USD', 'CAD']);
+export type Country = z.infer<typeof CountrySchema>;
+export type FilingStatus = z.infer<typeof FilingStatusSchema>;
+export type Currency = z.infer<typeof CurrencySchema>;
 
 export const TaxBracketSchema = z.object({
   min: z.number().nonnegative(),

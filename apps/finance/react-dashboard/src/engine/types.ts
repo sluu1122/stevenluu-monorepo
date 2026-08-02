@@ -1,4 +1,7 @@
 export type {
+  Country,
+  FilingStatus,
+  Currency,
   TaxBracket,
   FederalTaxTable,
   TaxConfig,

@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/pop
 import { Sheet, SheetContent, SheetTitle } from '@repo/ui/components/sheet';
 import { Separator } from '@repo/ui/components/separator';
 import { ThemeToggle } from './ThemeToggle';
+import { ScenarioSwitcher } from './ScenarioSwitcher';
 const BRAND_GRADIENT = 'linear-gradient(135deg, #5B5BD6 0%, #6E6AF0 100%)';
 
 // Mirrors the Angular dashboard's portfolioUrl default (localhost:3000 in dev,
@@ -36,6 +37,8 @@ function SidebarContent({ onNavigate }: { onNavigate: () => void }) {
           <p className="font-mono text-[10px] text-dim tracking-[0.04em] leading-[1.3] m-0">SANDBOX</p>
         </div>
       </div>
+
+      <ScenarioSwitcher />
 
       <div className="flex-1" />
 

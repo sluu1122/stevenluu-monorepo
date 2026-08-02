@@ -4,6 +4,8 @@ import { DashboardHeader } from './components/DashboardHeader';
 import { DashCard } from './components/DashCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/tabs';
 import { ThemeProvider } from './providers/ThemeProvider';
+import { ActiveScenarioProvider } from './providers/ActiveScenarioProvider';
+import { ScenarioSetupTab } from './features/scenario-setup/ScenarioSetupTab';
 
 const TABS = [
   { value: 'setup', label: 'Scenario Setup' },
@@ -22,38 +24,40 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <div className="flex min-h-dvh">
-        <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
+      <ActiveScenarioProvider>
+        <div className="flex min-h-dvh">
+          <Sidebar open={navOpen} onClose={() => setNavOpen(false)} />
 
-        <div className="flex-1 min-w-0 flex flex-col">
-          <DashboardHeader title={activeLabel} onMenuClick={() => setNavOpen(true)} />
+          <div className="flex-1 min-w-0 flex flex-col">
+            <DashboardHeader title={activeLabel} onMenuClick={() => setNavOpen(true)} />
 
-          <main className="flex-1 pt-4 sm:pt-[26px] px-4 sm:px-6 lg:px-8 pb-10 max-w-[1240px] w-full">
-            <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as TabValue)}>
-              <TabsList className="mb-5">
-                {TABS.map((tab) => (
-                  <TabsTrigger key={tab.value} value={tab.value}>
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            <main className="flex-1 pt-4 sm:pt-[26px] px-4 sm:px-6 lg:px-8 pb-10 max-w-[1240px] w-full">
+              <Tabs value={activeTab} onValueChange={(v: string) => setActiveTab(v as TabValue)}>
+                <TabsList className="mb-5">
+                  {TABS.map((tab) => (
+                    <TabsTrigger key={tab.value} value={tab.value}>
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
 
-              <TabsContent value="setup">
-                <DashCard>Scenario Setup — coming up next.</DashCard>
-              </TabsContent>
-              <TabsContent value="grid">
-                <DashCard>Planning Grid — coming up next.</DashCard>
-              </TabsContent>
-              <TabsContent value="charts">
-                <DashCard>Charts & Analytics — coming up next.</DashCard>
-              </TabsContent>
-              <TabsContent value="summary">
-                <DashCard>Client Summary — coming up next.</DashCard>
-              </TabsContent>
-            </Tabs>
-          </main>
+                <TabsContent value="setup">
+                  <ScenarioSetupTab />
+                </TabsContent>
+                <TabsContent value="grid">
+                  <DashCard>Planning Grid — coming up next.</DashCard>
+                </TabsContent>
+                <TabsContent value="charts">
+                  <DashCard>Charts & Analytics — coming up next.</DashCard>
+                </TabsContent>
+                <TabsContent value="summary">
+                  <DashCard>Client Summary — coming up next.</DashCard>
+                </TabsContent>
+              </Tabs>
+            </main>
+          </div>
         </div>
-      </div>
+      </ActiveScenarioProvider>
     </ThemeProvider>
   );
 }
