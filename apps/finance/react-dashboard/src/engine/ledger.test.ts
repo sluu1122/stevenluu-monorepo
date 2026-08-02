@@ -83,6 +83,31 @@ describe('buildLedger', () => {
     expect(rowAtSpouseClaim.age).not.toBe(cpp.claimAge);
   });
 
+  it("claws back OAS using the PRIOR year's taxable income, not the current year's", () => {
+    const scenario = createDefaultScenario('CA');
+    const currentAge = new Date().getFullYear() - scenario.birthYear;
+    const oas = scenario.benefits.find((b) => b.type === 'CA_OAS')!;
+    oas.claimAge = currentAge; // claimable starting the very first projected year
+    scenario.planningEndAge = currentAge + 3;
+    // A huge income source active only in year 1 pushes that year's taxable
+    // income far past the clawback threshold, with nothing to claw back yet
+    // (no prior year exists) - year 2 should then show the clawback.
+    const firstYear = new Date().getFullYear();
+    scenario.incomeSources = [
+      { id: 'big-income', label: 'One-time income', owner: 'self', startYear: firstYear, endYear: firstYear, annualAmountNominal: 500_000, growthRatePct: 0 },
+    ];
+
+    const { rows } = buildLedger(scenario, []);
+    const year1 = rows.find((r) => r.year === firstYear)!;
+    const year2 = rows.find((r) => r.year === firstYear + 1)!;
+
+    const oasAmountYear1 = year1.benefits.find((b) => b.type === 'CA_OAS')?.amount ?? 0;
+    const oasAmountYear2 = year2.benefits.find((b) => b.type === 'CA_OAS')?.amount ?? 0;
+
+    expect(oasAmountYear1).toBeCloseTo(oas.monthlyBenefitAtClaimAge * 12, 5); // full amount - no prior year to claw back from
+    expect(oasAmountYear2).toBeLessThan(oasAmountYear1); // year 2 pays for year 1's high income
+  });
+
   it('applies a GridOverride for spendingNominal without disturbing other years', () => {
     const scenario = createDefaultScenario('US');
     const startYear = new Date().getFullYear();

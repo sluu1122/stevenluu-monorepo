@@ -1,5 +1,6 @@
 import type { BenefitConfig } from './schema';
 import type { AuditStep } from './types';
+import { OAS_CLAWBACK_RATE, OAS_CLAWBACK_THRESHOLD_2025 } from './benefitDefaults';
 
 export interface BenefitCalcResult {
   amount: number;
@@ -28,6 +29,44 @@ export function calculateBenefitForYear(benefit: BenefitConfig, age: number): Be
           yearsSinceClaim,
         },
         result: amount,
+        relatedFields: ['benefits'],
+      },
+    ],
+  };
+}
+
+export interface OasClawbackResult {
+  netAmount: number;
+  clawback: number;
+  steps: AuditStep[];
+}
+
+/**
+ * OAS recovery tax: 15% of the PRIOR tax year's net income above the
+ * threshold, capped at the full gross benefit. This is the actual CRA
+ * mechanism (not an approximation of it) - clawback is genuinely based on
+ * the prior year's return, which conveniently also sidesteps the circularity
+ * that computing it from the current year's income (which itself includes
+ * this benefit) would create.
+ */
+export function applyOasClawback(grossAmount: number, previousYearTaxableIncome: number): OasClawbackResult {
+  const excessIncome = Math.max(0, previousYearTaxableIncome - OAS_CLAWBACK_THRESHOLD_2025);
+  const clawback = Math.min(grossAmount, excessIncome * OAS_CLAWBACK_RATE);
+  const netAmount = grossAmount - clawback;
+
+  if (clawback <= 0) {
+    return { netAmount, clawback: 0, steps: [] };
+  }
+
+  return {
+    netAmount,
+    clawback,
+    steps: [
+      {
+        label: 'OAS recovery tax (clawback)',
+        formula: 'min(grossAmount, max(0, priorYearTaxableIncome - threshold) × 15%)',
+        inputs: { grossAmount, previousYearTaxableIncome, threshold: OAS_CLAWBACK_THRESHOLD_2025 },
+        result: clawback,
         relatedFields: ['benefits'],
       },
     ],

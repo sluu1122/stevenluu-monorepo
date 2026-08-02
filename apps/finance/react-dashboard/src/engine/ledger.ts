@@ -1,7 +1,7 @@
 import type { GridOverride, Scenario } from './schema';
 import type { AuditStep, EngineWarning, LedgerResult, LedgerYearRow } from './types';
 import { getInflationRateForYear } from './inflation';
-import { calculateBenefitForYear } from './benefits';
+import { applyOasClawback, calculateBenefitForYear } from './benefits';
 import { calculateTotalTax } from './calculateTax';
 import { applyWithdrawal } from './waterfall';
 import { checkAndReplenish } from './cashBuffer';
@@ -48,6 +48,14 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
     }
   }
 
+  // OAS clawback is based on the PRIOR tax year's net income, not the
+  // current year's - this is the real CRA mechanism, and it also sidesteps
+  // the circularity that computing it from the current year's income (which
+  // includes the OAS itself) would create. No prior year exists before the
+  // first projected year, so it starts as 0 (a documented v1 simplification -
+  // this is a forward-only projection with no pre-scenario income history).
+  let previousYearTaxableIncome = 0;
+
   for (let year = startYear, age = year - scenario.birthYear; age <= scenario.planningEndAge; year++, age++) {
     const audit: AuditStep[] = [];
     const overriddenFields: string[] = [];
@@ -89,10 +97,18 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
       // not the primary person's age - each household member's timeline is
       // independent even though the accounts they draw from are shared.
       const personAge = benefit.owner === 'spouse' && scenario.spouse ? year - scenario.spouse.birthYear : age;
-      const { amount, steps } = calculateBenefitForYear(benefit, personAge);
+      const { amount: grossAmount, steps } = calculateBenefitForYear(benefit, personAge);
+      audit.push(...steps);
+
+      let amount = grossAmount;
+      if (benefit.type === 'CA_OAS' && grossAmount > 0) {
+        const clawbackResult = applyOasClawback(grossAmount, previousYearTaxableIncome);
+        amount = clawbackResult.netAmount;
+        audit.push(...clawbackResult.steps);
+      }
+
       if (amount > 0) benefits.push({ type: benefit.type, amount });
       totalBenefits += amount;
-      audit.push(...steps);
     }
 
     // --- Step 1: beginning-of-year withdrawal for the net spending need ---
@@ -112,6 +128,7 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
     const grossTaxableIncome = taxableWithdrawals + totalIncomes + totalBenefits;
     const taxResult = calculateTotalTax(grossTaxableIncome, scenario.taxConfig);
     audit.push(...taxResult.steps);
+    previousYearTaxableIncome = grossTaxableIncome;
 
     const taxWithdrawal = applyWithdrawal(taxResult.total, buckets, scenario.waterfall, balances, year);
     audit.push(...taxWithdrawal.steps);
