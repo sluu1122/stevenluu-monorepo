@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Button } from '@repo/ui/components/button';
 import { Input } from '@repo/ui/components/input';
 import { Label } from '@repo/ui/components/label';
+import { MoneyInput } from '../../components/MoneyInput';
 import type { GridOverride } from '../../engine/schema';
 
 interface OverrideEditDialogProps {
@@ -17,7 +18,7 @@ interface OverrideEditDialogProps {
 // Remounted via `key={year}` by the caller whenever the target year changes,
 // so its local state below resets fresh per year with no sync effect needed.
 export function OverrideEditDialog({ year, plannedValue, existingOverride, onClose, onSave, onClear }: OverrideEditDialogProps) {
-  const [value, setValue] = useState(() => String(existingOverride?.value ?? plannedValue));
+  const [value, setValue] = useState<number | undefined>(() => Math.round(existingOverride?.value ?? plannedValue));
   const [note, setNote] = useState(() => existingOverride?.note ?? '');
 
   return (
@@ -32,7 +33,7 @@ export function OverrideEditDialog({ year, plannedValue, existingOverride, onClo
         <div className="space-y-3">
           <div className="space-y-1.5">
             <Label>Nominal spending ($)</Label>
-            <Input type="number" value={value} onChange={(e) => setValue(e.target.value)} autoFocus />
+            <MoneyInput value={value} onChange={setValue} autoFocus />
           </div>
           <div className="space-y-1.5">
             <Label>Note (optional)</Label>
@@ -47,8 +48,7 @@ export function OverrideEditDialog({ year, plannedValue, existingOverride, onClo
           )}
           <Button
             onClick={() => {
-              const parsed = Number(value);
-              if (!Number.isNaN(parsed)) onSave(parsed, note);
+              if (value !== undefined) onSave(value, note);
             }}
           >
             Save

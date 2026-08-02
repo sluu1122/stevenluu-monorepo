@@ -1,9 +1,10 @@
-import { useFieldArray, useFormContext } from 'react-hook-form';
+import { Controller, useFieldArray, useFormContext } from 'react-hook-form';
 import { Plus, Trash2 } from 'lucide-react';
 import { DashCard } from '../../components/DashCard';
 import { Button } from '@repo/ui/components/button';
 import { Input } from '@repo/ui/components/input';
 import { Label } from '@repo/ui/components/label';
+import { MoneyInput } from '../../components/MoneyInput';
 import type { Scenario } from '../../engine/schema';
 import { generateId } from '../../engine/id';
 
@@ -54,11 +55,20 @@ export function IncomeAndBenefitsForm() {
               </div>
               <div className="space-y-1.5">
                 <Label>Start year</Label>
-                <Input type="number" {...register(`incomeSources.${index}.startYear`, { valueAsNumber: true })} />
+                <Input
+                  type="number"
+                  {...register(`incomeSources.${index}.startYear`, {
+                    setValueAs: (v) => (v === '' ? undefined : Math.round(Number(v))),
+                  })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Annual amount</Label>
-                <Input type="number" {...register(`incomeSources.${index}.annualAmountNominal`, { valueAsNumber: true })} />
+                <Controller
+                  control={control}
+                  name={`incomeSources.${index}.annualAmountNominal`}
+                  render={({ field }) => <MoneyInput value={field.value} onChange={field.onChange} />}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Growth %</Label>
@@ -81,11 +91,20 @@ export function IncomeAndBenefitsForm() {
               <Label className="!mt-0">{benefit.type.replace(/_/g, ' ')}</Label>
               <div className="space-y-1.5">
                 <Label>Claim age</Label>
-                <Input type="number" {...register(`benefits.${index}.claimAge`, { valueAsNumber: true })} />
+                <Input
+                  type="number"
+                  {...register(`benefits.${index}.claimAge`, {
+                    setValueAs: (v) => (v === '' ? undefined : Math.round(Number(v))),
+                  })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Monthly at claim ($)</Label>
-                <Input type="number" {...register(`benefits.${index}.monthlyBenefitAtClaimAge`, { valueAsNumber: true })} />
+                <Controller
+                  control={control}
+                  name={`benefits.${index}.monthlyBenefitAtClaimAge`}
+                  render={({ field }) => <MoneyInput value={field.value} onChange={field.onChange} />}
+                />
               </div>
             </div>
           ))}

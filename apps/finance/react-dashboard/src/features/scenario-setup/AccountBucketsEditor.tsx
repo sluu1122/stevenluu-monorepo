@@ -1,12 +1,13 @@
-import { useFormContext } from 'react-hook-form';
+import { Controller, useFormContext } from 'react-hook-form';
 import { DashCard } from '../../components/DashCard';
 import { Input } from '@repo/ui/components/input';
 import { Label } from '@repo/ui/components/label';
 import { Badge } from '@repo/ui/components/badge';
+import { MoneyInput } from '../../components/MoneyInput';
 import type { Scenario } from '../../engine/schema';
 
 export function AccountBucketsEditor() {
-  const { register, watch } = useFormContext<Scenario>();
+  const { register, control, watch } = useFormContext<Scenario>();
   const buckets = watch('accountBuckets');
 
   return (
@@ -29,7 +30,11 @@ export function AccountBucketsEditor() {
             </div>
             <div className="space-y-1.5">
               <Label>Starting balance</Label>
-              <Input type="number" {...register(`accountBuckets.${index}.startingBalance`, { valueAsNumber: true })} />
+              <Controller
+                control={control}
+                name={`accountBuckets.${index}.startingBalance`}
+                render={({ field }) => <MoneyInput value={field.value} onChange={field.onChange} />}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Pre-retirement return %</Label>
@@ -41,13 +46,10 @@ export function AccountBucketsEditor() {
             </div>
             <div className="space-y-1.5">
               <Label>Annual contribution</Label>
-              <Input
-                type="number"
-                {...register(`accountBuckets.${index}.annualContributionWhileWorking`, {
-                  // An empty/cleared input must resolve to undefined, not NaN -
-                  // the schema's z.number().optional() accepts the former, not the latter.
-                  setValueAs: (v) => (v === '' || v === null ? undefined : Number(v)),
-                })}
+              <Controller
+                control={control}
+                name={`accountBuckets.${index}.annualContributionWhileWorking`}
+                render={({ field }) => <MoneyInput value={field.value} onChange={field.onChange} />}
               />
             </div>
           </div>

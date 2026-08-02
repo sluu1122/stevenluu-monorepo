@@ -2,6 +2,7 @@ import { Controller, useFormContext } from 'react-hook-form';
 import { DashCard } from '../../components/DashCard';
 import { Input } from '@repo/ui/components/input';
 import { Label } from '@repo/ui/components/label';
+import { MoneyInput } from '../../components/MoneyInput';
 import type { Scenario } from '../../engine/schema';
 
 export function GlobalParametersForm() {
@@ -18,7 +19,7 @@ export function GlobalParametersForm() {
           <Input {...register('name')} />
         </div>
         <div className="space-y-1.5">
-          <Label>Country</Label>
+          <Label>Tax residency</Label>
           <Input value={country} disabled />
         </div>
         <div className="space-y-1.5">
@@ -27,11 +28,21 @@ export function GlobalParametersForm() {
         </div>
         <div className="space-y-1.5">
           <Label>Birth year</Label>
-          <Input type="number" {...register('birthYear', { valueAsNumber: true })} />
+          <Input
+            type="number"
+            {...register('birthYear', {
+              setValueAs: (v) => (v === '' ? undefined : Math.round(Number(v))),
+            })}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Planning end age</Label>
-          <Input type="number" {...register('planningEndAge', { valueAsNumber: true })} />
+          <Input
+            type="number"
+            {...register('planningEndAge', {
+              setValueAs: (v) => (v === '' ? undefined : Math.round(Number(v))),
+            })}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Retirement start year</Label>
@@ -43,14 +54,18 @@ export function GlobalParametersForm() {
                 type="number"
                 placeholder="Not set"
                 value={field.value ?? ''}
-                onChange={(e) => field.onChange(e.target.value === '' ? null : Number(e.target.value))}
+                onChange={(e) => field.onChange(e.target.value === '' ? null : Math.round(Number(e.target.value)))}
               />
             )}
           />
         </div>
         <div className="space-y-1.5">
           <Label>Annual spending at retirement (real $)</Label>
-          <Input type="number" {...register('annualSpendingRealAtRetirement', { valueAsNumber: true })} />
+          <Controller
+            control={control}
+            name="annualSpendingRealAtRetirement"
+            render={({ field }) => <MoneyInput value={field.value} onChange={field.onChange} />}
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Exchange rate (USD → CAD)</Label>
