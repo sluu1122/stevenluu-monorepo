@@ -13,6 +13,7 @@ export type {
   CashBufferRule,
   InflationAssumption,
   IncomeSource,
+  BenefitType,
   BenefitConfig,
   PersonOwner,
   Spouse,

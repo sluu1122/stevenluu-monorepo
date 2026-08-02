@@ -56,6 +56,33 @@ describe('buildLedger', () => {
     expect(retirementRows[0].spendingNominal).toBeCloseTo(scenario.annualSpendingRealAtRetirement, 5);
   });
 
+  it("resolves a spouse-owned benefit's claim age against the spouse's own birth year, not the primary person's age", () => {
+    const scenario = createDefaultScenario('CA');
+    const primaryBirthYear = scenario.birthYear;
+    const spouseBirthYear = primaryBirthYear - 5; // spouse is 5 years older
+    scenario.spouse = { birthYear: spouseBirthYear, retirementYear: null };
+
+    const cpp = scenario.benefits.find((b) => b.type === 'CA_CPP')!;
+    cpp.owner = 'spouse';
+    cpp.claimAge = 65;
+    // Spouse is older, so their claim year (spouseBirthYear + claimAge) falls
+    // at a HIGHER primary-person age than 65 - the window must reach past it.
+    scenario.planningEndAge = spouseBirthYear + cpp.claimAge - primaryBirthYear + 2;
+
+    const { rows } = buildLedger(scenario, []);
+    const spouseClaimYear = spouseBirthYear + cpp.claimAge;
+
+    const beforeSpouseClaims = rows.filter((r) => r.year < spouseClaimYear);
+    const afterSpouseClaims = rows.filter((r) => r.year >= spouseClaimYear);
+    expect(beforeSpouseClaims.every((r) => !r.benefits.some((b) => b.type === 'CA_CPP'))).toBe(true);
+    expect(afterSpouseClaims.some((r) => r.benefits.some((b) => b.type === 'CA_CPP'))).toBe(true);
+
+    // The primary person's own age at the spouse's claim year is NOT 65 (since
+    // the spouse is 5 years older) - confirms the age used wasn't the shared one.
+    const rowAtSpouseClaim = rows.find((r) => r.year === spouseClaimYear)!;
+    expect(rowAtSpouseClaim.age).not.toBe(cpp.claimAge);
+  });
+
   it('applies a GridOverride for spendingNominal without disturbing other years', () => {
     const scenario = createDefaultScenario('US');
     const startYear = new Date().getFullYear();

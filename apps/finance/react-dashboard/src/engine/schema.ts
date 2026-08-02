@@ -107,6 +107,7 @@ export const IncomeSourceSchema = z.object({
 export type IncomeSource = z.infer<typeof IncomeSourceSchema>;
 
 export const BenefitTypeSchema = z.enum(['US_SOCIAL_SECURITY', 'CA_CPP', 'CA_OAS']);
+export type BenefitType = z.infer<typeof BenefitTypeSchema>;
 export const BenefitConfigSchema = z.object({
   type: BenefitTypeSchema,
   owner: PersonOwnerSchema.optional(),

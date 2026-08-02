@@ -85,7 +85,11 @@ export function buildLedger(scenario: Scenario, overrides: GridOverride[]): Ledg
     const benefits: { type: string; amount: number }[] = [];
     let totalBenefits = 0;
     for (const benefit of scenario.benefits) {
-      const { amount, steps } = calculateBenefitForYear(benefit, age);
+      // A spouse's benefit claim age resolves against their own birth year,
+      // not the primary person's age - each household member's timeline is
+      // independent even though the accounts they draw from are shared.
+      const personAge = benefit.owner === 'spouse' && scenario.spouse ? year - scenario.spouse.birthYear : age;
+      const { amount, steps } = calculateBenefitForYear(benefit, personAge);
       if (amount > 0) benefits.push({ type: benefit.type, amount });
       totalBenefits += amount;
       audit.push(...steps);
