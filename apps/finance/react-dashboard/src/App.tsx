@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/ta
 import { ThemeProvider } from './providers/ThemeProvider';
 import { ActiveScenarioProvider } from './providers/ActiveScenarioProvider';
 import { ScenarioSetupTab } from './features/scenario-setup/ScenarioSetupTab';
+import { PlanningGridTab } from './features/planning-grid/PlanningGridTab';
 
 const TABS = [
   { value: 'setup', label: 'Scenario Setup' },
@@ -45,7 +46,7 @@ export default function App() {
                   <ScenarioSetupTab />
                 </TabsContent>
                 <TabsContent value="grid">
-                  <DashCard>Planning Grid — coming up next.</DashCard>
+                  <PlanningGridTab />
                 </TabsContent>
                 <TabsContent value="charts">
                   <DashCard>Charts & Analytics — coming up next.</DashCard>
