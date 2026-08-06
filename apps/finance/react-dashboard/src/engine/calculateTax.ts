@@ -1,4 +1,4 @@
-import type { FederalTaxTable, StateOrProvincialTaxTable, TaxBracket, TaxConfig } from './schema';
+import type { FederalTaxTable, FilingStatus, StateOrProvincialTaxTable, TaxBracket, TaxConfig } from './schema';
 import type { AuditStep } from './types';
 
 /**
@@ -178,22 +178,107 @@ export interface TotalTaxResult {
 }
 
 /**
+ * The IRS "provisional income" thresholds that decide how much of a Social
+ * Security benefit is taxable at all. Unlike almost every other federal
+ * dollar figure in this app, these are NOT indexed for inflation - Congress
+ * fixed them in 1983 (first tier) and 1993 (second tier) and never revisited
+ * them, which is exactly why more of every retiree's benefit becomes taxable
+ * over time even with `indexTaxThresholdsToInflation` off.
+ */
+const SS_PROVISIONAL_INCOME_THRESHOLDS: Record<FilingStatus, { first: number; second: number }> = {
+  single: { first: 25_000, second: 34_000 },
+  marriedFilingJointly: { first: 32_000, second: 44_000 },
+};
+
+export interface SocialSecurityTaxabilityResult {
+  taxableAmount: number;
+  steps: AuditStep[];
+}
+
+/**
+ * How much of a Social Security benefit counts as taxable income - the actual
+ * IRS formula, not a flat inclusion rate. "Combined income" (everything else
+ * plus half the benefit) below the first threshold makes none of it taxable;
+ * between the two thresholds, up to half is; above the second, up to 85% is.
+ * Most beneficiaries land in the 85% tier within a few years of claiming,
+ * since the thresholds above never move.
+ */
+export function taxableSocialSecurity(benefit: number, otherIncome: number, filingStatus: FilingStatus): SocialSecurityTaxabilityResult {
+  if (benefit <= 0) return { taxableAmount: 0, steps: [] };
+
+  const { first, second } = SS_PROVISIONAL_INCOME_THRESHOLDS[filingStatus];
+  const combinedIncome = otherIncome + 0.5 * benefit;
+
+  let taxableAmount: number;
+  if (combinedIncome <= first) {
+    taxableAmount = 0;
+  } else if (combinedIncome <= second) {
+    taxableAmount = Math.min(0.5 * benefit, 0.5 * (combinedIncome - first));
+  } else {
+    taxableAmount = Math.min(0.85 * benefit, 0.85 * (combinedIncome - second) + Math.min(6_000, 0.5 * benefit));
+  }
+
+  return {
+    taxableAmount,
+    steps: [
+      {
+        label: 'Taxable portion of Social Security (provisional-income test)',
+        formula: 'combinedIncome = otherIncome + 50% × benefit; 0% below the first threshold, up to 50% between the two, up to 85% above',
+        inputs: { benefit, otherIncome, combinedIncome, firstThreshold: first, secondThreshold: second },
+        result: taxableAmount,
+        relatedFields: ['taxesPaid.federal', 'taxesPaid.stateOrProvincial'],
+      },
+    ],
+  };
+}
+
+/**
  * Combined federal plus state/provincial tax on one person's gross income.
+ *
+ * `socialSecurityBenefit` is the slice of `grossIncome` that's a US Social
+ * Security benefit, if any - passed separately because it isn't taxed like
+ * ordinary income. Below it, `grossIncome` keeps meaning what every caller
+ * already treats it as (this person's full taxable income for the
+ * calculation, SS included at its gross amount); this function is what peels
+ * the correct taxable slice back out before running the bracket walk. A
+ * non-US scenario, or a US person who hasn't claimed yet, passes 0 and gets
+ * exactly the old behavior.
  *
  * `marginalRatePct` is the COMBINED marginal rate - the two tables have
  * different bracket edges, so the rate that matters for a decision is the sum,
  * not either one alone. Any surtax is excluded from it, since a surtax steps
  * on the tax rather than on income.
  */
-export function calculateTotalTax(grossIncome: number, taxConfig: TaxConfig): TotalTaxResult {
-  const { tax: federal, marginalRatePct: federalMarginal, steps: federalSteps } = calculateFederalTax(grossIncome, taxConfig.federalTable);
-  const provincial = calculateStateOrProvincialTax(grossIncome, taxConfig.stateOrProvincialTable);
+export function calculateTotalTax(grossIncome: number, taxConfig: TaxConfig, socialSecurityBenefit = 0): TotalTaxResult {
+  if (socialSecurityBenefit <= 0 || taxConfig.country !== 'US') {
+    const { tax: federal, marginalRatePct: federalMarginal, steps: federalSteps } = calculateFederalTax(grossIncome, taxConfig.federalTable);
+    const provincial = calculateStateOrProvincialTax(grossIncome, taxConfig.stateOrProvincialTable);
+    return {
+      federal,
+      stateOrProvincial: provincial.tax,
+      total: federal + provincial.tax,
+      marginalRatePct: federalMarginal + provincial.marginalRatePct,
+      steps: [...federalSteps, ...provincial.steps],
+    };
+  }
+
+  const otherIncome = Math.max(0, grossIncome - socialSecurityBenefit);
+  const { taxableAmount: ssTaxable, steps: ssSteps } = taxableSocialSecurity(socialSecurityBenefit, otherIncome, taxConfig.filingStatus);
+
+  const federalGrossIncome = otherIncome + ssTaxable;
+  // Most states that tax Social Security at all start from the federally
+  // taxable amount rather than the gross benefit - using it here rather than
+  // a separate state-specific inclusion rate.
+  const stateGrossIncome = otherIncome + (taxConfig.stateOrProvincialTable.taxesSocialSecurity ? ssTaxable : 0);
+
+  const { tax: federal, marginalRatePct: federalMarginal, steps: federalSteps } = calculateFederalTax(federalGrossIncome, taxConfig.federalTable);
+  const provincial = calculateStateOrProvincialTax(stateGrossIncome, taxConfig.stateOrProvincialTable);
 
   return {
     federal,
     stateOrProvincial: provincial.tax,
     total: federal + provincial.tax,
     marginalRatePct: federalMarginal + provincial.marginalRatePct,
-    steps: [...federalSteps, ...provincial.steps],
+    steps: [...ssSteps, ...federalSteps, ...provincial.steps],
   };
 }

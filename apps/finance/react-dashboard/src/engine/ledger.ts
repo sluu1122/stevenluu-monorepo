@@ -371,9 +371,14 @@ function realizeGain(amount: number, marketValue: number, basis: number, inclusi
 }
 
 /** The extra tax `amount` costs on top of `base` - the marginal cost of one more distribution. */
-function incrementalTaxOn(base: number, amount: number, taxConfig: TaxConfig): { federal: number; stateOrProvincial: number; total: number } {
-  const withAmount = calculateTotalTax(base + amount, taxConfig);
-  const without = calculateTotalTax(base, taxConfig);
+function incrementalTaxOn(
+  base: number,
+  amount: number,
+  taxConfig: TaxConfig,
+  socialSecurityBenefit = 0,
+): { federal: number; stateOrProvincial: number; total: number } {
+  const withAmount = calculateTotalTax(base + amount, taxConfig, socialSecurityBenefit);
+  const without = calculateTotalTax(base, taxConfig, socialSecurityBenefit);
   return {
     federal: withAmount.federal - without.federal,
     stateOrProvincial: withAmount.stateOrProvincial - without.stateOrProvincial,
@@ -401,6 +406,8 @@ interface HouseholdReplenishOptions {
    * from the same person is priced against the brackets an earlier one used.
    */
   baseTaxableIncomeByPersonId: Map<string, number>;
+  /** Each person's US Social Security benefit this year, if any - see calculateTax.ts. */
+  socialSecurityBenefitByPersonId: Map<string, number>;
   taxConfig: TaxConfig;
   /** Buckets that may not fund the top-up at all. */
   excluded: Set<string>;
@@ -434,7 +441,8 @@ interface HouseholdReplenishOptions {
  * keeping its own rules is the distinction that choice rests on.
  */
 function replenishHouseholdWide(netNeeded: number, options: HouseholdReplenishOptions): Map<string, ReplenishResult> {
-  const { scenario, balances, ageByBucketId, ownerOf, baseTaxableIncomeByPersonId, taxConfig, excluded, priority, maxGrossBySource } = options;
+  const { scenario, balances, ageByBucketId, ownerOf, baseTaxableIncomeByPersonId, socialSecurityBenefitByPersonId, taxConfig, excluded, priority, maxGrossBySource } =
+    options;
 
   const results = new Map<string, ReplenishResult>();
   const resultFor = (personId: string): ReplenishResult => {
@@ -482,14 +490,15 @@ function replenishHouseholdWide(netNeeded: number, options: HouseholdReplenishOp
         const netShare = Math.min(netRemaining, wanted * (capped / capacity));
         const owner = ownerOf(bucket.id);
         const base = baseTaxableIncomeByPersonId.get(owner) ?? 0;
+        const ssBenefit = socialSecurityBenefitByPersonId.get(owner) ?? 0;
         const isTaxDeferred = bucket.taxTreatment === 'taxDeferred';
         // A tax-deferred top-up is a real taxable distribution, so it has to
         // come out gross: pulling exactly the net would leave the buffer short
         // by the tax.
-        const gross = isTaxDeferred ? grossUpForNet(netShare, base, taxConfig, capped) : Math.min(capped, netShare);
+        const gross = isTaxDeferred ? grossUpForNet(netShare, base, taxConfig, capped, ssBenefit) : Math.min(capped, netShare);
         if (gross <= 0.01) continue;
 
-        const tax = isTaxDeferred ? incrementalTaxOn(base, gross, taxConfig) : { federal: 0, stateOrProvincial: 0, total: 0 };
+        const tax = isTaxDeferred ? incrementalTaxOn(base, gross, taxConfig, ssBenefit) : { federal: 0, stateOrProvincial: 0, total: 0 };
         const netLanded = gross - tax.total;
 
         balances[bucket.id] -= gross;
@@ -576,6 +585,7 @@ function computePersonRow(
   taxResult: { federal: number; stateOrProvincial: number; total: number },
   grossTaxableIncome: number,
   surplusToBank: number,
+  socialSecurityBenefit: number,
 ): { draft: DraftLedgerYearRow; warnings: EngineWarning[] } {
   const audit: AuditStep[] = [...needs.audit, ...replenishment.audit, ...share.audit];
   const warnings: EngineWarning[] = [...share.warnings];
@@ -635,8 +645,8 @@ function computePersonRow(
 
   let meltdownTax = { federal: 0, stateOrProvincial: 0, total: 0 };
   if (meltdownTotalWithdrawn > 0) {
-    const taxWithMeltdown = calculateTotalTax(grossTaxableIncome + meltdownTotalWithdrawn, taxConfig);
-    const taxWithoutMeltdown = calculateTotalTax(grossTaxableIncome, taxConfig);
+    const taxWithMeltdown = calculateTotalTax(grossTaxableIncome + meltdownTotalWithdrawn, taxConfig, socialSecurityBenefit);
+    const taxWithoutMeltdown = calculateTotalTax(grossTaxableIncome, taxConfig, socialSecurityBenefit);
     meltdownTax = {
       federal: taxWithMeltdown.federal - taxWithoutMeltdown.federal,
       stateOrProvincial: taxWithMeltdown.stateOrProvincial - taxWithoutMeltdown.stateOrProvincial,
@@ -947,6 +957,18 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       needsByPersonId.set(person.id, computePersonNeeds(person, year, year - person.birthYear, startYear, states.get(person.id)!, overrides, oasClawbackThreshold));
     }
 
+    // This person's US Social Security benefit this year, if any - a fixed
+    // constant for the rest of the year's tax calculations (see
+    // calculateTotalTax). Zero for a Canadian person, and zero for a US
+    // person who hasn't claimed yet, either of which restores the old
+    // 100%-taxable behavior exactly.
+    const ssBenefitByPersonId = new Map<string, number>();
+    for (const person of scenario.persons) {
+      const needs = needsByPersonId.get(person.id)!;
+      const ssBenefit = needs.benefits.filter((b) => b.type === 'US_SOCIAL_SECURITY').reduce((sum, b) => sum + b.amount, 0);
+      ssBenefitByPersonId.set(person.id, ssBenefit);
+    }
+
     // Who owns what, and how old they are this year. Both household-wide
     // passes - the buffer top-up in Phase 1 and the spending draw in Phase 2 -
     // need them, since a draw's age gate follows the account's OWNER and so
@@ -1071,8 +1093,9 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       // Self-funding, exactly like a meltdown: the distribution pays its own
       // incremental tax and only the remainder is available to deposit, so
       // the tax isn't also drawn from the spending waterfall later.
-      const withDistribution = calculateTotalTax(base + required.totalWithdrawn, taxConfigForYear);
-      const without = calculateTotalTax(base, taxConfigForYear);
+      const ssBenefit = ssBenefitByPersonId.get(person.id) ?? 0;
+      const withDistribution = calculateTotalTax(base + required.totalWithdrawn, taxConfigForYear, ssBenefit);
+      const without = calculateTotalTax(base, taxConfigForYear, ssBenefit);
       const tax = {
         federal: withDistribution.federal - without.federal,
         stateOrProvincial: withDistribution.stateOrProvincial - without.stateOrProvincial,
@@ -1171,6 +1194,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
           ageByBucketId,
           ownerOf,
           baseTaxableIncomeByPersonId: replenishmentBaseByPersonId,
+          socialSecurityBenefitByPersonId: ssBenefitByPersonId,
           taxConfig: taxConfigForYear,
           excluded,
           priority,
@@ -1208,6 +1232,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
             availableCash: totalCashHeld(ownCashBuckets, balances),
             countedTowardTarget: new Set(ownCashBuckets.map((b) => b.id)),
             availabilityAges: scenario.accountAvailabilityAges,
+            socialSecurityBenefit: ssBenefitByPersonId.get(person.id),
             ...replenishmentPlanFor(person, year, replenishmentBaseByPersonId.get(person.id)!),
           },
         );
@@ -1343,9 +1368,10 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       // priced as incremental on top of income+benefits alone. What's left is
       // the full year's tax minus that - which telescopes to the marginal tax
       // on this person's draws at the bracket replenishment already reached.
+      const ssBenefit = ssBenefitByPersonId.get(person.id) ?? 0;
       let taxResult: { federal: number; stateOrProvincial: number; total: number };
       if (replenishment.taxableDistribution > 0) {
-        const fullYearTax = calculateTotalTax(grossTaxableIncome, taxConfigForYear);
+        const fullYearTax = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit);
         taxResult = {
           federal: fullYearTax.federal - replenishment.taxesPaid.federal,
           stateOrProvincial: fullYearTax.stateOrProvincial - replenishment.taxesPaid.stateOrProvincial,
@@ -1359,7 +1385,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
           relatedFields: ['taxesPaid.federal', 'taxesPaid.stateOrProvincial', 'taxesPaid.total'],
         });
       } else {
-        const computed = calculateTotalTax(grossTaxableIncome, taxConfigForYear);
+        const computed = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit);
         taxResult = { federal: computed.federal, stateOrProvincial: computed.stateOrProvincial, total: computed.total };
         share.audit.push(...computed.steps);
       }
@@ -1399,6 +1425,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         taxByPersonId.get(person.id)!,
         grossTaxableByPersonId.get(person.id)!,
         surplusToBank,
+        ssBenefitByPersonId.get(person.id) ?? 0,
       );
       warningsByPerson.get(person.id)!.push(...warnings);
       draftsByPersonId.set(person.id, draft);

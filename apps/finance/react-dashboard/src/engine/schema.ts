@@ -52,6 +52,18 @@ export const StateOrProvincialTaxTableSchema = z.object({
   /** Rate the basic personal amount is credited at; conventionally the lowest bracket's rate. */
   creditRate: z.number().min(0).max(1),
   surtax: z.array(SurtaxBandSchema),
+  /**
+   * Whether this region taxes Social Security benefits at all. Meaningless
+   * for a Canadian province (CPP/OAS aren't Social Security and are already
+   * fully taxable, see ledger.ts) and false for the great majority of US
+   * states, which fully exempt it.
+   *
+   * Kept required rather than `.default()`, which would split the schema's
+   * input and output types and break react-hook-form's resolver (see
+   * `indexTaxThresholdsToInflation` above). Backfilled to `false` by the
+   * v9 -> v10 migration for a scenario saved before this field existed.
+   */
+  taxesSocialSecurity: z.boolean(),
 });
 export type StateOrProvincialTaxTable = z.infer<typeof StateOrProvincialTaxTableSchema>;
 
@@ -456,7 +468,7 @@ export const ExportBundleSchema = z.object({
 });
 export type ExportBundle = z.infer<typeof ExportBundleSchema>;
 
-export const CURRENT_SCHEMA_VERSION = 9;
+export const CURRENT_SCHEMA_VERSION = 10;
 
 /** Applied to any scenario predating scenario-level rates that had no per-account rate to derive one from. */
 export const DEFAULT_RETURN_RATES: ReturnRates = {

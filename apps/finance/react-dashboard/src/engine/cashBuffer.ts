@@ -42,13 +42,19 @@ const GROSS_UP_ITERATIONS = 24;
  * Solved by fixed point (G₀ = netNeeded, Gₙ₊₁ = netNeeded + incrementalTax(Gₙ))
  * rather than algebraically, because the tax is a piecewise bracket walk.
  */
-export function grossUpForNet(netNeeded: number, baseTaxableIncome: number, taxConfig: TaxConfig, available: number): number {
+export function grossUpForNet(
+  netNeeded: number,
+  baseTaxableIncome: number,
+  taxConfig: TaxConfig,
+  available: number,
+  socialSecurityBenefit = 0,
+): number {
   if (netNeeded <= 0 || available <= 0) return 0;
-  const baseTax = calculateTotalTax(baseTaxableIncome, taxConfig).total;
+  const baseTax = calculateTotalTax(baseTaxableIncome, taxConfig, socialSecurityBenefit).total;
 
   let gross = netNeeded;
   for (let i = 0; i < GROSS_UP_ITERATIONS; i++) {
-    const incrementalTax = calculateTotalTax(baseTaxableIncome + gross, taxConfig).total - baseTax;
+    const incrementalTax = calculateTotalTax(baseTaxableIncome + gross, taxConfig, socialSecurityBenefit).total - baseTax;
     const next = netNeeded + incrementalTax;
     const converged = Math.abs(next - gross) < 1e-6;
     gross = next;
@@ -91,6 +97,8 @@ export interface ReplenishOptions {
   maxGrossBySource?: Record<string, number>;
   /** Scenario-level overrides of the per-KIND availability age; statutory ages when omitted. */
   availabilityAges?: AccountAvailabilityAges;
+  /** This person's US Social Security benefit this year, if any - see calculateTax.ts. */
+  socialSecurityBenefit?: number;
 }
 
 /**
@@ -102,7 +110,8 @@ export interface ReplenishOptions {
  * Returns early once the need is met.
  */
 export function pullForNet(netNeeded: number, cashBucketId: string, options: ReplenishOptions): ReplenishResult {
-  const { replenishmentOrder, buckets, balances, age, baseTaxableIncome, taxConfig, countedTowardTarget, maxGrossBySource } = options;
+  const { replenishmentOrder, buckets, balances, age, baseTaxableIncome, taxConfig, countedTowardTarget, maxGrossBySource, socialSecurityBenefit = 0 } =
+    options;
   if (netNeeded <= 0) return EMPTY;
 
   const pulledFrom: Record<string, number> = {};
@@ -129,13 +138,17 @@ export function pullForNet(netNeeded: number, cashBucketId: string, options: Rep
     if (available <= 0) continue;
 
     const isTaxDeferred = bucket.taxTreatment === 'taxDeferred';
-    const gross = isTaxDeferred ? grossUpForNet(netRemaining, runningTaxableIncome, taxConfig, available) : Math.min(available, netRemaining);
+    const gross = isTaxDeferred
+      ? grossUpForNet(netRemaining, runningTaxableIncome, taxConfig, available, socialSecurityBenefit)
+      : Math.min(available, netRemaining);
     if (gross <= 0) continue;
 
     // When balance-limited, a grossed-up pull nets less than requested - the
     // shortfall simply carries into next year's top-up.
     const netLanded = isTaxDeferred
-      ? gross - (calculateTotalTax(runningTaxableIncome + gross, taxConfig).total - calculateTotalTax(runningTaxableIncome, taxConfig).total)
+      ? gross -
+        (calculateTotalTax(runningTaxableIncome + gross, taxConfig, socialSecurityBenefit).total -
+          calculateTotalTax(runningTaxableIncome, taxConfig, socialSecurityBenefit).total)
       : gross;
 
     pulledFrom[sourceId] = (pulledFrom[sourceId] ?? 0) + gross;
@@ -166,8 +179,8 @@ export function pullForNet(netNeeded: number, cashBucketId: string, options: Rep
   // equals this one calculation against the total distribution).
   let taxOnDistribution = { federal: 0, stateOrProvincial: 0, total: 0 };
   if (taxableDistribution > 0) {
-    const withDistribution = calculateTotalTax(baseTaxableIncome + taxableDistribution, taxConfig);
-    const without = calculateTotalTax(baseTaxableIncome, taxConfig);
+    const withDistribution = calculateTotalTax(baseTaxableIncome + taxableDistribution, taxConfig, socialSecurityBenefit);
+    const without = calculateTotalTax(baseTaxableIncome, taxConfig, socialSecurityBenefit);
     taxOnDistribution = {
       federal: withDistribution.federal - without.federal,
       stateOrProvincial: withDistribution.stateOrProvincial - without.stateOrProvincial,
@@ -216,6 +229,8 @@ export function checkAndReplenish(
     replenishmentOrder?: string[];
     maxGrossBySource?: Record<string, number>;
     availabilityAges?: AccountAvailabilityAges;
+    /** This person's US Social Security benefit this year, if any - see calculateTax.ts. */
+    socialSecurityBenefit?: number;
   } = {},
 ): ReplenishResult {
   if (!rule.enabled) return EMPTY;
@@ -234,5 +249,6 @@ export function checkAndReplenish(
     countedTowardTarget: options.countedTowardTarget,
     maxGrossBySource: options.maxGrossBySource,
     availabilityAges: options.availabilityAges,
+    socialSecurityBenefit: options.socialSecurityBenefit,
   });
 }

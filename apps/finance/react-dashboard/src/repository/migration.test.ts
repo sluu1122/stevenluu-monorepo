@@ -409,3 +409,23 @@ describe('v8 -> v9 migration', () => {
     expect(twice).toEqual(once);
   });
 });
+
+describe('v9 -> v10 migration', () => {
+  /** A v9 scenario - already through the region-table and cash-rate migrations - whose table predates `taxesSocialSecurity`. */
+  function v9Blob() {
+    const migrated = migrateStorageBlob(v3Blob(), 3) as { scenarios: Array<{ taxConfig: { stateOrProvincialTable: Record<string, unknown> } }> };
+    delete migrated.scenarios[0].taxConfig.stateOrProvincialTable.taxesSocialSecurity;
+    return migrated;
+  }
+
+  it('backfills taxesSocialSecurity to false on the region table', () => {
+    const bundle = ExportBundleSchema.parse(migrateStorageBlob(v9Blob(), 9));
+    expect(bundle.scenarios[0].taxConfig.stateOrProvincialTable.taxesSocialSecurity).toBe(false);
+  });
+
+  it('leaves an already-v10 scenario alone', () => {
+    const once = migrateStorageBlob(v9Blob(), 9);
+    const twice = migrateStorageBlob(once, 10);
+    expect(twice).toEqual(once);
+  });
+});

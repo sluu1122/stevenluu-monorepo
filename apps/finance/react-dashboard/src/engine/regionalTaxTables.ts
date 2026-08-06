@@ -29,15 +29,30 @@ import type { StateOrProvincialTaxTable } from './schema';
  * the same tax bill either way; it understates the deduction's value for a
  * graduated state's lower earners and overstates it for their higher earners,
  * the same trade-off already accepted for the federal BPA (see calculateTax.ts).
+ *
+ * `taxesSocialSecurity` is likewise a seeded, verify-it-yourself simplification:
+ * true for the handful of states that still tax any of it (as of 2025: CO, CT,
+ * MN, MT, NM, RI, UT, VT, WV - most others repealed their own tax on it years
+ * ago), using the SAME federally-taxable amount as the state's base rather than
+ * modelling each one's own separate exemption/threshold rules on top of that
+ * (several, like Colorado and New Mexico, exempt most retirees outright above
+ * a certain age or income and only tax a slice in between).
  */
 
 function noTax(label: string): StateOrProvincialTaxTable {
-  return { label, brackets: [{ min: 0, max: null, rate: 0 }], basicPersonalAmount: 0, creditRate: 0, surtax: [] };
+  return { label, brackets: [{ min: 0, max: null, rate: 0 }], basicPersonalAmount: 0, creditRate: 0, surtax: [], taxesSocialSecurity: false };
 }
 
 /** A flat-rate table. Exact under the credit approximation above, since there's only one rate to apply it at. */
-function flatState(label: string, ratePct: number, standardDeduction: number): StateOrProvincialTaxTable {
-  return { label, brackets: [{ min: 0, max: null, rate: ratePct / 100 }], basicPersonalAmount: standardDeduction, creditRate: ratePct / 100, surtax: [] };
+function flatState(label: string, ratePct: number, standardDeduction: number, taxesSocialSecurity = false): StateOrProvincialTaxTable {
+  return {
+    label,
+    brackets: [{ min: 0, max: null, rate: ratePct / 100 }],
+    basicPersonalAmount: standardDeduction,
+    creditRate: ratePct / 100,
+    surtax: [],
+    taxesSocialSecurity,
+  };
 }
 
 export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
@@ -55,6 +70,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 12_932,
     creditRate: 0.0506,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   AB: {
     label: 'Alberta',
@@ -69,6 +85,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 22_323,
     creditRate: 0.08,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   SK: {
     label: 'Saskatchewan',
@@ -80,6 +97,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 19_491,
     creditRate: 0.105,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   MB: {
     label: 'Manitoba',
@@ -91,6 +109,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 15_969,
     creditRate: 0.108,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   ON: {
     label: 'Ontario',
@@ -109,6 +128,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
       { taxOver: 5_710, rate: 0.2 },
       { taxOver: 7_307, rate: 0.36 },
     ],
+    taxesSocialSecurity: false,
   },
   QC: {
     label: 'Quebec',
@@ -121,6 +141,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 18_571,
     creditRate: 0.14,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   NB: {
     label: 'New Brunswick',
@@ -132,6 +153,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 13_396,
     creditRate: 0.094,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   NS: {
     label: 'Nova Scotia',
@@ -145,6 +167,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 11_894,
     creditRate: 0.0879,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   PE: {
     label: 'Prince Edward Island',
@@ -158,6 +181,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 14_250,
     creditRate: 0.095,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   NL: {
     label: 'Newfoundland and Labrador',
@@ -173,6 +197,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 11_067,
     creditRate: 0.087,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   YT: {
     label: 'Yukon',
@@ -186,6 +211,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 16_129,
     creditRate: 0.064,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   NT: {
     label: 'Northwest Territories',
@@ -198,6 +224,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 17_842,
     creditRate: 0.059,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   NU: {
     label: 'Nunavut',
@@ -210,6 +237,7 @@ export const CANADIAN_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 19_798,
     creditRate: 0.04,
     surtax: [],
+    taxesSocialSecurity: false,
   },
 };
 
@@ -231,6 +259,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 2_500,
     creditRate: 0.02,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   AK: noTax('Alaska'),
   AZ: flatState('Arizona', 2.5, 14_600),
@@ -246,6 +275,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 2_270,
     creditRate: 0,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   CA: {
     label: 'California',
@@ -270,8 +300,9 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 14_900,
     creditRate: 0.01,
     surtax: [],
+    taxesSocialSecurity: false,
   },
-  CO: flatState('Colorado', 4.4, 14_600),
+  CO: flatState('Colorado', 4.4, 14_600, true),
   CT: {
     label: 'Connecticut',
     brackets: [
@@ -286,6 +317,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 15_000,
     creditRate: 0.02,
     surtax: [],
+    taxesSocialSecurity: true,
   },
   DE: {
     label: 'Delaware',
@@ -301,6 +333,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 3_250,
     creditRate: 0,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   FL: noTax('Florida'),
   GA: flatState('Georgia', 5.19, 12_000),
@@ -325,6 +358,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 9_000,
     creditRate: 0.014,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   ID: flatState('Idaho', 5.3, 14_600),
   IL: flatState('Illinois', 4.95, 2_775),
@@ -339,6 +373,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 3_605,
     creditRate: 0.052,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   KY: flatState('Kentucky', 4.0, 3_160),
   LA: flatState('Louisiana', 3.0, 12_500),
@@ -352,6 +387,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 14_600,
     creditRate: 0.058,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   MD: {
     label: 'Maryland',
@@ -368,6 +404,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 3_200,
     creditRate: 0.02,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   MA: {
     label: 'Massachusetts',
@@ -380,6 +417,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 4_400,
     creditRate: 0.05,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   MI: flatState('Michigan', 4.25, 5_600),
   MN: {
@@ -393,6 +431,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 14_575,
     creditRate: 0.0535,
     surtax: [],
+    taxesSocialSecurity: true,
   },
   MS: {
     label: 'Mississippi',
@@ -403,6 +442,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 0,
     creditRate: 0,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   MO: {
     label: 'Missouri',
@@ -419,6 +459,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 14_600,
     creditRate: 0,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   MT: {
     label: 'Montana',
@@ -429,6 +470,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 14_600,
     creditRate: 0.047,
     surtax: [],
+    taxesSocialSecurity: true,
   },
   NE: {
     label: 'Nebraska',
@@ -441,6 +483,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 7_900,
     creditRate: 0.0246,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   NV: noTax('Nevada'),
   NH: noTax('New Hampshire'),
@@ -458,6 +501,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 1_000,
     creditRate: 0.014,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   NM: {
     label: 'New Mexico',
@@ -471,6 +515,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 14_600,
     creditRate: 0.017,
     surtax: [],
+    taxesSocialSecurity: true,
   },
   NY: {
     label: 'New York',
@@ -488,6 +533,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 8_000,
     creditRate: 0.04,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   NC: flatState('North Carolina', 4.25, 12_750),
   ND: {
@@ -499,6 +545,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 0,
     creditRate: 0,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   OH: {
     label: 'Ohio',
@@ -510,6 +557,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 0,
     creditRate: 0,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   OK: {
     label: 'Oklahoma',
@@ -524,6 +572,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 6_350,
     creditRate: 0.0025,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   OR: {
     label: 'Oregon',
@@ -536,6 +585,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 2_745,
     creditRate: 0.0475,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   PA: flatState('Pennsylvania', 3.07, 0),
   RI: {
@@ -548,6 +598,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 10_550,
     creditRate: 0.0375,
     surtax: [],
+    taxesSocialSecurity: true,
   },
   SC: {
     label: 'South Carolina',
@@ -559,11 +610,12 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 14_600,
     creditRate: 0,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   SD: noTax('South Dakota'),
   TN: noTax('Tennessee'),
   TX: noTax('Texas'),
-  UT: flatState('Utah', 4.5, 1_750),
+  UT: flatState('Utah', 4.5, 1_750, true),
   VT: {
     label: 'Vermont',
     brackets: [
@@ -575,6 +627,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 7_000,
     creditRate: 0.0335,
     surtax: [],
+    taxesSocialSecurity: true,
   },
   VA: {
     label: 'Virginia',
@@ -587,6 +640,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 8_500,
     creditRate: 0.02,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   // No general wage income tax. Washington does levy a 7% excise tax on
   // capital gains above roughly $270,000 for high earners, which this doesn't
@@ -604,6 +658,9 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 0,
     creditRate: 0,
     surtax: [],
+    // Phasing out on a legislated schedule and fully repealed from 2026 -
+    // still partly in effect for the 2025 figures modelled here.
+    taxesSocialSecurity: true,
   },
   WI: {
     label: 'Wisconsin',
@@ -616,6 +673,7 @@ export const US_STATE_TAX_TABLES: Record<string, StateOrProvincialTaxTable> = {
     basicPersonalAmount: 13_230,
     creditRate: 0.035,
     surtax: [],
+    taxesSocialSecurity: false,
   },
   WY: noTax('Wyoming'),
 };
@@ -628,5 +686,6 @@ export function flatRateTable(ratePct: number): StateOrProvincialTaxTable {
     basicPersonalAmount: 0,
     creditRate: 0,
     surtax: [],
+    taxesSocialSecurity: false,
   };
 }

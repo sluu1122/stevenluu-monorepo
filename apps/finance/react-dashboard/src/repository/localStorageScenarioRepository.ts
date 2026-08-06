@@ -464,6 +464,22 @@ function migrateScenarioV8ToV9(scenario: Record<string, unknown>): Record<string
   return { ...scenario, returnRates: { ...rest, cashPct: post ?? pre ?? DEFAULT_RETURN_RATES.cashPct } };
 }
 
+/**
+ * v9 -> v10: the region table gained `taxesSocialSecurity`, so Social Security
+ * can be taxed by the IRS provisional-income formula instead of at a flat
+ * 100% inclusion rate. Backfilled to `false` - correct for the great majority
+ * of real states/provinces, and identical to the old always-100%-taxable
+ * behavior for anyone it isn't (see calculateTax.ts's `socialSecurityBenefit`
+ * default of 0, which a false flag here doesn't even need to reach).
+ */
+function migrateScenarioV9ToV10(scenario: Record<string, unknown>): Record<string, unknown> {
+  const taxConfig = (scenario.taxConfig ?? {}) as Record<string, unknown>;
+  const table = (taxConfig.stateOrProvincialTable ?? {}) as Record<string, unknown>;
+  if ('taxesSocialSecurity' in table) return scenario;
+
+  return { ...scenario, taxConfig: { ...taxConfig, stateOrProvincialTable: { ...table, taxesSocialSecurity: false } } };
+}
+
 /** Exported so the JSON-import path (exportImport.ts) can apply the same migration to an uploaded backup file, not just LocalStorage reads. */
 export function migrateStorageBlob(raw: unknown, fromVersion: number): unknown {
   void fromVersion; // migration is structurally self-detecting, see migrateScenarioV1ToV2/V2ToV3/V3ToV4/V4ToV5
@@ -483,13 +499,13 @@ export function migrateStorageBlob(raw: unknown, fromVersion: number): unknown {
     // by the presence of root fields that v4 has since moved onto each
     // person, so running them against v4 data would re-add those fields.
     // v4->v5 is additive and self-detecting, so it always runs.
-    if ('persons' in s) return migrateScenarioV8ToV9(migrateScenarioV7ToV8(migrateScenarioV6ToV7(migrateScenarioV5ToV6(migrateScenarioV4ToV5(s as Record<string, unknown>)))));
+    if ('persons' in s) return migrateScenarioV9ToV10(migrateScenarioV8ToV9(migrateScenarioV7ToV8(migrateScenarioV6ToV7(migrateScenarioV5ToV6(migrateScenarioV4ToV5(s as Record<string, unknown>))))));
     const v3 = migrateScenarioV2ToV3(migrateScenarioV1ToV2(s as Record<string, unknown>));
     const { scenario, primaryPersonId } = migrateScenarioV3ToV4(v3);
     if (primaryPersonId && typeof scenario.id === 'string') {
       primaryPersonIdByScenarioId.set(scenario.id, primaryPersonId);
     }
-    return migrateScenarioV8ToV9(migrateScenarioV7ToV8(migrateScenarioV6ToV7(migrateScenarioV5ToV6(migrateScenarioV4ToV5(scenario)))));
+    return migrateScenarioV9ToV10(migrateScenarioV8ToV9(migrateScenarioV7ToV8(migrateScenarioV6ToV7(migrateScenarioV5ToV6(migrateScenarioV4ToV5(scenario))))));
   });
 
   const migratedOverrides = (bundle.overrides ?? []).map((o) => {

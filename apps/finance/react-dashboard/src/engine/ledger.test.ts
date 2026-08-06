@@ -96,6 +96,14 @@ describe('buildScenarioLedger', () => {
     const ssBenefit = person1.benefits.find((b) => b.type === 'US_SOCIAL_SECURITY')!;
     const currentAge = new Date().getFullYear() - person1.birthYear;
     person1.planningEndAge = ssBenefit.claimAge + 2;
+    // A salary on top of the benefit, since retirementStartYear === null means
+    // income never stops - without it, the only other income is a few
+    // thousand of taxable-account interest, which lands combined income
+    // (otherIncome + 50% of the benefit) under the IRS's $25,000 provisional-
+    // income floor and correctly owes nothing. High enough to clear the
+    // $34,000 second threshold too, so 85% of the benefit is taxable and the
+    // assertion below isn't sensitive to exactly where in between it lands.
+    person1.annualIncomeNominal = 40_000;
     // Thresholds held still, so the benefit is measured against today's
     // standard deduction rather than one indexed 30 years forward - by then a
     // 26,400 benefit sits below it and owes nothing, which would make this
