@@ -2,8 +2,12 @@ import { ExportBundleSchema } from '../engine/schema';
 import type { ExportBundle } from '../engine/schema';
 import { migrateStorageBlob } from './localStorageScenarioRepository';
 
-export function downloadExport(bundle: ExportBundle): void {
-  const filename = `retirement-planner-export-${new Date().toISOString().slice(0, 10)}.json`;
+export function downloadExport(bundle: ExportBundle, namePart = 'export'): void {
+  const slug = namePart
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'export';
+  const filename = `retirement-planner-${slug}-${new Date().toISOString().slice(0, 10)}.json`;
   const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
 

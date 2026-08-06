@@ -14,5 +14,6 @@ export interface ScenarioRepository {
   saveOverride(override: GridOverride): Promise<GridOverride>;
   deleteOverride(id: string): Promise<void>;
   exportAll(): Promise<ExportBundle>;
+  exportScenario(id: string): Promise<ExportBundle>;
   importAll(bundle: ExportBundle, mode: 'merge' | 'replace'): Promise<void>;
 }

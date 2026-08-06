@@ -347,22 +347,24 @@ export type GridOverride = z.infer<typeof GridOverrideSchema>;
  * six-account household had twelve numbers to keep consistent and a single
  * forgotten one quietly skewed the projection.
  *
- * Cash gets its own pair because it genuinely behaves differently - a savings
- * account tracks short rates while a portfolio tracks equity returns - and
- * because the cash-buffer rule keeps a deliberately large balance there.
- * `isCashBuffer` decides which pair an account uses.
+ * Investments still split pre/post retirement, since a glide path toward a
+ * more conservative allocation at retirement is a real and common choice.
+ * Cash does NOT: a savings rate doesn't move because its owner retired, it
+ * moves with prevailing short rates, which this model doesn't otherwise
+ * simulate - the pre/post split was two numbers a user had to keep in sync
+ * for no behavior anyone actually wanted. `isCashBuffer` still decides which
+ * of the two rates an account uses.
  */
 export const ReturnRatesSchema = z.object({
   investmentsPreRetirementPct: z.number(),
   investmentsPostRetirementPct: z.number(),
-  cashPreRetirementPct: z.number(),
-  cashPostRetirementPct: z.number(),
+  cashPct: z.number(),
 });
 export type ReturnRates = z.infer<typeof ReturnRatesSchema>;
 
 /** The growth rate this account earns in a given year, in percent. */
 export function returnRatePctFor(bucket: Pick<AccountBucket, 'isCashBuffer'>, rates: ReturnRates, isRetired: boolean): number {
-  if (bucket.isCashBuffer) return isRetired ? rates.cashPostRetirementPct : rates.cashPreRetirementPct;
+  if (bucket.isCashBuffer) return rates.cashPct;
   return isRetired ? rates.investmentsPostRetirementPct : rates.investmentsPreRetirementPct;
 }
 
@@ -454,12 +456,11 @@ export const ExportBundleSchema = z.object({
 });
 export type ExportBundle = z.infer<typeof ExportBundleSchema>;
 
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 /** Applied to any scenario predating scenario-level rates that had no per-account rate to derive one from. */
 export const DEFAULT_RETURN_RATES: ReturnRates = {
   investmentsPreRetirementPct: 7,
   investmentsPostRetirementPct: 5,
-  cashPreRetirementPct: 2,
-  cashPostRetirementPct: 2,
+  cashPct: 2,
 };

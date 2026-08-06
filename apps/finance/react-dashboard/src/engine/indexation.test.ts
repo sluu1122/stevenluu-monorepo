@@ -98,7 +98,7 @@ describe('indexation across a projection', () => {
   function pensionScenario(): Scenario {
     const scenario = createDefaultScenario('CA');
     scenario.inflation = { mode: 'flat', flatRatePct: 2.5 };
-    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPreRetirementPct: 0, cashPostRetirementPct: 0 };
+    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPct: 0 };
 
     // Non-registered distributions scale with BALANCES, which grow at the
     // return rate rather than with inflation, so they would break the
@@ -187,7 +187,7 @@ describe('indexation across a projection', () => {
   it('steps an indexed TFSA contribution up over the projection, funded from cash', () => {
     const scenario = createDefaultScenario('CA');
     scenario.inflation = { mode: 'flat', flatRatePct: 2.5 };
-    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPreRetirementPct: 0, cashPostRetirementPct: 0 };
+    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPct: 0 };
 
     const person = scenario.persons[0];
     person.retirementStartYear = null;
@@ -240,7 +240,7 @@ describe('shared account buckets index too', () => {
   it('indexes a shared account contribution on the same schedule', () => {
     const scenario = createDefaultScenario('CA');
     scenario.inflation = { mode: 'flat', flatRatePct: 2.5 };
-    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPreRetirementPct: 0, cashPostRetirementPct: 0 };
+    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPct: 0 };
 
     const jointCash: AccountBucket = {
       id: 'joint-cash',
@@ -283,7 +283,7 @@ describe('account availability overrides', () => {
   /** A retiree whose only money is in a 401(k), statutorily gated at 59.5. */
   function gatedScenario(age: number) {
     const scenario = createDefaultScenario('US');
-    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPreRetirementPct: 0, cashPostRetirementPct: 0 };
+    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPct: 0 };
     scenario.inflation = { mode: 'flat', flatRatePct: 0 };
     const person = scenario.persons[0];
     person.birthYear = startYear - age;

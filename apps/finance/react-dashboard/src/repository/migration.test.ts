@@ -265,9 +265,45 @@ describe('v5 -> v6 migration', () => {
     expect(bundle.scenarios[0].returnRates).toEqual({
       investmentsPreRetirementPct: 7,
       investmentsPostRetirementPct: 5,
-      cashPreRetirementPct: 2,
-      cashPostRetirementPct: 2,
+      cashPct: 2,
     });
+  });
+
+  it('pools a cash account’s pre- and post-retirement rate into the one cash vote when they differ', () => {
+    // Cash no longer keeps two figures, so a pre-v7 blob whose cash account
+    // had different pre/post rates has to fold both into a single vote rather
+    // than picking one arbitrarily.
+    const blob = v3Blob();
+    const cash = blob.scenarios[0].accountBuckets.find((b: { id: string }) => b.id === 'bucket-cash')!;
+    cash.preRetirementReturnPct = 2;
+    cash.postRetirementReturnPct = 2;
+    // A second cash account voting for a different rate on both sides tips
+    // the pooled majority to that rate.
+    blob.scenarios[0].accountBuckets.push({
+      id: 'bucket-cash-2',
+      label: 'Second Cash',
+      country: 'US',
+      kind: 'US_CASH_HYSA',
+      taxTreatment: 'taxable',
+      isCashBuffer: true,
+      startingBalance: 1_000,
+      preRetirementReturnPct: 1,
+      postRetirementReturnPct: 1,
+    });
+    blob.scenarios[0].accountBuckets.push({
+      id: 'bucket-cash-3',
+      label: 'Third Cash',
+      country: 'US',
+      kind: 'US_CASH_HYSA',
+      taxTreatment: 'taxable',
+      isCashBuffer: true,
+      startingBalance: 1_000,
+      preRetirementReturnPct: 1,
+      postRetirementReturnPct: 1,
+    });
+
+    const bundle = ExportBundleSchema.parse(migrateStorageBlob(blob, 3));
+    expect(bundle.scenarios[0].returnRates.cashPct).toBe(1);
   });
 
   it('takes the majority rate when accounts within a group disagree', () => {
@@ -288,8 +324,7 @@ describe('v5 -> v6 migration', () => {
     blob.scenarios[0].cashBufferRule.replenishmentOrder = [];
 
     const bundle = ExportBundleSchema.parse(migrateStorageBlob(blob, 3));
-    expect(bundle.scenarios[0].returnRates.cashPreRetirementPct).toBe(DEFAULT_RETURN_RATES.cashPreRetirementPct);
-    expect(bundle.scenarios[0].returnRates.cashPostRetirementPct).toBe(DEFAULT_RETURN_RATES.cashPostRetirementPct);
+    expect(bundle.scenarios[0].returnRates.cashPct).toBe(DEFAULT_RETURN_RATES.cashPct);
   });
 
   it('drops the per-account rate fields rather than leaving them to drift', () => {
@@ -334,6 +369,43 @@ describe('v5 -> v6 migration', () => {
   it('leaves an already-v6 scenario alone', () => {
     const once = migrateStorageBlob(v3Blob(), 3);
     const twice = migrateStorageBlob(once, 6);
+    expect(twice).toEqual(once);
+  });
+});
+
+describe('v8 -> v9 migration', () => {
+  /** A v8 scenario, already through the v7->v8 provincial-table migration, with the old two-field cash rate. */
+  function v8Blob() {
+    const blob = v3Blob();
+    const migrated = migrateStorageBlob(blob, 3) as { scenarios: Array<Record<string, unknown>> };
+    const scenario = migrated.scenarios[0] as Record<string, unknown> & { returnRates: Record<string, unknown> };
+    scenario.returnRates = {
+      investmentsPreRetirementPct: 7,
+      investmentsPostRetirementPct: 5,
+      cashPreRetirementPct: 1,
+      cashPostRetirementPct: 3,
+    };
+    return migrated;
+  }
+
+  it('carries the post-retirement cash rate forward as the single rate', () => {
+    // The retiree's buffer is the account this rate actually governs in
+    // practice, so it's the figure kept when the two disagreed.
+    const bundle = ExportBundleSchema.parse(migrateStorageBlob(v8Blob(), 8));
+    expect(bundle.scenarios[0].returnRates.cashPct).toBe(3);
+    expect(bundle.scenarios[0].returnRates).not.toHaveProperty('cashPreRetirementPct');
+    expect(bundle.scenarios[0].returnRates).not.toHaveProperty('cashPostRetirementPct');
+  });
+
+  it('leaves the investment rates untouched', () => {
+    const bundle = ExportBundleSchema.parse(migrateStorageBlob(v8Blob(), 8));
+    expect(bundle.scenarios[0].returnRates.investmentsPreRetirementPct).toBe(7);
+    expect(bundle.scenarios[0].returnRates.investmentsPostRetirementPct).toBe(5);
+  });
+
+  it('leaves an already-v9 scenario alone', () => {
+    const once = migrateStorageBlob(v8Blob(), 8);
+    const twice = migrateStorageBlob(once, 9);
     expect(twice).toEqual(once);
   });
 });

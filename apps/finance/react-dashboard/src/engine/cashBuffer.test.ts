@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkAndReplenish, grossUpForNet } from './cashBuffer';
 import { getDefaultFederalTable } from './taxBrackets';
 import type { AccountBucket, CashBufferRule, TaxConfig } from './schema';
-import { flatRateTable } from './provincialTaxTables';
+import { flatRateTable } from './regionalTaxTables';
 
 // The age gate now comes from the account KIND, so a bucket that should be
 // gated is built as a 401(k)/IRA (statutory 59.5) rather than by setting an

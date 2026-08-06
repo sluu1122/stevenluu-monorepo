@@ -4,7 +4,7 @@ import { DashCard } from '../../components/DashCard';
 import { Input } from '@repo/ui/components/input';
 import { Label } from '@repo/ui/components/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/components/select';
-import { PROVINCIAL_TAX_TABLES } from '../../engine/provincialTaxTables';
+import { CANADIAN_TAX_TABLES, US_STATE_TAX_TABLES } from '../../engine/regionalTaxTables';
 import type { Scenario } from '../../engine/schema';
 
 interface BracketRateInputProps {
@@ -45,9 +45,16 @@ export function TaxAssumptionsForm() {
   const provincial = watch('taxConfig.stateOrProvincialTable');
 
   const regionNoun = country === 'US' ? 'State' : 'Provincial';
-  // A migrated scenario carries its old flat rate as a one-bracket table, which
-  // matches no preset - shown as-is so it's obvious it needs replacing.
-  const presetKey = Object.keys(PROVINCIAL_TAX_TABLES).find((key) => PROVINCIAL_TAX_TABLES[key].label === provincial?.label) ?? '';
+  // The picker only ever offers tables for the scenario's OWN tax residency -
+  // a Canadian scenario has no business showing California's brackets, and
+  // switching country used to leave whichever country's table was already
+  // selected in place, silently mismatched against the new residency.
+  const tablesForCountry = country === 'US' ? US_STATE_TAX_TABLES : CANADIAN_TAX_TABLES;
+  // A migrated scenario carries its old flat rate as a one-bracket table, and
+  // switching residency leaves the OTHER country's table in place until the
+  // user picks a new one - both match no preset, shown as-is so it's obvious
+  // a real table still needs picking.
+  const presetKey = Object.keys(tablesForCountry).find((key) => tablesForCountry[key].label === provincial?.label) ?? '';
 
   return (
     <DashCard>
@@ -81,13 +88,23 @@ export function TaxAssumptionsForm() {
           <Label>{regionNoun} table</Label>
           <Select
             value={presetKey}
-            onValueChange={(key: string) => setValue('taxConfig.stateOrProvincialTable', { ...PROVINCIAL_TAX_TABLES[key] }, { shouldDirty: true })}
+            onValueChange={(key: string) => {
+              // Radix's Select fires a phantom onValueChange("") of its own
+              // accord when the item list changes out from under a controlled
+              // value - exactly what happens here the instant residency
+              // switches this list from provinces to states. Nothing in
+              // `tablesForCountry` is ever keyed by "", so this is never a
+              // real user pick; forwarding it would spread undefined into `{}`
+              // and blank out the table this same switch just set.
+              const table = tablesForCountry[key];
+              if (table) setValue('taxConfig.stateOrProvincialTable', { ...table }, { shouldDirty: true });
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder={provincial?.label ?? 'Choose one'} />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(PROVINCIAL_TAX_TABLES).map(([key, table]) => (
+              {Object.entries(tablesForCountry).map(([key, table]) => (
                 <SelectItem key={key} value={key}>
                   {table.label}
                 </SelectItem>
@@ -97,7 +114,7 @@ export function TaxAssumptionsForm() {
         </div>
       </div>
 
-      {provincial && (
+      {provincial?.brackets && provincial.brackets.length > 0 && (
         <div className="mb-5 rounded-[9px] bg-surface-muted px-3 py-2.5 text-[12.5px] text-dim">
           <span className="text-ink font-medium">{provincial.label}</span>: {provincial.brackets.length} bracket
           {provincial.brackets.length === 1 ? '' : 's'} from {(provincial.brackets[0].rate * 100).toFixed(2)}% to{' '}

@@ -25,7 +25,6 @@ import { InflationForm } from './InflationForm';
 import { SharedAccountsEditor } from './SharedAccountsEditor';
 import { SharedCashBufferForm } from './SharedCashBufferForm';
 import { TaxableAccountTaxationForm } from './TaxableAccountTaxationForm';
-import { ImportExportPanel } from './ImportExportPanel';
 
 const SCENARIO_TAB = 'scenario';
 
@@ -153,7 +152,6 @@ export function ScenarioSetupTab() {
             <TaxAssumptionsForm />
             <TaxableAccountTaxationForm />
             <InflationForm />
-            <ImportExportPanel />
           </TabsContent>
 
           {persons.map((person, personIndex) => (

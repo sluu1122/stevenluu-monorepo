@@ -15,8 +15,7 @@ import type { AccountBucket, GridOverride, PersonPlan, ReturnRates, Scenario } f
 const NO_GROWTH: ReturnRates = {
   investmentsPreRetirementPct: 0,
   investmentsPostRetirementPct: 0,
-  cashPreRetirementPct: 0,
-  cashPostRetirementPct: 0,
+  cashPct: 0,
 };
 
 /**
@@ -654,7 +653,7 @@ describe('shared (joint) accounts', () => {
     const { scenario, joint } = sharedScenario(100_000);
     // The joint account is the only one left standing below, so a scenario-wide
     // 10% is 10% on it and nothing else.
-    scenario.returnRates = { investmentsPreRetirementPct: 10, investmentsPostRetirementPct: 10, cashPreRetirementPct: 10, cashPostRetirementPct: 10 };
+    scenario.returnRates = { investmentsPreRetirementPct: 10, investmentsPostRetirementPct: 10, cashPct: 10 };
     for (const p of scenario.persons) {
       p.accountBuckets = [];
       p.cashBufferRule = { enabled: false, targetMonthsOfSpending: 6, replenishmentOrder: [] };

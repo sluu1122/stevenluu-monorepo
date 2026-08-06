@@ -3,7 +3,7 @@ import { getDefaultFederalTable } from './taxBrackets';
 import { US_SOCIAL_SECURITY_2026, CA_CPP_2026, CA_OAS_2026 } from './benefitDefaults';
 import { ACCOUNT_KIND_META, US_ACCOUNT_KINDS, CA_ACCOUNT_KINDS, DEFAULT_HOUSEHOLD_WITHDRAWAL_ORDER } from './accountKindMeta';
 import { CURRENT_SCHEMA_VERSION, DEFAULT_REQUIRED_DISTRIBUTION_RULE, DEFAULT_RETURN_RATES, DEFAULT_SHARED_CASH_BUFFER_RULE, DEFAULT_TAXABLE_ACCOUNT_TAXATION } from './schema';
-import { PROVINCIAL_TAX_TABLES } from './provincialTaxTables';
+import { CANADIAN_TAX_TABLES, US_STATE_TAX_TABLES } from './regionalTaxTables';
 import type { AccountBucket, AccountKind, BenefitConfig, PersonPlan, Scenario } from './schema';
 
 // Growth rates are scenario-level now (see DEFAULT_RETURN_RATES), so a seeded
@@ -134,9 +134,10 @@ export function createDefaultScenario(country: 'US' | 'CA', name = 'New Scenario
       federalTable: getDefaultFederalTable(country, 'single'),
       // Seeded with a real table rather than a rate, since a flat percentage
       // was never right for anyone. BC for a Canadian scenario because it's
-      // the most common case here; a US one starts with no state tax, which
-      // IS correct for several states and obvious when it isn't.
-      stateOrProvincialTable: country === 'CA' ? { ...PROVINCIAL_TAX_TABLES.BC } : { ...PROVINCIAL_TAX_TABLES.US_NO_STATE_TAX },
+      // the most common case here; Texas for a US one, which has the useful
+      // property of being both a real, common state AND obviously wrong the
+      // moment a user's actual state has an income tax.
+      stateOrProvincialTable: country === 'CA' ? { ...CANADIAN_TAX_TABLES.BC } : { ...US_STATE_TAX_TABLES.TX },
     },
     taxableAccountTaxation: { ...DEFAULT_TAXABLE_ACCOUNT_TAXATION },
     inflation: {

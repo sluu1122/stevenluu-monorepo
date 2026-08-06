@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { calculateFederalTax, calculateTotalTax } from './calculateTax';
 import { US_FEDERAL_2026_SINGLE, CA_FEDERAL_2026 } from './taxBrackets';
 import type { TaxConfig } from './schema';
-import { flatRateTable } from './provincialTaxTables';
+import { flatRateTable } from './regionalTaxTables';
 
 describe('calculateFederalTax', () => {
   it('owes nothing when income is below the standard deduction', () => {

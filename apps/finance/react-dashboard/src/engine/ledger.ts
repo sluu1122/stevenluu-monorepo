@@ -849,6 +849,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
   // a low basis costs materially more to draw down.
   const costBasis: Record<string, number> = {};
   const allBucketsInScenario = [...sharedBuckets, ...scenario.persons.flatMap((p) => p.accountBuckets)];
+  const bucketById = new Map(allBucketsInScenario.map((b) => [b.id, b]));
   for (const bucket of allBucketsInScenario) {
     if (bucket.taxTreatment !== 'taxable') continue;
     costBasis[bucket.id] = convertBucketAmountToScenarioCurrency(bucket.costBasis ?? bucket.startingBalance, bucket, scenario);
@@ -1216,6 +1217,30 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       }
     }
 
+    // Phase 1c: give this year's Phase-1 credits their cost basis NOW, before
+    // the gain pass below runs.
+    //
+    // Money routed into a taxable account during Phase 1 - a required
+    // distribution's proceeds, a cash-buffer top-up - arrives at par and
+    // carries basis equal to itself. Adding that basis only at year end (Phase
+    // 4b, where it used to happen) left the gain pass measuring the year's
+    // sales against the OPENING balance alone. An account credited mid-year and
+    // then drawn down by more than it opened with therefore showed the excess
+    // as pure appreciation: a cash account, which cannot appreciate at all, was
+    // charged capital gains tax on required-distribution proceeds that had
+    // already been taxed in full as ordinary income on the way out of the
+    // registered account.
+    const basisCreditedInPhase1: Record<string, number> = {};
+    for (const person of scenario.persons) {
+      for (const [bucketId, amount] of Object.entries(replenishmentByPersonId.get(person.id)!.credits)) {
+        if (bucketById.get(bucketId)?.taxTreatment !== 'taxable') continue;
+        costBasis[bucketId] = (costBasis[bucketId] ?? 0) + amount;
+        basisCreditedInPhase1[bucketId] = (basisCreditedInPhase1[bucketId] ?? 0) + amount;
+      }
+    }
+    /** What an account was worth when this year's sales came out of it: its opening value plus anything Phase 1 already put in. */
+    const saleReferenceValue = (bucketId: string) => Math.max(0, balancesAtYearStart[bucketId] ?? 0) + (basisCreditedInPhase1[bucketId] ?? 0);
+
     // Phase 2: the household's spending and tax, funded from ONE ordered pass
     // over every account, then assembled into per-person rows.
     //
@@ -1287,7 +1312,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       for (const bucket of [...person.accountBuckets, ...(person.id === primaryPersonId ? sharedBuckets : [])]) {
         if (bucket.taxTreatment !== 'taxable') continue;
         const sold = (share.withdrawals[bucket.id] ?? 0) + (replenishment.withdrawals[bucket.id] ?? 0);
-        const { taxableGain } = realizeGain(sold, balancesAtYearStart[bucket.id] ?? 0, costBasis[bucket.id] ?? 0, inclusionRatePct);
+        const { taxableGain } = realizeGain(sold, saleReferenceValue(bucket.id), costBasis[bucket.id] ?? 0, inclusionRatePct);
         realizedGains += taxableGain;
       }
       if ((distributionIncomeByPersonId.get(person.id) ?? 0) > 0.005) {
@@ -1500,21 +1525,25 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
 
     // Phase 4b: settle cost basis, now that every sale and purchase for the
     // year is known. Sales consume basis in proportion to what fraction of the
-    // account was basis at the year's OPENING - the same reference the gain was
+    // account was basis when they came out - the same reference the gain was
     // charged against in pass 2b, so the two can't drift apart. Purchases add
     // to basis dollar for dollar.
     //
-    // Distributions were already added in Phase 0b, which is what keeps them
-    // from being taxed twice: once as income when thrown off, and again as a
-    // capital gain when the units they bought are eventually sold.
+    // Distributions were already added in Phase 0b, and Phase 1's credits in
+    // Phase 1c, which is what keeps both from being taxed twice: once as income
+    // when earned or distributed, and again as a capital gain when the units
+    // they bought are eventually sold. Only what Phase 4 itself contributed is
+    // still owed basis here.
     for (const bucket of allBucketsInScenario) {
       if (bucket.taxTreatment !== 'taxable') continue;
       const sold = scenario.persons.reduce((sum, p) => sum + (draftsByPersonId.get(p.id)!.withdrawals[bucket.id] ?? 0), 0) + (sharedFundingWithdrawals[bucket.id] ?? 0);
       const bought =
-        scenario.persons.reduce((sum, p) => sum + (draftsByPersonId.get(p.id)!.contributions[bucket.id] ?? 0), 0) + (sharedContributions[bucket.id] ?? 0);
+        scenario.persons.reduce((sum, p) => sum + (draftsByPersonId.get(p.id)!.contributions[bucket.id] ?? 0), 0) +
+        (sharedContributions[bucket.id] ?? 0) -
+        (basisCreditedInPhase1[bucket.id] ?? 0);
 
       if (sold > 0.005) {
-        const { basisConsumed } = realizeGain(sold, balancesAtYearStart[bucket.id] ?? 0, costBasis[bucket.id] ?? 0, inclusionRatePct);
+        const { basisConsumed } = realizeGain(sold, saleReferenceValue(bucket.id), costBasis[bucket.id] ?? 0, inclusionRatePct);
         costBasis[bucket.id] = Math.max(0, (costBasis[bucket.id] ?? 0) - basisConsumed);
       }
       if (bought > 0.005) costBasis[bucket.id] = (costBasis[bucket.id] ?? 0) + bought;

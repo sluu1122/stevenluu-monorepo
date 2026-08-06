@@ -5,18 +5,26 @@ import { Label } from '@repo/ui/components/label';
 import { Checkbox } from '@repo/ui/components/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/components/select';
 import { getDefaultFederalTable } from '../../engine/taxBrackets';
+import { CANADIAN_TAX_TABLES, US_STATE_TAX_TABLES } from '../../engine/regionalTaxTables';
 import type { Country, Scenario } from '../../engine/schema';
 
 export function GlobalParametersForm() {
   const { register, control, getValues, setValue } = useFormContext<Scenario>();
 
-  // Tax residency drives which federal bracket table applies - switching it
-  // regenerates the default table for the new country so the brackets shown
-  // in Tax Assumptions always match the residency label above them.
+  // Tax residency drives which federal bracket table applies, AND which
+  // province/state table is even valid - switching it regenerates the federal
+  // table and resets the region table to a same-country default, so a
+  // scenario switched from Canada to the US doesn't keep showing Ontario in
+  // what is now supposed to be a state picker.
   function handleTaxResidencyChange(nextCountry: Country) {
     const filingStatus = getValues('taxConfig.filingStatus');
     setValue('taxConfig.country', nextCountry, { shouldDirty: true });
     setValue('taxConfig.federalTable', getDefaultFederalTable(nextCountry, filingStatus), { shouldDirty: true });
+    setValue(
+      'taxConfig.stateOrProvincialTable',
+      nextCountry === 'CA' ? { ...CANADIAN_TAX_TABLES.BC } : { ...US_STATE_TAX_TABLES.TX },
+      { shouldDirty: true },
+    );
   }
 
   return (
@@ -85,7 +93,7 @@ export function GlobalParametersForm() {
       <p className="text-[12.5px] text-dim mb-3">
         Applied to every account in the scenario. Cash accounts are kept separate because a savings balance tracks short rates rather than the market.
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <Label>Investments before retirement %</Label>
           <Input type="number" step="0.1" {...register('returnRates.investmentsPreRetirementPct', { valueAsNumber: true })} />
@@ -95,12 +103,8 @@ export function GlobalParametersForm() {
           <Input type="number" step="0.1" {...register('returnRates.investmentsPostRetirementPct', { valueAsNumber: true })} />
         </div>
         <div className="space-y-1.5">
-          <Label>Cash before retirement %</Label>
-          <Input type="number" step="0.1" {...register('returnRates.cashPreRetirementPct', { valueAsNumber: true })} />
-        </div>
-        <div className="space-y-1.5">
-          <Label>Cash after retirement %</Label>
-          <Input type="number" step="0.1" {...register('returnRates.cashPostRetirementPct', { valueAsNumber: true })} />
+          <Label>Cash %</Label>
+          <Input type="number" step="0.1" {...register('returnRates.cashPct', { valueAsNumber: true })} />
         </div>
       </div>
 

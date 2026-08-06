@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { buildScenarioLedger } from './ledger';
 import { calculateStateOrProvincialTax, calculateTotalTax, indexTaxConfig } from './calculateTax';
-import { PROVINCIAL_TAX_TABLES, flatRateTable } from './provincialTaxTables';
+import { CANADIAN_TAX_TABLES, flatRateTable } from './regionalTaxTables';
 import { createDefaultScenario } from './defaults';
 import type { AccountBucket, Scenario } from './schema';
 
 const startYear = new Date().getFullYear();
 
 describe('provincial tax table', () => {
-  const bc = PROVINCIAL_TAX_TABLES.BC;
+  const bc = CANADIAN_TAX_TABLES.BC;
 
   it('walks brackets progressively rather than charging one rate on everything', () => {
     // 5.06% on the first 49,279, then 7.7% on the rest.
@@ -36,7 +36,7 @@ describe('provincial tax table', () => {
   });
 
   it('charges Ontario’s surtax on the tax rather than on income', () => {
-    const on = PROVINCIAL_TAX_TABLES.ON;
+    const on = CANADIAN_TAX_TABLES.ON;
     const withSurtax = calculateStateOrProvincialTax(250_000, on).tax;
     const withoutSurtax = calculateStateOrProvincialTax(250_000, { ...on, surtax: [] }).tax;
 
@@ -57,19 +57,19 @@ describe('provincial tax table', () => {
   });
 
   it('indexes provincial brackets, the personal amount and the surtax thresholds together', () => {
-    const config = { ...createDefaultScenario('CA').taxConfig, stateOrProvincialTable: PROVINCIAL_TAX_TABLES.ON };
+    const config = { ...createDefaultScenario('CA').taxConfig, stateOrProvincialTable: CANADIAN_TAX_TABLES.ON };
     const indexed = indexTaxConfig(config, 2);
     const table = indexed.stateOrProvincialTable;
 
-    expect(table.basicPersonalAmount).toBeCloseTo(PROVINCIAL_TAX_TABLES.ON.basicPersonalAmount * 2, 6);
-    expect(table.brackets[1].min).toBeCloseTo(PROVINCIAL_TAX_TABLES.ON.brackets[1].min * 2, 6);
-    expect(table.brackets[1].rate).toBe(PROVINCIAL_TAX_TABLES.ON.brackets[1].rate);
-    expect(table.surtax[0].taxOver).toBeCloseTo(PROVINCIAL_TAX_TABLES.ON.surtax[0].taxOver * 2, 6);
-    expect(table.surtax[0].rate).toBe(PROVINCIAL_TAX_TABLES.ON.surtax[0].rate);
+    expect(table.basicPersonalAmount).toBeCloseTo(CANADIAN_TAX_TABLES.ON.basicPersonalAmount * 2, 6);
+    expect(table.brackets[1].min).toBeCloseTo(CANADIAN_TAX_TABLES.ON.brackets[1].min * 2, 6);
+    expect(table.brackets[1].rate).toBe(CANADIAN_TAX_TABLES.ON.brackets[1].rate);
+    expect(table.surtax[0].taxOver).toBeCloseTo(CANADIAN_TAX_TABLES.ON.surtax[0].taxOver * 2, 6);
+    expect(table.surtax[0].rate).toBe(CANADIAN_TAX_TABLES.ON.surtax[0].rate);
   });
 
   it('reports a combined marginal rate, since a decision faces both tables at once', () => {
-    const config = { ...createDefaultScenario('CA').taxConfig, stateOrProvincialTable: PROVINCIAL_TAX_TABLES.BC };
+    const config = { ...createDefaultScenario('CA').taxConfig, stateOrProvincialTable: CANADIAN_TAX_TABLES.BC };
     const result = calculateTotalTax(300_000, config);
     // Top CA federal bracket (33%) plus BC's top (20.5%).
     expect(result.marginalRatePct).toBeCloseTo(33 + 20.5, 6);
@@ -84,8 +84,7 @@ describe('non-registered account taxation', () => {
     scenario.returnRates = {
       investmentsPreRetirementPct: options.returnPct ?? 0,
       investmentsPostRetirementPct: options.returnPct ?? 0,
-      cashPreRetirementPct: 0,
-      cashPostRetirementPct: 0,
+      cashPct: 0,
     };
 
     const person = scenario.persons[0];
@@ -202,7 +201,7 @@ describe('non-registered account taxation', () => {
 
   it('treats a cash account as distributing its entire return, since all of it is interest', () => {
     const { scenario, person } = taxableOnly({ balance: 0 });
-    scenario.returnRates = { ...scenario.returnRates, cashPostRetirementPct: 3 };
+    scenario.returnRates = { ...scenario.returnRates, cashPct: 3 };
     person.accountBuckets = [
       { id: 'cash', label: 'Cash', country: 'CA', kind: 'CA_CASH_POOL', taxTreatment: 'taxable', startingBalance: 500_000, isCashBuffer: true },
     ];
@@ -210,6 +209,61 @@ describe('non-registered account taxation', () => {
 
     // 3% of 500,000 - the whole return, not the 2% investment yield.
     expect(rowFor(scenario).taxesPaid.total).toBeCloseTo(calculateTotalTax(15_000, scenario.taxConfig).total, 2);
+  });
+
+  it('gives money credited DURING the year its cost basis before the gain is charged', () => {
+    // Regression: a taxable account can be drawn down by far more than it
+    // opened with, because required distributions and cash-buffer top-ups land
+    // in it earlier the same year. Those credits arrive at par and carry basis
+    // equal to themselves. Adding that basis only at year end left the gain
+    // pass measuring the whole year's sales against the OPENING balance, so
+    // everything above it looked like pure appreciation - and a CASH account,
+    // which cannot appreciate at all, was charged capital gains tax on
+    // required-distribution proceeds already taxed in full as ordinary income.
+    const { scenario, person } = taxableOnly({ balance: 0 });
+    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPct: 2 };
+    scenario.householdSpendingRealAtRetirement = 150_000;
+    scenario.householdWithdrawalOrder = ['CA_CASH_POOL'];
+
+    const cash: AccountBucket = {
+      id: 'cash',
+      label: 'Cash',
+      country: 'CA',
+      kind: 'CA_CASH_POOL',
+      taxTreatment: 'taxable',
+      // Deliberately tiny next to the year's flows, so the sale dwarfs it.
+      startingBalance: 20_000,
+      isCashBuffer: true,
+    };
+    const rrsp: AccountBucket = {
+      id: 'rrsp',
+      label: 'RRSP',
+      country: 'CA',
+      kind: 'CA_RRSP_RRIF',
+      taxTreatment: 'taxDeferred',
+      startingBalance: 3_000_000,
+    };
+    person.accountBuckets = [cash, rrsp];
+    person.meltdownRules = [];
+    // A REQUIRED distribution, not a meltdown: statutory minimums run in phase
+    // 1, before spending draws, which is what lets the year's sales exceed the
+    // account's opening balance. A meltdown lands too late to reproduce this.
+    person.birthYear = startYear - 75;
+    person.planningEndAge = 75;
+    person.requiredDistributionRule = { enabled: true, startAgeOverride: null, destinationAccountBucketId: 'cash' };
+    person.surplusDestinationAccountBucketId = 'cash';
+
+    const row = rowFor(scenario);
+    const sold = row.withdrawals['cash'] ?? 0;
+    const credited = row.contributions['cash'] ?? 0;
+
+    // The setup has to actually exercise the bug: more sold than the account
+    // opened with, funded by money credited mid-year.
+    expect(credited).toBeGreaterThan(20_000);
+    expect(sold).toBeGreaterThan(20_000);
+
+    const gainStep = row.audit.steps.find((s) => s.label.includes('capital gain'));
+    expect(gainStep?.result ?? 0).toBe(0);
   });
 });
 
@@ -220,7 +274,7 @@ describe('OAS clawback base', () => {
     // before meltdowns ran, so this income was invisible to it.
     const scenario = createDefaultScenario('CA');
     scenario.inflation = { mode: 'flat', flatRatePct: 0 };
-    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPreRetirementPct: 0, cashPostRetirementPct: 0 };
+    scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPct: 0 };
     scenario.taxableAccountTaxation = { ...scenario.taxableAccountTaxation, enabled: false };
     scenario.householdSpendingRealAtRetirement = 0;
 

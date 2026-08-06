@@ -1,5 +1,5 @@
 import { CURRENT_SCHEMA_VERSION, DEFAULT_RETURN_RATES, DEFAULT_SHARED_CASH_BUFFER_RULE, DEFAULT_TAXABLE_ACCOUNT_TAXATION, ExportBundleSchema } from '../engine/schema';
-import { flatRateTable } from '../engine/provincialTaxTables';
+import { flatRateTable } from '../engine/regionalTaxTables';
 import type { AccountKind, ExportBundle, GridOverride, Scenario } from '../engine/schema';
 import { ACCOUNT_KIND_META, DEFAULT_HOUSEHOLD_WITHDRAWAL_ORDER } from '../engine/accountKindMeta';
 import type { ScenarioRepository } from './types';
@@ -400,8 +400,10 @@ function migrateScenarioV6ToV7(scenario: Record<string, unknown>): Record<string
     returnRates: {
       investmentsPreRetirementPct: mostCommon(collect(false, 'preRetirementReturnPct'), DEFAULT_RETURN_RATES.investmentsPreRetirementPct),
       investmentsPostRetirementPct: mostCommon(collect(false, 'postRetirementReturnPct'), DEFAULT_RETURN_RATES.investmentsPostRetirementPct),
-      cashPreRetirementPct: mostCommon(collect(true, 'preRetirementReturnPct'), DEFAULT_RETURN_RATES.cashPreRetirementPct),
-      cashPostRetirementPct: mostCommon(collect(true, 'postRetirementReturnPct'), DEFAULT_RETURN_RATES.cashPostRetirementPct),
+      // Cash has always been one field going into a v9+ scenario (see
+      // migrateScenarioV8ToV9), so a pre-v7 blob's pre- and post-retirement
+      // cash rates are pooled into a single vote rather than two.
+      cashPct: mostCommon([...collect(true, 'preRetirementReturnPct'), ...collect(true, 'postRetirementReturnPct')], DEFAULT_RETURN_RATES.cashPct),
     },
   };
 }
@@ -439,6 +441,29 @@ function migrateScenarioV7ToV8(scenario: Record<string, unknown>): Record<string
   return next;
 }
 
+/**
+ * v8 -> v9: cash growth stops splitting by pre/post retirement - see
+ * ReturnRatesSchema's own comment for why the split never earned its keep.
+ *
+ * Carried forward as the POST-retirement rate, on the theory that a retiree's
+ * cash buffer - the account this rate actually governs in practice, since a
+ * pre-retirement household rarely holds much idle cash - is the number a user
+ * more likely set deliberately. When the two already matched (the seeded
+ * default, and so the common case), nothing is lost either way.
+ */
+function migrateScenarioV8ToV9(scenario: Record<string, unknown>): Record<string, unknown> {
+  const rates = (scenario.returnRates ?? {}) as Record<string, unknown>;
+  if ('cashPct' in rates) return scenario;
+
+  const post = typeof rates.cashPostRetirementPct === 'number' ? rates.cashPostRetirementPct : undefined;
+  const pre = typeof rates.cashPreRetirementPct === 'number' ? rates.cashPreRetirementPct : undefined;
+  const { cashPreRetirementPct: _pre, cashPostRetirementPct: _post, ...rest } = rates;
+  void _pre;
+  void _post;
+
+  return { ...scenario, returnRates: { ...rest, cashPct: post ?? pre ?? DEFAULT_RETURN_RATES.cashPct } };
+}
+
 /** Exported so the JSON-import path (exportImport.ts) can apply the same migration to an uploaded backup file, not just LocalStorage reads. */
 export function migrateStorageBlob(raw: unknown, fromVersion: number): unknown {
   void fromVersion; // migration is structurally self-detecting, see migrateScenarioV1ToV2/V2ToV3/V3ToV4/V4ToV5
@@ -458,13 +483,13 @@ export function migrateStorageBlob(raw: unknown, fromVersion: number): unknown {
     // by the presence of root fields that v4 has since moved onto each
     // person, so running them against v4 data would re-add those fields.
     // v4->v5 is additive and self-detecting, so it always runs.
-    if ('persons' in s) return migrateScenarioV7ToV8(migrateScenarioV6ToV7(migrateScenarioV5ToV6(migrateScenarioV4ToV5(s as Record<string, unknown>))));
+    if ('persons' in s) return migrateScenarioV8ToV9(migrateScenarioV7ToV8(migrateScenarioV6ToV7(migrateScenarioV5ToV6(migrateScenarioV4ToV5(s as Record<string, unknown>)))));
     const v3 = migrateScenarioV2ToV3(migrateScenarioV1ToV2(s as Record<string, unknown>));
     const { scenario, primaryPersonId } = migrateScenarioV3ToV4(v3);
     if (primaryPersonId && typeof scenario.id === 'string') {
       primaryPersonIdByScenarioId.set(scenario.id, primaryPersonId);
     }
-    return migrateScenarioV7ToV8(migrateScenarioV6ToV7(migrateScenarioV5ToV6(migrateScenarioV4ToV5(scenario))));
+    return migrateScenarioV8ToV9(migrateScenarioV7ToV8(migrateScenarioV6ToV7(migrateScenarioV5ToV6(migrateScenarioV4ToV5(scenario)))));
   });
 
   const migratedOverrides = (bundle.overrides ?? []).map((o) => {
@@ -565,6 +590,17 @@ export class LocalStorageScenarioRepository implements ScenarioRepository {
 
   async exportAll(): Promise<ExportBundle> {
     return { ...readBlob(), exportedAt: new Date().toISOString() };
+  }
+
+  async exportScenario(id: string): Promise<ExportBundle> {
+    const blob = readBlob();
+    const scenario = blob.scenarios.find((s) => s.id === id);
+    return {
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      scenarios: scenario ? [scenario] : [],
+      overrides: blob.overrides.filter((o) => o.scenarioId === id),
+    };
   }
 
   async importAll(bundle: ExportBundle, mode: 'merge' | 'replace'): Promise<void> {

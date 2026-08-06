@@ -23,7 +23,7 @@ function withoutTaxableAccountTax(scenario: Scenario): void {
 
 function couple(): Scenario {
   const scenario = createDefaultScenario('CA');
-  scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPreRetirementPct: 0, cashPostRetirementPct: 0 };
+  scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPct: 0 };
   scenario.inflation = { mode: 'flat', flatRatePct: 0 };
   withoutTaxableAccountTax(scenario);
   scenario.persons.push(createDefaultPersonPlan('CA', 'Person 2'));

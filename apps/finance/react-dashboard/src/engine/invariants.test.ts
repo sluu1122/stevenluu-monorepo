@@ -184,7 +184,7 @@ describe('balance-sheet invariants', () => {
     };
     // Flat 7% either side of retirement, so the growth assertion below has one
     // rate to check against no matter which half of the projection it lands in.
-    scenario.returnRates = { investmentsPreRetirementPct: 7, investmentsPostRetirementPct: 7, cashPreRetirementPct: 7, cashPostRetirementPct: 7 };
+    scenario.returnRates = { investmentsPreRetirementPct: 7, investmentsPostRetirementPct: 7, cashPct: 7 };
     // Owned by person 1 only - in the combined view person 2's row must not
     // report this bucket at all, which is what stopped an unconverted copy
     // from overwriting the owner's converted one.
