@@ -1,16 +1,20 @@
 import { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, FileText } from 'lucide-react';
 import { DashCard } from '../../components/DashCard';
+import { Button } from '@repo/ui/components/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { useActiveScenario } from '../../hooks/useActiveScenario';
 import { useScenarios, useSaveScenario } from '../../hooks/useScenarios';
 import { useGridOverrides, useSaveOverride, useDeleteOverride } from '../../hooks/useGridOverrides';
-import { useLedger } from '../../hooks/useLedger';
+import { usePersonView } from '../../hooks/useLedger';
+import { useMoney } from '../../hooks/useDisplayCurrency';
 import { generateId } from '../../engine/id';
+import { PersonViewSelector } from '../../components/PersonViewSelector';
+import { DisplayCurrencyToggle } from '../../components/DisplayCurrencyToggle';
 import { LedgerTable } from './LedgerTable';
-import { FormulaBreakdownSheet } from './FormulaBreakdownSheet';
+import { FormulaBreakdownPanel } from './FormulaBreakdownPanel';
 import { OverrideEditDialog } from './OverrideEditDialog';
-import { RetirementYearStepper } from './RetirementYearStepper';
-import type { LedgerYearRow } from '../../engine/types';
+import { exportGridCsv } from './exportGridCsv';
 
 export function PlanningGridTab() {
   const { data: scenarios = [] } = useScenarios();
@@ -22,29 +26,35 @@ export function PlanningGridTab() {
   const saveOverride = useSaveOverride(activeScenario?.id);
   const deleteOverride = useDeleteOverride(activeScenario?.id);
 
-  const { rows, warnings, error } = useLedger(activeScenario, overrides);
+  const { rows, warnings, error, person, buckets, bucketOwnerLabels, sharedBucketIds, combined, label } = usePersonView(activeScenario, overrides);
+  const money = useMoney(activeScenario);
 
-  const [auditRow, setAuditRow] = useState<LedgerYearRow | null>(null);
+  // Held as a year rather than the row object, so the panel re-reads the live
+  // row whenever the ledger recomputes instead of showing a stale snapshot.
+  const [auditYear, setAuditYear] = useState<number | null>(null);
   const [overrideYear, setOverrideYear] = useState<number | null>(null);
+  const [warningsOpen, setWarningsOpen] = useState(false);
 
   if (!activeScenario) {
     return <DashCard>Create a scenario in Scenario Setup to see the planning grid.</DashCard>;
   }
 
-  const existingOverride = overrideYear !== null ? overrides.find((o) => o.year === overrideYear && o.field === 'spendingNominal') : undefined;
+  const existingOverride =
+    overrideYear !== null && person ? overrides.find((o) => o.personId === person.id && o.year === overrideYear && o.field === 'spendingNominal') : undefined;
   const plannedRow = overrideYear !== null ? rows.find((r) => r.year === overrideYear) : undefined;
+  const auditRow = auditYear !== null ? (rows.find((r) => r.year === auditYear) ?? null) : null;
 
   // Narrowed to non-null here (see the guard above) - captured in a local so
   // the nested function below doesn't lose that narrowing across the closure boundary.
   const scenario = activeScenario;
 
   function updatePersonRetirementYear(personId: string, year: number | null) {
-    const persons = scenario.household.persons.map((p) => (p.id === personId ? { ...p, retirementStartYear: year } : p));
-    saveScenario.mutate({ ...scenario, household: { persons }, updatedAt: new Date().toISOString() });
+    const persons = scenario.persons.map((p) => (p.id === personId ? { ...p, retirementStartYear: year } : p));
+    saveScenario.mutate({ ...scenario, persons, updatedAt: new Date().toISOString() });
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 flex-1 min-h-0">
       {error && (
         <DashCard className="border-loss/30 bg-loss-bg flex items-start gap-2.5 py-3">
           <AlertTriangle className="size-4 text-loss shrink-0 mt-0.5" />
@@ -63,52 +73,98 @@ export function PlanningGridTab() {
       )}
 
       {!error && warnings.length > 0 && (
-        <DashCard className="border-loss/30 bg-loss-bg flex items-start gap-2.5 py-3">
-          <AlertTriangle className="size-4 text-loss shrink-0 mt-0.5" />
-          <div className="text-[12.5px] text-loss-dark w-full">
-            <p className="font-semibold mb-1">
+        <DashCard className="border-loss/30 bg-loss-bg flex items-center gap-2.5 py-2 sm:py-2">
+          <AlertTriangle className="size-4 text-loss shrink-0" />
+          <p className="text-[12.5px] text-loss-dark truncate flex-1">
+            <span className="font-semibold">
               {warnings.length} shortfall{warnings.length > 1 ? 's' : ''} in this plan
-            </p>
-            <p>{warnings[0].message}</p>
-            {warnings.length > 1 && (
-              <details className="mt-1">
-                <summary className="cursor-pointer font-medium">Show all {warnings.length} warnings</summary>
-                <ul className="mt-1.5 list-disc pl-4 space-y-0.5">
-                  {warnings.map((w, i) => (
-                    <li key={i}>
-                      {w.year}: {w.message}
-                    </li>
-                  ))}
-                </ul>
-              </details>
-            )}
-          </div>
+            </span>
+            <span className="ml-1.5">— {warnings[0].message}</span>
+          </p>
+          <Button variant="ghost" size="sm" className="cursor-pointer text-loss-dark hover:text-loss-dark shrink-0" onClick={() => setWarningsOpen(true)}>
+            View details
+          </Button>
         </DashCard>
       )}
 
+      <Dialog open={warningsOpen} onOpenChange={setWarningsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {warnings.length} shortfall{warnings.length > 1 ? 's' : ''} in this plan
+            </DialogTitle>
+            <DialogDescription>Years where planned withdrawals exceed available account balances.</DialogDescription>
+          </DialogHeader>
+          <ul className="max-h-[50vh] overflow-y-auto list-disc pl-4 space-y-1 text-[13px] text-ink">
+            {warnings.map((w, i) => (
+              <li key={i}>
+                {w.year}: {w.message}
+              </li>
+            ))}
+          </ul>
+        </DialogContent>
+      </Dialog>
+
       {!error && (
         <>
-          <p className="text-[12.5px] text-dim">
-            Click a row to see its formula breakdown. Click a "Nominal" spending value to override it for that year.
-          </p>
-
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            {activeScenario.household.persons.map((person) => (
-              <RetirementYearStepper
-                key={person.id}
-                label={person.label}
-                value={person.retirementStartYear}
-                birthYear={person.birthYear}
-                onChange={(year) => updatePersonRetirementYear(person.id, year)}
-              />
-            ))}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <PersonViewSelector
+              persons={activeScenario.persons}
+              selectedPerson={person}
+              onRetirementYearChange={(year) => person && updatePersonRetirementYear(person.id, year)}
+            />
+            <div className="flex items-center gap-2 shrink-0">
+              <DisplayCurrencyToggle scenarioCurrency={activeScenario.currency} />
+              <Button
+                variant="outline"
+                className="cursor-pointer shrink-0"
+                onClick={() =>
+                  exportGridCsv(activeScenario, rows, {
+                    buckets,
+                    bucketOwnerLabels: combined ? bucketOwnerLabels : undefined,
+                    sharedBucketIds,
+                    viewLabel: label,
+                    money,
+                  })
+                }
+              >
+                <FileText className="size-4" /> Export CSV
+              </Button>
+            </div>
           </div>
 
-          <LedgerTable scenario={activeScenario} rows={rows} overrides={overrides} onOpenAudit={setAuditRow} onEditOverride={(row) => setOverrideYear(row.year)} />
+          {/* Grid and breakdown share the row: the panel sits beside the grid so
+              both scroll independently, stacking below it on narrow screens. */}
+          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
+            <LedgerTable
+              money={money}
+              buckets={buckets}
+              bucketOwnerLabels={combined ? bucketOwnerLabels : undefined}
+              sharedBucketIds={sharedBucketIds}
+              rows={rows}
+              overrides={overrides}
+              personId={person?.id ?? null}
+              // A combined row's spending is the sum across everyone, so there's
+              // no single person whose override it would be - pick one person to edit it.
+              allowOverrides={!combined}
+              selectedYear={auditYear}
+              onOpenAudit={(row) => setAuditYear(row.year)}
+              onEditOverride={(row) => setOverrideYear(row.year)}
+            />
+            {auditRow && (
+              <FormulaBreakdownPanel
+                row={auditRow}
+                baseCurrency={activeScenario.currency}
+                buckets={buckets}
+                bucketOwnerLabels={combined ? bucketOwnerLabels : undefined}
+                sharedBucketIds={sharedBucketIds}
+                money={money}
+                onClose={() => setAuditYear(null)}
+              />
+            )}
+          </div>
         </>
       )}
-
-      <FormulaBreakdownSheet row={auditRow} currency={activeScenario.currency} onClose={() => setAuditRow(null)} />
 
       <OverrideEditDialog
         key={overrideYear}
@@ -117,10 +173,11 @@ export function PlanningGridTab() {
         existingOverride={existingOverride}
         onClose={() => setOverrideYear(null)}
         onSave={(value, note) => {
-          if (overrideYear === null) return;
+          if (overrideYear === null || !person) return;
           saveOverride.mutate({
             id: existingOverride?.id ?? generateId('override'),
             scenarioId: activeScenario.id,
+            personId: person.id,
             year: overrideYear,
             field: 'spendingNominal',
             value,

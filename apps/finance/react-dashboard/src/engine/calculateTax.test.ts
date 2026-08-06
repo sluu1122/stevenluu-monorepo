@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { calculateFederalTax, calculateTotalTax } from './calculateTax';
 import { US_FEDERAL_2026_SINGLE, CA_FEDERAL_2026 } from './taxBrackets';
 import type { TaxConfig } from './schema';
+import { flatRateTable } from './provincialTaxTables';
 
 describe('calculateFederalTax', () => {
   it('owes nothing when income is below the standard deduction', () => {
@@ -44,17 +45,20 @@ describe('calculateTotalTax', () => {
     country: 'US',
     filingStatus: 'single',
     federalTable: US_FEDERAL_2026_SINGLE,
-    stateOrProvincialFlatRatePct: 5,
+    // A single 5% bracket with no personal amount - the shape a pre-v8
+    // scenario migrates into, which is what makes the old assertions still
+    // meaningful here.
+    stateOrProvincialTable: flatRateTable(5),
   };
 
-  it('adds a flat state/provincial rate on top of gross income to the federal bracket tax', () => {
+  it('adds the state/provincial table on top of the federal bracket tax', () => {
     const result = calculateTotalTax(100_000, taxConfig);
     expect(result.stateOrProvincial).toBeCloseTo(5_000, 5);
     expect(result.total).toBeCloseTo(result.federal + 5_000, 5);
   });
 
-  it('reduces to just federal tax when the flat rate is zero', () => {
-    const result = calculateTotalTax(100_000, { ...taxConfig, stateOrProvincialFlatRatePct: 0 });
+  it('reduces to just federal tax when the state/provincial table is all zeroes', () => {
+    const result = calculateTotalTax(100_000, { ...taxConfig, stateOrProvincialTable: flatRateTable(0) });
     expect(result.stateOrProvincial).toBe(0);
     expect(result.total).toBe(result.federal);
   });

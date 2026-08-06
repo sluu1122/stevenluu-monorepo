@@ -1,14 +1,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/components/table';
-import { formatCurrency } from '../../lib/format';
+import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { LedgerYearRow } from '../../engine/types';
-import type { Currency } from '../../engine/schema';
 
 interface SummaryPrintableTableProps {
   rows: LedgerYearRow[];
-  currency: Currency;
+  money: MoneyFormatter;
 }
 
-export function SummaryPrintableTable({ rows, currency }: SummaryPrintableTableProps) {
+export function SummaryPrintableTable({ rows, money }: SummaryPrintableTableProps) {
   return (
     <div className="border border-edge rounded-[14px] overflow-hidden">
       <Table className="text-[13px]">
@@ -28,9 +27,9 @@ export function SummaryPrintableTable({ rows, currency }: SummaryPrintableTableP
               <TableCell className="font-mono">{row.year}</TableCell>
               <TableCell>{row.age}</TableCell>
               <TableCell className="text-dim">{row.isRetired ? 'Retired' : 'Working'}</TableCell>
-              <TableCell className="text-right font-mono">{formatCurrency(row.spendingNominal, currency)}</TableCell>
-              <TableCell className="text-right font-mono">{formatCurrency(row.taxesPaid.total, currency)}</TableCell>
-              <TableCell className="text-right font-mono font-semibold">{formatCurrency(row.totalNetWorth, currency)}</TableCell>
+              <TableCell className="text-right font-mono">{money.format(row.spendingNominal)}</TableCell>
+              <TableCell className="text-right font-mono">{money.format(row.taxesPaid.total)}</TableCell>
+              <TableCell className="text-right font-mono font-semibold">{money.format(row.totalNetWorth)}</TableCell>
             </TableRow>
           ))}
         </TableBody>

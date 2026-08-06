@@ -7,9 +7,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { useActiveScenario } from '../hooks/useActiveScenario';
 import { useDeleteScenario, useSaveScenario, useScenarios } from '../hooks/useScenarios';
 import { createDefaultScenario } from '../engine/defaults';
-import type { Country, Scenario } from '../engine/schema';
+import type { Scenario } from '../engine/schema';
 
-type DialogMode = null | 'new' | 'rename' | 'delete';
+type DialogMode = null | 'rename' | 'delete';
 
 // Rename/Delete/Duplicate act on whichever row's icon button was clicked,
 // not necessarily the active scenario - triggered from plain per-row
@@ -25,11 +25,10 @@ export function ScenarioSwitcher() {
   const [targetScenario, setTargetScenario] = useState<Scenario | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
-  async function createScenario(country: Country) {
-    const scenario = createDefaultScenario(country);
+  async function createScenario() {
+    const scenario = createDefaultScenario('CA');
     await saveScenario.mutateAsync(scenario);
     setActiveScenarioId(scenario.id);
-    setDialogMode(null);
   }
 
   async function duplicateScenario(scenario: Scenario) {
@@ -64,7 +63,7 @@ export function ScenarioSwitcher() {
           variant="ghost"
           size="icon"
           className="size-6 cursor-pointer"
-          onClick={() => setDialogMode('new')}
+          onClick={() => createScenario()}
           aria-label="Add new scenario"
         >
           <Plus className="size-3.5" />
@@ -135,34 +134,27 @@ export function ScenarioSwitcher() {
         ))}
       </div>
 
-      <Dialog open={dialogMode === 'new'} onOpenChange={(open: boolean) => !open && setDialogMode(null)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>New scenario</DialogTitle>
-          </DialogHeader>
-          <div className="flex gap-2">
-            <Button className="flex-1" onClick={() => createScenario('US')}>
-              United States
-            </Button>
-            <Button className="flex-1" variant="outline" onClick={() => createScenario('CA')}>
-              Canada
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={dialogMode === 'rename'} onOpenChange={(open: boolean) => !open && setDialogMode(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Rename scenario</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="scenario-rename">Name</Label>
-            <Input id="scenario-rename" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} autoFocus />
-          </div>
-          <DialogFooter>
-            <Button onClick={submitRename}>Save</Button>
-          </DialogFooter>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              submitRename();
+            }}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="scenario-rename">Name</Label>
+              <Input id="scenario-rename" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} autoFocus />
+            </div>
+            <DialogFooter className="mt-4">
+              <Button type="submit" className="cursor-pointer">
+                Save
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

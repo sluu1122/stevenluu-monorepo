@@ -5,12 +5,12 @@ import type { BenefitConfig } from './schema';
 
 describe('calculateBenefitForYear', () => {
   it('is zero before the claim age', () => {
-    const benefit: BenefitConfig = { type: 'CA_CPP', personId: 'person-1', claimAge: 65, monthlyBenefitAtClaimAge: 1_000, colaPct: 2 };
+    const benefit: BenefitConfig = { type: 'CA_CPP', claimAge: 65, monthlyBenefitAtClaimAge: 1_000, colaPct: 2 };
     expect(calculateBenefitForYear(benefit, 64).amount).toBe(0);
   });
 
   it('compounds by colaPct for each year since claim', () => {
-    const benefit: BenefitConfig = { type: 'CA_CPP', personId: 'person-1', claimAge: 65, monthlyBenefitAtClaimAge: 1_000, colaPct: 2 };
+    const benefit: BenefitConfig = { type: 'CA_CPP', claimAge: 65, monthlyBenefitAtClaimAge: 1_000, colaPct: 2 };
     expect(calculateBenefitForYear(benefit, 65).amount).toBeCloseTo(12_000, 5);
     expect(calculateBenefitForYear(benefit, 66).amount).toBeCloseTo(12_000 * 1.02, 5);
   });

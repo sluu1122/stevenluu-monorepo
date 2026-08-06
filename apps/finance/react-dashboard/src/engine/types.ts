@@ -15,8 +15,7 @@ export type {
   IncomeSource,
   BenefitType,
   BenefitConfig,
-  Person,
-  Household,
+  PersonPlan,
   MeltdownRule,
   GridOverride,
   Scenario,
@@ -61,6 +60,8 @@ export interface LedgerYearRow {
 
   cashBufferReplenishment: number;
   meltdownWithdrawalTotal: number;
+  /** Gross statutory minimum withdrawn from tax-deferred accounts this year (US RMD / Canadian RRIF minimum). */
+  requiredDistributionTotal: number;
 
   taxesPaid: { federal: number; stateOrProvincial: number; total: number };
 

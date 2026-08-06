@@ -68,6 +68,10 @@
   --chart-2: #eb6834;
   --chart-3: #1baf7a;
   --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-7: #4a3aa7;
+  --chart-8: #e34948;
 }
 
 .dark {
@@ -99,6 +103,10 @@
   --chart-2: #d95926;
   --chart-3: #199e70;
   --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+  --chart-7: #9085e9;
+  --chart-8: #e66767;
 }
 
 @theme {
@@ -139,10 +147,20 @@
 
 html, body, #root {
   min-height: 100dvh;
+  /* The app manages its own scroll region inside <main> (see App.tsx) - this
+     stops a scroll past main's bottom from chaining into a document-level
+     bounce that drags the whole layout, sidebar included, out of place. */
+  overflow: hidden;
   background: var(--brand-page-bg);
   color: var(--brand-page-fg);
   font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+@media print {
+  html, body, #root {
+    overflow: visible;
+  }
 }
 
 *, *::before, *::after { box-sizing: border-box; }

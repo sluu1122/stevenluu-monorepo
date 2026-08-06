@@ -3,8 +3,11 @@ import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 import { Checkbox } from '@repo/ui/components/checkbox';
 import { DashCard } from '../../components/DashCard';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@repo/ui/components/chart';
-import { buildLedger } from '../../engine/ledger';
+import { buildScenarioLedger } from '../../engine/ledger';
+import { combineLedgers } from '../../engine/combineLedgers';
+import { getPrimaryPerson } from '../../engine/household';
 import { formatCompactCurrency } from '../../lib/format';
+import { useMoney } from '../../hooks/useDisplayCurrency';
 import type { Scenario } from '../../engine/schema';
 
 // Same fixed categorical order used by BalanceByBucketStackedChart - here it
@@ -19,6 +22,7 @@ interface ScenarioComparisonToggleProps {
 
 export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: ScenarioComparisonToggleProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const money = useMoney(activeScenario);
 
   if (otherScenarios.length === 0) return null;
 
@@ -33,21 +37,27 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: Sce
   const comparisonScenarios = otherScenarios.filter((s) => selectedIds.includes(s.id));
   // Comparison overlays ignore each scenario's own grid overrides for
   // simplicity - this chart is about comparing baseline assumptions, not
-  // one-off lump-sum edits.
+  // one-off lump-sum edits. Each scenario is compared on its whole-household
+  // net worth (every person combined), not one person's slice of it.
   const series = [activeScenario, ...comparisonScenarios].map((scenario, i) => ({
     id: scenario.id,
     label: scenario.name,
     color: PALETTE[i % PALETTE.length],
-    rows: buildLedger(scenario, []).rows,
+    rows: combineLedgers(buildScenarioLedger(scenario, []), getPrimaryPerson(scenario.persons).id, scenario.sharedAccountBuckets).rows,
   }));
 
   const yearSet = new Set<number>();
   series.forEach((s) => s.rows.forEach((row) => yearSet.add(row.year)));
   const years = [...yearSet].sort((a, b) => a - b);
+  // Age is shown relative to the active scenario (series[0]) - comparison
+  // scenarios may have different birth years, so there's no single "age" a
+  // given calendar year maps to across all of them.
+  const activeSeries = series[0];
   const data = years.map((year) => {
-    const point: Record<string, number | undefined> = { year };
+    const point: Record<string, number | undefined> = { year, age: activeSeries.rows.find((row) => row.year === year)?.age };
     for (const s of series) {
-      point[s.id] = s.rows.find((row) => row.year === year)?.totalNetWorth;
+      const found = s.rows.find((row) => row.year === year)?.totalNetWorth;
+      point[s.id] = found === undefined ? undefined : money.convert(found);
     }
     return point;
   });
@@ -56,6 +66,35 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: Sce
   series.forEach((s) => {
     config[s.id] = { label: s.label, color: s.color };
   });
+
+  // The color swatch is only rendered by the shared ChartTooltipContent when
+  // no custom `formatter` is passed, so it has to be drawn manually here to
+  // keep one - same pattern as BalanceByBucketStackedChart.
+  function renderTooltip(props: React.ComponentProps<typeof ChartTooltipContent>) {
+    return (
+      <ChartTooltipContent
+        {...props}
+        labelFormatter={(_value, payload) => {
+          const point = payload?.[0]?.payload as { year: number; age?: number } | undefined;
+          return point ? (point.age !== undefined ? `${point.year} (age ${point.age})` : `${point.year}`) : '';
+        }}
+        formatter={(value, name) => {
+          const seriesId = String(name);
+          const label = config[seriesId]?.label;
+          const color = config[seriesId]?.color;
+          return (
+            <>
+              <div className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: color }} />
+              <div className="flex flex-1 items-center justify-between gap-2 leading-none">
+                <span className="text-muted-foreground">{label ?? seriesId}</span>
+                <span className="font-mono font-medium tabular-nums text-foreground">{formatCompactCurrency(Number(value), money.currency)}</span>
+              </div>
+            </>
+          );
+        }}
+      />
+    );
+  }
 
   return (
     <DashCard>
@@ -81,9 +120,9 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: Sce
           <LineChart data={data} margin={{ left: 4, right: 4, top: 8, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
             <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
-            <YAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v) => formatCompactCurrency(v, activeScenario.currency)} />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v) => formatCompactCurrency(v, money.currency)} />
             {/* @ts-expect-error - see NetWorthOverTimeChart: recharts@3.9.2's own Tooltip content prop typing has an unrelated `& string` intersection. */}
-            <ChartTooltip content={(props) => <ChartTooltipContent {...props} formatter={(value) => formatCompactCurrency(Number(value), activeScenario.currency)} />} />
+            <ChartTooltip content={renderTooltip} />
             <ChartLegend content={<ChartLegendContent />} />
             {series.map((s) => (
               <Line key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={2} dot={false} connectNulls />

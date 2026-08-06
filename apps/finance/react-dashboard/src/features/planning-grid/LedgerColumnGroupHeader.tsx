@@ -10,8 +10,16 @@ interface LedgerColumnGroupHeaderProps {
 }
 
 export function LedgerColumnGroupHeader({ label, colSpan, collapsed, onToggle }: LedgerColumnGroupHeaderProps) {
+  // The rule under this row is an inset shadow, not `border-b`: the header is
+  // sticky and the table is border-collapse, so a real border belongs to the
+  // table grid and scrolls away from the header. See LedgerTable's
+  // ROW_RULE_SHADOW.
   return (
-    <TableHead colSpan={colSpan} className="whitespace-nowrap border-l border-edge bg-surface-raised px-2 py-1.5">
+    <TableHead
+      colSpan={colSpan}
+      className="whitespace-nowrap border-l border-edge bg-surface-raised px-2 py-1.5"
+      style={{ boxShadow: 'inset 0 -1px 0 0 var(--brand-page-fg)' }}
+    >
       <button
         type="button"
         onClick={onToggle}

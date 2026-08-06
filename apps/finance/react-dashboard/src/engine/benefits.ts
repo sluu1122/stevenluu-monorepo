@@ -48,9 +48,13 @@ export interface OasClawbackResult {
  * the prior year's return, which conveniently also sidesteps the circularity
  * that computing it from the current year's income (which itself includes
  * this benefit) would create.
+ *
+ * `threshold` is passed in rather than read from the constant because the CRA
+ * indexes it annually; frozen at its 2025 figure across a long projection it
+ * would claw back the whole benefit on the strength of inflation alone.
  */
-export function applyOasClawback(grossAmount: number, previousYearTaxableIncome: number): OasClawbackResult {
-  const excessIncome = Math.max(0, previousYearTaxableIncome - OAS_CLAWBACK_THRESHOLD_2025);
+export function applyOasClawback(grossAmount: number, previousYearTaxableIncome: number, threshold: number = OAS_CLAWBACK_THRESHOLD_2025): OasClawbackResult {
+  const excessIncome = Math.max(0, previousYearTaxableIncome - threshold);
   const clawback = Math.min(grossAmount, excessIncome * OAS_CLAWBACK_RATE);
   const netAmount = grossAmount - clawback;
 
@@ -65,7 +69,7 @@ export function applyOasClawback(grossAmount: number, previousYearTaxableIncome:
       {
         label: 'OAS recovery tax (clawback)',
         formula: 'min(grossAmount, max(0, priorYearTaxableIncome - threshold) × 15%)',
-        inputs: { grossAmount, previousYearTaxableIncome, threshold: OAS_CLAWBACK_THRESHOLD_2025 },
+        inputs: { grossAmount, previousYearTaxableIncome, threshold },
         result: clawback,
         relatedFields: ['benefits'],
       },

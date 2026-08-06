@@ -1,24 +1,20 @@
-import type { Household, Person } from './schema';
+import type { PersonPlan } from './schema';
 
 /**
- * Person 1 is the household's reference point for age/retirement-timing
- * purposes (the grid's Age column, the household spending/withdrawal
- * trigger, etc.) - centralized here rather than every consumer
- * independently indexing household.persons[0].
+ * Person 1 is only a default - the person whose plan a view falls back to
+ * when nothing has been selected yet. Unlike the previous household model,
+ * no calculation is anchored to them: age, retirement timing, spending and
+ * tax all come from whichever person's plan is being built.
  */
-export function getPrimaryPerson(household: Household): Person {
-  return household.persons[0];
+export function getPrimaryPerson(persons: PersonPlan[]): PersonPlan {
+  return persons[0];
 }
 
-export function getHouseholdRetirementStartYear(household: Household): number | null {
-  return getPrimaryPerson(household).retirementStartYear;
-}
-
-export function getHouseholdAge(household: Household, year: number): number {
-  return year - getPrimaryPerson(household).birthYear;
-}
-
-/** The plan projects far enough to cover whichever person lives longest, not just Person 1. */
-export function getProjectionHorizonEndYear(household: Household): number {
-  return Math.max(...household.persons.map((p) => p.birthYear + p.planningEndAge));
+/**
+ * Every person's ledger is projected over this same span - the longest-lived
+ * person's horizon - so all persons' rows line up year-for-year and the
+ * combined view is a straight row-by-row zip with no alignment logic.
+ */
+export function getProjectionHorizonEndYear(persons: PersonPlan[]): number {
+  return Math.max(...persons.map((p) => p.birthYear + p.planningEndAge));
 }
