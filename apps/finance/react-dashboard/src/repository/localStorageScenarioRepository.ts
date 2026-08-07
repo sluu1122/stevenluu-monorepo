@@ -3,7 +3,6 @@ import { flatRateTable } from '../engine/regionalTaxTables';
 import type { AccountKind, ExportBundle, GridOverride, Scenario } from '../engine/schema';
 import { ACCOUNT_KIND_META, DEFAULT_HOUSEHOLD_WITHDRAWAL_ORDER } from '../engine/accountKindMeta';
 import { createDemoScenarios } from '../engine/demoScenarios';
-import { ACTIVE_SCENARIO_STORAGE_KEY } from '../lib/storageKeys';
 import type { ScenarioRepository } from './types';
 import { generateId } from '../engine/id';
 
@@ -18,15 +17,19 @@ function emptyBundle(): ExportBundle {
  * validation cases below, which explicitly fall back to empty rather than
  * risk masking a user's real data) gets three demo scenarios instead of a
  * blank slate, so the app shows real output immediately. Persisted right
- * away so re-reading doesn't mint fresh ids on every call, and the first one
- * is made active so it opens directly instead of landing on the "create your
- * first scenario" empty state with three scenarios hidden in the switcher.
+ * away so re-reading doesn't mint fresh ids on every call.
+ *
+ * Which scenario becomes ACTIVE is deliberately not decided here: this runs
+ * inside the async listScenarios() call, well after ActiveScenarioProvider's
+ * own synchronous localStorage read at mount, so writing an active-scenario
+ * id directly to localStorage from this layer could never reach that
+ * already-rendered provider's React state. ActiveScenarioProvider instead
+ * falls back to the first scenario reactively once this data loads.
  */
 function seedDemoBundle(): ExportBundle {
   const scenarios = createDemoScenarios();
   const bundle: ExportBundle = { schemaVersion: CURRENT_SCHEMA_VERSION, exportedAt: new Date().toISOString(), scenarios, overrides: [] };
   writeBlob(bundle);
-  if (!localStorage.getItem(ACTIVE_SCENARIO_STORAGE_KEY)) localStorage.setItem(ACTIVE_SCENARIO_STORAGE_KEY, scenarios[0].id);
   return bundle;
 }
 

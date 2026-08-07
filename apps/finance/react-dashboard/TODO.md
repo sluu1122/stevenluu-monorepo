@@ -61,3 +61,29 @@ combined base frozen at the start of Phase 2d, so if BOTH spouses have an
 active meltdown rule firing in the same year, the second one processed doesn't
 see the first one's income yet. Narrow case (requires two simultaneous
 meltdown rules under MFJ) and documented in code, but not actually fixed.
+
+## Pinned to recharts v2 - revisit upgrading back to v3
+
+Charts (`NetWorthOverTimeChart`, `BalanceByBucketStackedChart`,
+`ScenarioComparisonToggle`) rendered blank in the production Docker build
+only (fine under `npm run dev`) with recharts v3.9.2/v3.10.1. Root-caused via
+a Docker + headless-Chrome debugging harness: v3's `ResponsiveContainer`
+reports its measured size correctly (confirmed by reading React's fiber state
+directly), but the dispatch into recharts' own internal Redux store
+(`ReportChartSize`, fired from inside a `useEffect`) never completes under a
+production React build - it only works in dev because `<StrictMode>`'s
+dev-only double-effect-invocation happens to paper over it. Neither a
+one-frame defer nor a forced remount fixed it, and no console error is ever
+thrown.
+
+Worked around by downgrading to recharts v2.15.4, which renders correctly at
+runtime under React 19 (verified directly) but ships types that predate React
+19's stricter JSX checks - patched with a small compat shim
+(`packages/ui/src/lib/rechartsCompat.ts`) rather than suppressing errors.
+
+Worth another look when a newer recharts v3.x patch might have fixed the
+Redux-dispatch race, or if upstream confirms/fixes the underlying issue -
+search for open recharts GitHub issues about `ResponsiveContainer` /
+`ReportChartSize` staying blank in production-only builds before attempting
+a re-upgrade, and re-run the same Docker+CDP repro to confirm before
+committing to it.

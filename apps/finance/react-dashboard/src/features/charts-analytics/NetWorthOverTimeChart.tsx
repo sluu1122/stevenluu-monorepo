@@ -1,5 +1,6 @@
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { AreaChart, CartesianGrid } from 'recharts';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@repo/ui/components/chart';
+import { CompatArea, CompatXAxis, CompatYAxis } from '@repo/ui/lib/rechartsCompat';
 import { formatCompactCurrency } from '../../lib/format';
 import { categorizeBuckets, sumAccountEnd } from '../../lib/investmentCategories';
 import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
@@ -97,11 +98,10 @@ export function NetWorthOverTimeChart({ rows, buckets, money }: NetWorthOverTime
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
-        <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
-        <YAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v) => formatCompactCurrency(v, money.currency)} />
-        {/* @ts-expect-error - recharts@3.9.2's own Tooltip prop types intersect `content` with `string` for reasons unrelated to this (well-documented, standard) function-as-content usage. */}
+        <CompatXAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
+        <CompatYAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
         <ChartTooltip content={renderTooltip} />
-        <Area type="monotone" dataKey="totalNetWorth" stroke="var(--chart-1)" strokeWidth={2} fill="url(#netWorthFill)" />
+        <CompatArea type="monotone" dataKey="totalNetWorth" stroke="var(--chart-1)" strokeWidth={2} fill="url(#netWorthFill)" />
       </AreaChart>
     </ChartContainer>
   );

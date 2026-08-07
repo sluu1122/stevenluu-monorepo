@@ -1,5 +1,6 @@
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { AreaChart, CartesianGrid } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@repo/ui/components/chart';
+import { CompatArea, CompatXAxis, CompatYAxis } from '@repo/ui/lib/rechartsCompat';
 import { formatCompactCurrency } from '../../lib/format';
 import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { AccountBucket } from '../../engine/schema';
@@ -72,11 +73,11 @@ export function BalanceByBucketStackedChart({ rows, buckets, money, bucketOwnerL
     return (
       <ChartTooltipContent
         {...props}
-        labelFormatter={(_value, payload) => {
+        labelFormatter={(_value: unknown, payload?: { payload?: unknown }[]) => {
           const point = payload?.[0]?.payload as { year: number; age: number } | undefined;
           return point ? `${point.year} (age ${point.age})` : '';
         }}
-        formatter={(value, name) => {
+        formatter={(value: unknown, name: unknown) => {
           const bucketId = String(name);
           const color = config[bucketId]?.color;
           return (
@@ -97,13 +98,12 @@ export function BalanceByBucketStackedChart({ rows, buckets, money, bucketOwnerL
     <ChartContainer config={config} className="aspect-auto h-[320px] w-full">
       <AreaChart data={data} margin={{ left: 4, right: 4, top: 8, bottom: 0 }}>
         <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
-        <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
-        <YAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v) => formatCompactCurrency(v, money.currency)} />
-        {/* @ts-expect-error - recharts@3.9.2's own Tooltip prop types intersect `content` with `string` for reasons unrelated to this (well-documented, standard) function-as-content usage. */}
+        <CompatXAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
+        <CompatYAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
         <ChartTooltip content={renderTooltip} />
         <ChartLegend content={<ChartLegendContent />} />
         {series.map((s) => (
-          <Area key={s.id} type="monotone" dataKey={s.id} stackId="1" stroke={s.color} fill={s.color} fillOpacity={0.55} />
+          <CompatArea key={s.id} type="monotone" dataKey={s.id} stackId="1" stroke={s.color} fill={s.color} fillOpacity={0.55} />
         ))}
       </AreaChart>
     </ChartContainer>

@@ -37,10 +37,9 @@ export function ScenarioSwitcher() {
   async function confirmDelete() {
     if (!targetScenario) return;
     await deleteScenario.mutateAsync(targetScenario.id);
-    if (targetScenario.id === activeScenarioId) {
-      const remaining = scenarios.filter((s) => s.id !== targetScenario.id);
-      setActiveScenarioId(remaining[0]?.id ?? null);
-    }
+    // ActiveScenarioProvider falls back to the next available scenario on
+    // its own once the list re-fetches; clearing it here just triggers that.
+    if (targetScenario.id === activeScenarioId) setActiveScenarioId(null);
     setTargetScenario(null);
   }
 

@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { LineChart, CartesianGrid } from 'recharts';
 import { Checkbox } from '@repo/ui/components/checkbox';
 import { DashCard } from '../../components/DashCard';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@repo/ui/components/chart';
+import { CompatLine, CompatXAxis, CompatYAxis } from '@repo/ui/lib/rechartsCompat';
 import { buildScenarioLedger } from '../../engine/ledger';
 import { combineLedgers } from '../../engine/combineLedgers';
 import { getPrimaryPerson } from '../../engine/household';
@@ -74,11 +75,11 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: Sce
     return (
       <ChartTooltipContent
         {...props}
-        labelFormatter={(_value, payload) => {
+        labelFormatter={(_value: unknown, payload?: { payload?: unknown }[]) => {
           const point = payload?.[0]?.payload as { year: number; age?: number } | undefined;
           return point ? (point.age !== undefined ? `${point.year} (age ${point.age})` : `${point.year}`) : '';
         }}
-        formatter={(value, name) => {
+        formatter={(value: unknown, name: unknown) => {
           const seriesId = String(name);
           const label = config[seriesId]?.label;
           const color = config[seriesId]?.color;
@@ -119,13 +120,12 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: Sce
         <ChartContainer config={config} className="aspect-auto h-[300px] w-full">
           <LineChart data={data} margin={{ left: 4, right: 4, top: 8, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
-            <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
-            <YAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v) => formatCompactCurrency(v, money.currency)} />
-            {/* @ts-expect-error - see NetWorthOverTimeChart: recharts@3.9.2's own Tooltip content prop typing has an unrelated `& string` intersection. */}
+            <CompatXAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
+            <CompatYAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
             <ChartTooltip content={renderTooltip} />
             <ChartLegend content={<ChartLegendContent />} />
             {series.map((s) => (
-              <Line key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={2} dot={false} connectNulls />
+              <CompatLine key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={2} dot={false} connectNulls />
             ))}
           </LineChart>
         </ChartContainer>

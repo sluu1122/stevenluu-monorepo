@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LocalStorageScenarioRepository } from './localStorageScenarioRepository';
-import { ACTIVE_SCENARIO_STORAGE_KEY } from '../lib/storageKeys';
 
 /** Node's test environment has no global `localStorage` - a minimal in-memory stand-in is enough for the repository's get/set/remove calls. */
 class MemoryStorage implements Storage {
@@ -39,16 +38,11 @@ describe('first-run demo seeding', () => {
     expect(scenarios).toHaveLength(3);
   });
 
-  it('sets an active scenario id so the app opens directly into a scenario', async () => {
-    await new LocalStorageScenarioRepository().listScenarios();
-    expect(localStorage.getItem(ACTIVE_SCENARIO_STORAGE_KEY)).toBeTruthy();
-  });
-
-  it('does not overwrite an active scenario id the user already set', async () => {
-    localStorage.setItem(ACTIVE_SCENARIO_STORAGE_KEY, 'user-picked-id');
-    await new LocalStorageScenarioRepository().listScenarios();
-    expect(localStorage.getItem(ACTIVE_SCENARIO_STORAGE_KEY)).toBe('user-picked-id');
-  });
+  // Which scenario becomes ACTIVE is ActiveScenarioProvider's job, not the
+  // repository's - it falls back to the first scenario reactively once this
+  // data loads, since a direct localStorage write from this layer can never
+  // reach a component that already read that key at mount. See
+  // ActiveScenarioProvider.tsx.
 
   it('persists the seeded scenarios so re-reading returns the same ids rather than minting new ones', async () => {
     const first = await new LocalStorageScenarioRepository().listScenarios();
