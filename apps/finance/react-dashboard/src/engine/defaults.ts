@@ -41,6 +41,21 @@ function createCAAccountBuckets(): AccountBucket[] {
   return CA_ACCOUNT_KINDS.map(createSeededAccountBucket);
 }
 
+/**
+ * The order a person's cash buffer replenishes from: taxable first, then
+ * tax-deferred, then tax-free. Exported so a scenario that adds accounts
+ * on top of `createDefaultPersonPlan`'s seeded set (e.g. a cross-border
+ * household with both US and CA buckets) can recompute it rather than
+ * leaving the new accounts unreachable by replenishment.
+ */
+export function deriveReplenishmentOrder(accountBuckets: AccountBucket[]): string[] {
+  const treatmentOrder: Record<string, number> = { taxable: 0, taxDeferred: 1, taxFree: 2 };
+  return accountBuckets
+    .filter((b) => !b.isCashBuffer)
+    .sort((a, b) => treatmentOrder[a.taxTreatment] - treatmentOrder[b.taxTreatment])
+    .map((b) => b.id);
+}
+
 function createDefaultBenefits(country: 'US' | 'CA'): BenefitConfig[] {
   if (country === 'US') {
     return [
@@ -75,13 +90,6 @@ function createDefaultBenefits(country: 'US' | 'CA'): BenefitConfig[] {
  */
 export function createDefaultPersonPlan(country: 'US' | 'CA', label: string): PersonPlan {
   const accountBuckets = country === 'US' ? createUSAccountBuckets() : createCAAccountBuckets();
-  const nonCashBuckets = accountBuckets.filter((b) => !b.isCashBuffer);
-
-  // The order spending draws these down is the household's now (see
-  // Scenario.householdWithdrawalOrder); this ordering is only used to seed the
-  // cash-buffer replenishment list, which is still per-person.
-  const treatmentOrder: Record<string, number> = { taxable: 0, taxDeferred: 1, taxFree: 2 };
-  const orderedNonCash = [...nonCashBuckets].sort((a, b) => treatmentOrder[a.taxTreatment] - treatmentOrder[b.taxTreatment]);
 
   return {
     id: generateId('person'),
@@ -95,7 +103,7 @@ export function createDefaultPersonPlan(country: 'US' | 'CA', label: string): Pe
     cashBufferRule: {
       enabled: true,
       targetMonthsOfSpending: 6,
-      replenishmentOrder: orderedNonCash.map((b) => b.id),
+      replenishmentOrder: deriveReplenishmentOrder(accountBuckets),
     },
     meltdownRules: [],
     requiredDistributionRule: { ...DEFAULT_REQUIRED_DISTRIBUTION_RULE },

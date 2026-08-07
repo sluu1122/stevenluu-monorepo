@@ -2,6 +2,8 @@ import { CURRENT_SCHEMA_VERSION, DEFAULT_RETURN_RATES, DEFAULT_SHARED_CASH_BUFFE
 import { flatRateTable } from '../engine/regionalTaxTables';
 import type { AccountKind, ExportBundle, GridOverride, Scenario } from '../engine/schema';
 import { ACCOUNT_KIND_META, DEFAULT_HOUSEHOLD_WITHDRAWAL_ORDER } from '../engine/accountKindMeta';
+import { createDemoScenarios } from '../engine/demoScenarios';
+import { ACTIVE_SCENARIO_STORAGE_KEY } from '../lib/storageKeys';
 import type { ScenarioRepository } from './types';
 import { generateId } from '../engine/id';
 
@@ -9,6 +11,23 @@ const STORAGE_KEY = 'retirement-planner:v1';
 
 function emptyBundle(): ExportBundle {
   return { schemaVersion: CURRENT_SCHEMA_VERSION, exportedAt: new Date().toISOString(), scenarios: [], overrides: [] };
+}
+
+/**
+ * A brand-new install (no storage key at all - not the corrupted/failed-
+ * validation cases below, which explicitly fall back to empty rather than
+ * risk masking a user's real data) gets three demo scenarios instead of a
+ * blank slate, so the app shows real output immediately. Persisted right
+ * away so re-reading doesn't mint fresh ids on every call, and the first one
+ * is made active so it opens directly instead of landing on the "create your
+ * first scenario" empty state with three scenarios hidden in the switcher.
+ */
+function seedDemoBundle(): ExportBundle {
+  const scenarios = createDemoScenarios();
+  const bundle: ExportBundle = { schemaVersion: CURRENT_SCHEMA_VERSION, exportedAt: new Date().toISOString(), scenarios, overrides: [] };
+  writeBlob(bundle);
+  if (!localStorage.getItem(ACTIVE_SCENARIO_STORAGE_KEY)) localStorage.setItem(ACTIVE_SCENARIO_STORAGE_KEY, scenarios[0].id);
+  return bundle;
 }
 
 /**
@@ -521,7 +540,7 @@ export function migrateStorageBlob(raw: unknown, fromVersion: number): unknown {
 
 function readBlob(): ExportBundle {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return emptyBundle();
+  if (!raw) return seedDemoBundle();
 
   let parsedJson: unknown;
   try {

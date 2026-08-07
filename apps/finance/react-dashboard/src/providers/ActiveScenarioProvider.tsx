@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActiveScenarioContext } from './active-scenario-context';
-
-const STORAGE_KEY = 'retirement-planner:active-scenario-id';
+import { ACTIVE_SCENARIO_STORAGE_KEY as STORAGE_KEY } from '../lib/storageKeys';
 
 export function ActiveScenarioProvider({ children }: { children: ReactNode }) {
   const [activeScenarioId, setActiveScenarioIdState] = useState<string | null>(() => window.localStorage.getItem(STORAGE_KEY));
