@@ -70,16 +70,17 @@ function SidebarContent({ onNavigate, activeLabel, onToggleCollapsed }: SidebarC
 
       <div className="flex-1" />
 
+      <button
+        type="button"
+        onClick={() => setImportExportOpen(true)}
+        className="flex items-center gap-1.5 mb-3 text-[12.5px] font-medium text-dim hover:text-ink transition-colors cursor-pointer"
+      >
+        <ArrowLeftRight className="size-3.5" />
+        Import / Export
+      </button>
+
       {/* Bottom */}
       <div className="border-t border-edge pt-4 flex flex-col gap-3">
-        <button
-          type="button"
-          onClick={() => setImportExportOpen(true)}
-          className="flex items-center gap-1.5 text-[12.5px] font-medium text-dim hover:text-ink transition-colors cursor-pointer"
-        >
-          <ArrowLeftRight className="size-3.5" />
-          Import / Export
-        </button>
         <ThemeToggle />
         <Separator className="bg-edge" />
         <p className="text-[11px] text-dim font-mono tracking-[0.03em] leading-[1.5] m-0">

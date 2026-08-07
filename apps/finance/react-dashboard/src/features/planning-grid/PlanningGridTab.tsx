@@ -88,7 +88,7 @@ export function PlanningGridTab() {
       )}
 
       <Dialog open={warningsOpen} onOpenChange={setWarningsOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {warnings.length} shortfall{warnings.length > 1 ? 's' : ''} in this plan
