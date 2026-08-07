@@ -13,7 +13,7 @@ export interface ScenarioRepository {
   listOverrides(scenarioId: string): Promise<GridOverride[]>;
   saveOverride(override: GridOverride): Promise<GridOverride>;
   deleteOverride(id: string): Promise<void>;
-  exportAll(): Promise<ExportBundle>;
-  exportScenario(id: string): Promise<ExportBundle>;
+  /** Pass every scenario's id to export a full backup, or a subset for a partial one. */
+  exportScenarios(ids: string[]): Promise<ExportBundle>;
   importAll(bundle: ExportBundle, mode: 'merge' | 'replace'): Promise<void>;
 }

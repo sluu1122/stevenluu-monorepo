@@ -623,18 +623,14 @@ export class LocalStorageScenarioRepository implements ScenarioRepository {
     writeBlob(blob);
   }
 
-  async exportAll(): Promise<ExportBundle> {
-    return { ...readBlob(), exportedAt: new Date().toISOString() };
-  }
-
-  async exportScenario(id: string): Promise<ExportBundle> {
+  async exportScenarios(ids: string[]): Promise<ExportBundle> {
     const blob = readBlob();
-    const scenario = blob.scenarios.find((s) => s.id === id);
+    const idSet = new Set(ids);
     return {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
-      scenarios: scenario ? [scenario] : [],
-      overrides: blob.overrides.filter((o) => o.scenarioId === id),
+      scenarios: blob.scenarios.filter((s) => idSet.has(s.id)),
+      overrides: blob.overrides.filter((o) => idSet.has(o.scenarioId)),
     };
   }
 

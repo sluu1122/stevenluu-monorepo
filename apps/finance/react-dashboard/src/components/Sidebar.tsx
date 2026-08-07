@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Info, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ArrowLeftRight, Info, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { resumeData } from '@repo/resume-data';
 import { Avatar, AvatarFallback } from '@repo/ui/components/avatar';
 import { Button } from '@repo/ui/components/button';
@@ -10,6 +10,7 @@ import { cn } from '../lib/utils';
 import { ThemeToggle } from './ThemeToggle';
 import { ScenarioSwitcher } from './ScenarioSwitcher';
 import { AboutDialog } from './AboutDialog';
+import { ImportExportDialog } from './ImportExportDialog';
 const BRAND_GRADIENT = 'linear-gradient(135deg, #5B5BD6 0%, #6E6AF0 100%)';
 
 // Mirrors the Angular dashboard's portfolioUrl default (localhost:3000 in dev,
@@ -35,6 +36,7 @@ interface SidebarContentProps {
 
 function SidebarContent({ onNavigate, activeLabel, onToggleCollapsed }: SidebarContentProps) {
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [importExportOpen, setImportExportOpen] = useState(false);
 
   return (
     <>
@@ -70,6 +72,14 @@ function SidebarContent({ onNavigate, activeLabel, onToggleCollapsed }: SidebarC
 
       {/* Bottom */}
       <div className="border-t border-edge pt-4 flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setImportExportOpen(true)}
+          className="flex items-center gap-1.5 text-[12.5px] font-medium text-dim hover:text-ink transition-colors cursor-pointer"
+        >
+          <ArrowLeftRight className="size-3.5" />
+          Import / Export
+        </button>
         <ThemeToggle />
         <Separator className="bg-edge" />
         <p className="text-[11px] text-dim font-mono tracking-[0.03em] leading-[1.5] m-0">
@@ -140,6 +150,7 @@ function SidebarContent({ onNavigate, activeLabel, onToggleCollapsed }: SidebarC
           </PopoverContent>
         </Popover>
         <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
+        <ImportExportDialog open={importExportOpen} onOpenChange={setImportExportOpen} />
       </div>
     </>
   );
