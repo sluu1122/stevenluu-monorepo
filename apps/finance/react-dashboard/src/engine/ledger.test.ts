@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { buildScenarioLedger } from './ledger';
 import { combineLedgers } from './combineLedgers';
 import { createDefaultPersonPlan, createDefaultScenario } from './defaults';
-import { calculateTotalTax } from './calculateTax';
+import { calculateFederalTax, calculateTotalTax } from './calculateTax';
 import { grossUpForNet } from './cashBuffer';
 import { availableFromAgeFor } from './accountKindMeta';
+import { getDefaultFederalTable } from './taxBrackets';
+import { flatRateTable } from './regionalTaxTables';
 import type { AccountBucket, GridOverride, PersonPlan, ReturnRates, Scenario } from './schema';
 
 /**
@@ -409,6 +411,101 @@ describe('per-person tax isolation', () => {
     // Each row only ever carries its own person's bucket ids.
     expect(Object.keys(p1.accountEnd).every((id) => person1.accountBuckets.some((b) => b.id === id))).toBe(true);
     expect(Object.keys(p2.accountEnd).every((id) => person2.accountBuckets.some((b) => b.id === id))).toBe(true);
+  });
+});
+
+describe('married-filing-jointly tax combination', () => {
+  /**
+   * The bug this fix exists for: two spouses each got the FULL MFJ standard
+   * deduction and the full MFJ bracket ladder applied to their OWN income
+   * separately, instead of both incomes landing on one combined return - a
+   * real couple filing jointly gets ONE standard deduction and ONE bracket
+   * walk over their combined income, not two.
+   */
+  it('combines both spouses onto one bracket walk and one standard deduction instead of taxing each on their own income', () => {
+    const scenario = createDefaultScenario('US');
+    scenario.taxConfig.filingStatus = 'marriedFilingJointly';
+    scenario.taxConfig.federalTable = getDefaultFederalTable('US', 'marriedFilingJointly');
+    scenario.taxConfig.stateOrProvincialTable = flatRateTable(0); // isolate federal
+    withoutTaxableAccountTax(scenario);
+
+    const person1 = scenario.persons[0];
+    person1.annualIncomeNominal = 105_000;
+    person1.incomeGrowthRatePct = 0;
+    person1.benefits = [];
+
+    const person2 = createDefaultPersonPlan('US', 'Person 2');
+    person2.annualIncomeNominal = 85_000;
+    person2.incomeGrowthRatePct = 0;
+    person2.benefits = [];
+    scenario.persons.push(person2);
+
+    const p1Row = buildFor(scenario, person1).rows[0];
+    const p2Row = buildFor(scenario, person2).rows[0];
+    const combinedFederalTax = p1Row.taxesPaid.federal + p2Row.taxesPaid.federal;
+
+    const trueJointTax = calculateFederalTax(190_000, scenario.taxConfig.federalTable).tax;
+    expect(combinedFederalTax).toBeCloseTo(trueJointTax, 2);
+
+    // Taxing each spouse separately (the bug) would owe strictly less, since
+    // it hands out the double-wide MFJ deduction and bracket edges twice.
+    const separatelyFiledTotal =
+      calculateFederalTax(105_000, scenario.taxConfig.federalTable).tax + calculateFederalTax(85_000, scenario.taxConfig.federalTable).tax;
+    expect(combinedFederalTax).toBeGreaterThan(separatelyFiledTotal + 1);
+  });
+
+  it('leaves a single-filer household taxed exactly as before (each person on their own return)', () => {
+    const scenario = createDefaultScenario('US'); // filingStatus defaults to 'single'
+    withoutTaxableAccountTax(scenario);
+
+    const person1 = scenario.persons[0];
+    person1.annualIncomeNominal = 105_000;
+    person1.incomeGrowthRatePct = 0;
+    person1.benefits = [];
+
+    const person2 = createDefaultPersonPlan('US', 'Person 2');
+    person2.annualIncomeNominal = 85_000;
+    person2.incomeGrowthRatePct = 0;
+    person2.benefits = [];
+    scenario.persons.push(person2);
+
+    const p1Row = buildFor(scenario, person1).rows[0];
+    const p2Row = buildFor(scenario, person2).rows[0];
+
+    expect(p1Row.taxesPaid.federal).toBeCloseTo(calculateTotalTax(105_000, scenario.taxConfig).federal, 2);
+    expect(p2Row.taxesPaid.federal).toBeCloseTo(calculateTotalTax(85_000, scenario.taxConfig).federal, 2);
+  });
+
+  it("combines both spouses' Social Security for the provisional-income test under a joint return", () => {
+    const scenario = createDefaultScenario('US');
+    scenario.taxConfig.filingStatus = 'marriedFilingJointly';
+    scenario.taxConfig.federalTable = getDefaultFederalTable('US', 'marriedFilingJointly');
+    scenario.taxConfig.stateOrProvincialTable = flatRateTable(0);
+    withoutTaxableAccountTax(scenario);
+    setSpendingEach(scenario, { atRetirement: 0 });
+    const startYear = new Date().getFullYear();
+
+    const person1 = scenario.persons[0];
+    person1.retirementStartYear = startYear;
+    person1.annualIncomeNominal = 0;
+    const ss1 = person1.benefits.find((b) => b.type === 'US_SOCIAL_SECURITY')!;
+    ss1.claimAge = 0; // claimed immediately, to isolate this from age timing
+    ss1.monthlyBenefitAtClaimAge = 1_500;
+
+    const person2 = createDefaultPersonPlan('US', 'Person 2');
+    person2.retirementStartYear = startYear;
+    person2.annualIncomeNominal = 0;
+    const ss2 = person2.benefits.find((b) => b.type === 'US_SOCIAL_SECURITY')!;
+    ss2.claimAge = 0;
+    ss2.monthlyBenefitAtClaimAge = 1_500;
+    scenario.persons.push(person2);
+
+    const p1Row = buildFor(scenario, person1).rows[0];
+    const p2Row = buildFor(scenario, person2).rows[0];
+
+    // Combined SS = 36,000/yr with zero other income: combined income = 0 +
+    // 50%*36,000 = 18,000, under the MFJ $32,000 floor - none of it taxable.
+    expect(p1Row.taxesPaid.federal + p2Row.taxesPaid.federal).toBe(0);
   });
 });
 

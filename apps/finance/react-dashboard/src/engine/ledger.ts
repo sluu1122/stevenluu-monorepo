@@ -458,6 +458,15 @@ function replenishHouseholdWide(netNeeded: number, options: HouseholdReplenishOp
   const allBuckets = [...scenario.sharedAccountBuckets, ...scenario.persons.flatMap((p) => p.accountBuckets)];
   const drawnGross: Record<string, number> = {};
 
+  // See buildScenarioLedger's own isJointFiling/bumpSharedTaxBase - a joint
+  // return shares one base across both spouses, so a taxable pull from
+  // EITHER of their accounts has to raise both of their entries.
+  const isJointFiling = scenario.taxConfig.country === 'US' && scenario.taxConfig.filingStatus === 'marriedFilingJointly';
+  function bumpBase(personId: string, delta: number): void {
+    const targets = isJointFiling ? scenario.persons.map((p) => p.id) : [personId];
+    for (const id of targets) baseTaxableIncomeByPersonId.set(id, (baseTaxableIncomeByPersonId.get(id) ?? 0) + delta);
+  }
+
   /** The most this account may still give up: what it holds, less any meltdown ceiling already used. */
   const capacityOf = (bucket: AccountBucket): number => {
     const balance = Math.max(0, balances[bucket.id] ?? 0);
@@ -515,7 +524,7 @@ function replenishHouseholdWide(netNeeded: number, options: HouseholdReplenishOp
             stateOrProvincial: result.taxOnDistribution.stateOrProvincial + tax.stateOrProvincial,
             total: result.taxOnDistribution.total + tax.total,
           };
-          baseTaxableIncomeByPersonId.set(owner, base + gross);
+          bumpBase(owner, gross);
         }
         result.steps.push({
           label: `Replenish cash from ${bucket.label}${isTaxDeferred ? ' (taxable distribution)' : ''}`,
@@ -903,6 +912,28 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
   const earliestRetirementYear = retirementYears.length > 0 ? Math.min(...retirementYears) : null;
   const allRetiredByYear = (year: number) => scenario.persons.every((p) => p.retirementStartYear !== null && year >= p.retirementStartYear);
 
+  // A married-filing-jointly household files ONE return: both spouses' income
+  // lands on a single combined bracket walk against a single standard
+  // deduction, not two separate applications of the (already-doubled) joint
+  // brackets to each person's own income. Concretely, this is what keeps a
+  // dollar earned by either spouse taxed at the household's TRUE marginal
+  // rate rather than each spouse's own, lower, standalone one.
+  const isJointFiling = scenario.taxConfig.country === 'US' && scenario.taxConfig.filingStatus === 'marriedFilingJointly';
+
+  /**
+   * Adds `delta` to one person's running taxable-income base - or, under a
+   * joint return, to every person's, since the whole household shares one
+   * bracket ladder and a draw from ANY of their accounts has to be priced
+   * against it. The two (or more) entries stay mirrored copies of the same
+   * number for the rest of the year, so every later read of "this person's
+   * base" already reflects whatever the household has done so far.
+   */
+  function bumpSharedTaxBase(map: Map<string, number>, personId: string, delta: number): void {
+    if (delta === 0) return;
+    const targets = isJointFiling ? scenario.persons.map((p) => p.id) : [personId];
+    for (const id of targets) map.set(id, (map.get(id) ?? 0) + delta);
+  }
+
   // Both run from 1 in the projection's first year; see their use inside the
   // loop. The household one re-anchors at the earliest retirement, so spending
   // entered "in today's money at retirement" means exactly that.
@@ -962,11 +993,20 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
     // calculateTotalTax). Zero for a Canadian person, and zero for a US
     // person who hasn't claimed yet, either of which restores the old
     // 100%-taxable behavior exactly.
+    //
+    // A joint return combines BOTH spouses' Social Security for the IRS's
+    // provisional-income test (Publication 915 has couples add every benefit
+    // either of them received before comparing to the joint thresholds), so
+    // under MFJ every person's entry is mirrored to that same combined total.
     const ssBenefitByPersonId = new Map<string, number>();
     for (const person of scenario.persons) {
       const needs = needsByPersonId.get(person.id)!;
       const ssBenefit = needs.benefits.filter((b) => b.type === 'US_SOCIAL_SECURITY').reduce((sum, b) => sum + b.amount, 0);
       ssBenefitByPersonId.set(person.id, ssBenefit);
+    }
+    if (isJointFiling) {
+      const combinedSsBenefit = scenario.persons.reduce((sum, p) => sum + (ssBenefitByPersonId.get(p.id) ?? 0), 0);
+      for (const person of scenario.persons) ssBenefitByPersonId.set(person.id, combinedSsBenefit);
     }
 
     // Who owns what, and how old they are this year. Both household-wide
@@ -1028,12 +1068,22 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
     // taxable income (income + benefits) - a reasonable base since those
     // don't depend on any withdrawal decision, unlike spending-driven
     // withdrawals which haven't happened yet at this point.
+    //
+    // Under a joint return this "base" is the household's combined income,
+    // not each person's own - see isJointFiling - so every gross-up and every
+    // incremental tax calculation that reads it for the rest of the year,
+    // regardless of which spouse's account it's pricing, lands on the
+    // household's true shared bracket position.
     const replenishmentByPersonId = new Map<string, ReplenishmentOutcome>();
     const replenishmentBaseByPersonId = new Map<string, number>();
     for (const person of scenario.persons) {
       replenishmentByPersonId.set(person.id, emptyReplenishmentOutcome());
       const needs = needsByPersonId.get(person.id)!;
       replenishmentBaseByPersonId.set(person.id, needs.totalIncomes + needs.totalBenefits + (distributionIncomeByPersonId.get(person.id) ?? 0));
+    }
+    if (isJointFiling) {
+      const combinedBase = scenario.persons.reduce((sum, p) => sum + replenishmentBaseByPersonId.get(p.id)!, 0);
+      for (const person of scenario.persons) replenishmentBaseByPersonId.set(person.id, combinedBase);
     }
 
     const sharedRule = scenario.sharedCashBufferRule;
@@ -1116,7 +1166,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       outcome.audit.push(...required.steps);
       // Raises the base every later gross-up and the meltdown ceiling are
       // priced against, so the forced income is never counted twice.
-      replenishmentBaseByPersonId.set(person.id, base + required.totalWithdrawn);
+      bumpSharedTaxBase(replenishmentBaseByPersonId, person.id, required.totalWithdrawn);
 
       const buffer = bufferShortfallFor(person);
       let bufferRoom = buffer?.shortfall ?? 0;
@@ -1239,6 +1289,10 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         for (const [bucketId, amount] of Object.entries(result.pulledFrom)) balances[bucketId] -= amount;
         balances[ownCashBucket.id] += result.amountTransferred;
         accumulateReplenishment(replenishmentByPersonId.get(person.id)!, result, ownCashBucket);
+        // So a second person's per-person top-up later in this same loop, if
+        // one fires, prices its own gross-up against what this one already
+        // used - matters under a joint return, where they share one base.
+        bumpSharedTaxBase(replenishmentBaseByPersonId, person.id, result.taxableDistribution);
       }
     }
 
@@ -1310,13 +1364,13 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       sharesByPersonId.get(person.id)!.incomeUsedForSpending = householdIncome > 0 ? incomeUsedForSpending * (own / householdIncome) : 0;
     }
 
-    // --- 2b: each person's tax, on their OWN income and their OWN accounts ---
+    // --- 2b: each person's taxable income, on their OWN accounts ---
     const taxByPersonId = new Map<string, { federal: number; stateOrProvincial: number; total: number }>();
     const grossTaxableByPersonId = new Map<string, number>();
     for (const person of scenario.persons) {
-      const needs = needsByPersonId.get(person.id)!;
       const replenishment = replenishmentByPersonId.get(person.id)!;
       const share = sharesByPersonId.get(person.id)!;
+      const needs = needsByPersonId.get(person.id)!;
 
       // Only tax-deferred draws are taxable, and shared buckets can never be
       // tax-deferred, so this is exactly this person's own registered accounts -
@@ -1363,34 +1417,103 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       const grossTaxableIncome =
         taxableWithdrawals + needs.totalIncomes + needs.totalBenefits + replenishment.taxableDistribution + distributionIncome + realizedGains;
       grossTaxableByPersonId.set(person.id, grossTaxableIncome);
+    }
 
-      // Replenishment already self-funded and charged tax on its own slice,
-      // priced as incremental on top of income+benefits alone. What's left is
-      // the full year's tax minus that - which telescopes to the marginal tax
-      // on this person's draws at the bracket replenishment already reached.
-      const ssBenefit = ssBenefitByPersonId.get(person.id) ?? 0;
-      let taxResult: { federal: number; stateOrProvincial: number; total: number };
-      if (replenishment.taxableDistribution > 0) {
-        const fullYearTax = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit);
-        taxResult = {
-          federal: fullYearTax.federal - replenishment.taxesPaid.federal,
-          stateOrProvincial: fullYearTax.stateOrProvincial - replenishment.taxesPaid.stateOrProvincial,
-          total: fullYearTax.total - replenishment.taxesPaid.total,
+    // Filed separately unless the household elected a joint return. A single
+    // filer's (or unmarried cohabitants') tax is exactly their own income
+    // against their own brackets; a joint return combines BOTH spouses' income
+    // onto ONE combined bracket walk - which is the whole point of
+    // isJointFiling - and only SPLITS the resulting bill back out per person
+    // for reporting, proportional to each one's own share of the combined
+    // income. That split doesn't change what the household owes in total,
+    // only how this one row happens to show its piece of it.
+    if (isJointFiling && scenario.persons.length > 1) {
+      const combinedGrossTaxableIncome = scenario.persons.reduce((sum, p) => sum + grossTaxableByPersonId.get(p.id)!, 0);
+      const combinedSsBenefit = ssBenefitByPersonId.get(scenario.persons[0].id) ?? 0; // already mirrored to the combined total
+      const combinedAlreadyTaxed = scenario.persons.reduce(
+        (sum, p) => {
+          const paid = replenishmentByPersonId.get(p.id)!.taxesPaid;
+          return { federal: sum.federal + paid.federal, stateOrProvincial: sum.stateOrProvincial + paid.stateOrProvincial, total: sum.total + paid.total };
+        },
+        { federal: 0, stateOrProvincial: 0, total: 0 },
+      );
+
+      const fullYearTax = calculateTotalTax(combinedGrossTaxableIncome, taxConfigForYear, combinedSsBenefit);
+      const remaining = {
+        federal: fullYearTax.federal - combinedAlreadyTaxed.federal,
+        stateOrProvincial: fullYearTax.stateOrProvincial - combinedAlreadyTaxed.stateOrProvincial,
+        total: fullYearTax.total - combinedAlreadyTaxed.total,
+      };
+
+      for (const person of scenario.persons) {
+        const share = sharesByPersonId.get(person.id)!;
+        const own = grossTaxableByPersonId.get(person.id)!;
+        const portion = combinedGrossTaxableIncome > 0 ? own / combinedGrossTaxableIncome : 1 / scenario.persons.length;
+        const taxResult = {
+          federal: remaining.federal * portion,
+          stateOrProvincial: remaining.stateOrProvincial * portion,
+          total: remaining.total * portion,
         };
+        taxByPersonId.set(person.id, taxResult);
         share.audit.push({
-          label: "Tax on this year's income and withdrawals (net of cash-buffer replenishment already taxed)",
-          formula: 'calculateTotalTax(grossTaxableIncome) - taxAlreadyChargedOnReplenishment',
-          inputs: { grossTaxableIncome, taxAlreadyChargedOnReplenishment: replenishment.taxesPaid.total },
-          result: fullYearTax.total - replenishment.taxesPaid.total,
+          label: "This person's share of the household's joint tax bill (net of cash-buffer replenishment already taxed)",
+          formula: 'calculateTotalTax(combined household income) - taxAlreadyChargedOnReplenishment, split by share of combined taxable income',
+          inputs: {
+            combinedGrossTaxableIncome,
+            ownGrossTaxableIncome: own,
+            taxAlreadyChargedOnReplenishment: combinedAlreadyTaxed.total,
+          },
+          result: taxResult.total,
           relatedFields: ['taxesPaid.federal', 'taxesPaid.stateOrProvincial', 'taxesPaid.total'],
         });
-      } else {
-        const computed = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit);
-        taxResult = { federal: computed.federal, stateOrProvincial: computed.stateOrProvincial, total: computed.total };
-        share.audit.push(...computed.steps);
       }
-      taxByPersonId.set(person.id, taxResult);
+    } else {
+      for (const person of scenario.persons) {
+        const replenishment = replenishmentByPersonId.get(person.id)!;
+        const share = sharesByPersonId.get(person.id)!;
+        const grossTaxableIncome = grossTaxableByPersonId.get(person.id)!;
+
+        // Replenishment already self-funded and charged tax on its own slice,
+        // priced as incremental on top of income+benefits alone. What's left is
+        // the full year's tax minus that - which telescopes to the marginal tax
+        // on this person's draws at the bracket replenishment already reached.
+        const ssBenefit = ssBenefitByPersonId.get(person.id) ?? 0;
+        let taxResult: { federal: number; stateOrProvincial: number; total: number };
+        if (replenishment.taxableDistribution > 0) {
+          const fullYearTax = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit);
+          taxResult = {
+            federal: fullYearTax.federal - replenishment.taxesPaid.federal,
+            stateOrProvincial: fullYearTax.stateOrProvincial - replenishment.taxesPaid.stateOrProvincial,
+            total: fullYearTax.total - replenishment.taxesPaid.total,
+          };
+          share.audit.push({
+            label: "Tax on this year's income and withdrawals (net of cash-buffer replenishment already taxed)",
+            formula: 'calculateTotalTax(grossTaxableIncome) - taxAlreadyChargedOnReplenishment',
+            inputs: { grossTaxableIncome, taxAlreadyChargedOnReplenishment: replenishment.taxesPaid.total },
+            result: fullYearTax.total - replenishment.taxesPaid.total,
+            relatedFields: ['taxesPaid.federal', 'taxesPaid.stateOrProvincial', 'taxesPaid.total'],
+          });
+        } else {
+          const computed = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit);
+          taxResult = { federal: computed.federal, stateOrProvincial: computed.stateOrProvincial, total: computed.total };
+          share.audit.push(...computed.steps);
+        }
+        taxByPersonId.set(person.id, taxResult);
+      }
     }
+
+    // A meltdown's own tax is priced as incremental on top of this same base
+    // (see computePersonRow) - under a joint return that base is the
+    // household's combined income, not this one person's own, for the same
+    // reason the settlement above is. Frozen at this point rather than
+    // updated as each person's meltdown runs in Phase 2d below, so two
+    // spouses who both have an active meltdown rule in the same year each
+    // price against the household's PRE-meltdown position rather than
+    // cascading off each other - a narrower version of the same per-person
+    // snapshot approximation meltdown pricing already accepted.
+    const combinedGrossTaxableIncomeForMeltdown = isJointFiling
+      ? scenario.persons.reduce((sum, p) => sum + grossTaxableByPersonId.get(p.id)!, 0)
+      : null;
 
     // --- 2c: fund the household's tax bill, then bank what's left ---
     const householdTax = scenario.persons.reduce((sum, p) => sum + taxByPersonId.get(p.id)!.total, 0);
@@ -1423,7 +1546,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         taxConfigForYear,
         sharesByPersonId.get(person.id)!,
         taxByPersonId.get(person.id)!,
-        grossTaxableByPersonId.get(person.id)!,
+        combinedGrossTaxableIncomeForMeltdown ?? grossTaxableByPersonId.get(person.id)!,
         surplusToBank,
         ssBenefitByPersonId.get(person.id) ?? 0,
       );
