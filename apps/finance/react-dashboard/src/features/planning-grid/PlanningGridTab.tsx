@@ -148,6 +148,10 @@ export function PlanningGridTab() {
               // no single person whose override it would be - pick one person to edit it.
               allowOverrides={!combined}
               selectedYear={auditYear}
+              // Same revision App.tsx keys its own scroll memory off: a save
+              // bumps updatedAt, which is the signal that every number in the
+              // grid has been recomputed and a remembered offset is stale.
+              scrollMemoryKey={`${activeScenario.id}|${activeScenario.updatedAt}`}
               onOpenAudit={(row) => setAuditYear(row.year)}
               onEditOverride={(row) => setOverrideYear(row.year)}
             />

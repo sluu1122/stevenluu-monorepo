@@ -14,6 +14,7 @@ import { ClientSummaryTab } from './features/client-summary/ClientSummaryTab';
 import { useActiveScenario } from './hooks/useActiveScenario';
 import { useScenarios } from './hooks/useScenarios';
 import { useBodyPointerEventsWatchdog } from './hooks/useBodyPointerEventsWatchdog';
+import { restoreScrollPosition } from './lib/restoreScroll';
 
 const TABS = [
   { value: 'setup', label: 'Scenario Setup' },
@@ -78,32 +79,13 @@ function AppShell() {
     setActiveTab(next);
   }
 
+  // The incoming tab is usually still laying out when this runs (charts
+  // measuring, cards reflowing), so a single write gets clamped short - hence
+  // the re-apply-until-it-takes helper rather than a bare assignment.
   useLayoutEffect(() => {
     const main = mainRef.current;
     if (!main) return;
-    const target = scrollByTab.current[activeTab] ?? 0;
-    main.scrollTop = target;
-    if (main.scrollTop === target) return;
-
-    // Didn't take: the incoming tab is still laying out (charts measuring, cards
-    // reflowing), so the container isn't tall enough to reach that offset yet.
-    // Re-apply as it grows, and bail the moment it lands, the user takes over,
-    // or the content turns out to be genuinely shorter than where we left off.
-    let frame = requestAnimationFrame(function settle() {
-      if (!mainRef.current) return;
-      mainRef.current.scrollTop = target;
-      if (mainRef.current.scrollTop !== target) frame = requestAnimationFrame(settle);
-    });
-    const stop = () => cancelAnimationFrame(frame);
-    const deadline = window.setTimeout(stop, 1000);
-    main.addEventListener('wheel', stop, { passive: true });
-    main.addEventListener('touchstart', stop, { passive: true });
-    return () => {
-      cancelAnimationFrame(frame);
-      window.clearTimeout(deadline);
-      main.removeEventListener('wheel', stop);
-      main.removeEventListener('touchstart', stop);
-    };
+    return restoreScrollPosition(main, { top: scrollByTab.current[activeTab] ?? 0 });
   }, [activeTab]);
 
   const activeLabel = TABS.find((t) => t.value === activeTab)?.label ?? '';

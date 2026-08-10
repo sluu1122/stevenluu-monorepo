@@ -3,7 +3,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Pencil } from 'lucide-react';
 import { LedgerColumnGroupHeader } from './LedgerColumnGroupHeader';
 import { CellOverrideBadge } from './CellOverrideBadge';
+import { recallGridScroll, rememberGridScroll } from './gridScrollMemory';
 import { cn } from '../../lib/utils';
+import { restoreScrollPosition } from '../../lib/restoreScroll';
 import { bucketHeading, categorizeBuckets, sumAccountEnd } from '../../lib/investmentCategories';
 import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { AccountBucket, GridOverride } from '../../engine/schema';
@@ -135,6 +137,12 @@ interface LedgerTableProps {
   allowOverrides: boolean;
   /** The row whose breakdown the side panel is showing, so it can be marked here. */
   selectedYear: number | null;
+  /**
+   * Identity of the numbers currently on screen. The grid's scroll offset is
+   * remembered across the tab switches that unmount it, and dropped whenever
+   * this changes - see gridScrollMemory.
+   */
+  scrollMemoryKey: string;
   onOpenAudit: (row: LedgerYearRow) => void;
   onEditOverride: (row: LedgerYearRow) => void;
 }
@@ -149,6 +157,7 @@ export function LedgerTable({
   personId,
   allowOverrides,
   selectedYear,
+  scrollMemoryKey,
   onOpenAudit,
   onEditOverride,
 }: LedgerTableProps) {
@@ -159,6 +168,35 @@ export function LedgerTable({
   // Table renders its own `overflow-auto` wrapper around the <table>, so that
   // wrapper - the element whose scroll we drive below - is the table's parent.
   const scroller = () => tableRef.current?.parentElement ?? null;
+
+  /**
+   * Keeps your place in the grid across tab switches.
+   *
+   * Leaving the Planning Grid unmounts it, which destroys this scroll
+   * container outright - so the offset is parked outside React on every scroll
+   * and put back on the way in. Both axes: the grid is far wider than it is
+   * tall, so which columns you had scrolled to matters at least as much as
+   * which rows.
+   *
+   * Re-running on scrollMemoryKey is what handles a save: the new key has no
+   * offset stored against it, so the grid opens at the top rather than at a
+   * position that pointed into numbers which have since been recomputed.
+   */
+  useLayoutEffect(() => {
+    const el = tableRef.current?.parentElement;
+    if (!el) return;
+
+    const remembered = recallGridScroll(scrollMemoryKey);
+    const cancelRestore = remembered ? restoreScrollPosition(el, remembered) : null;
+
+    const onScroll = () => rememberGridScroll(scrollMemoryKey, { top: el.scrollTop, left: el.scrollLeft });
+    el.addEventListener('scroll', onScroll, { passive: true });
+
+    return () => {
+      cancelRestore?.();
+      el.removeEventListener('scroll', onScroll);
+    };
+  }, [scrollMemoryKey]);
 
   function toggle(key: string) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
