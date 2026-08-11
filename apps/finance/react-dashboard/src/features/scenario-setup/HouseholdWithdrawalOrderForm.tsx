@@ -82,7 +82,13 @@ export function HouseholdWithdrawalOrderForm() {
   const persons = watch('persons') ?? [];
   const sharedBuckets = watch('sharedAccountBuckets') ?? [];
 
-  const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
+  // The distance constraint is what stops a plain tap counting as a drag. On
+  // touch, without it, tapping the handle silently reorders the withdrawal
+  // order - which changes engine output. Matches the other sortable editors.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const accountsOf = (kind: AccountKind): { label: string; shared: boolean }[] => [
     ...sharedBuckets.filter((b: AccountBucket) => b.kind === kind).map((b: AccountBucket) => ({ label: b.label, shared: true })),
