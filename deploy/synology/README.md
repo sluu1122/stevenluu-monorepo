@@ -126,8 +126,17 @@ socket), so no separate login is needed. `ollama` and `cloudflared` are
 deliberately **not** watched — `ollama`'s image never changes, and
 `cloudflared` is infra you'd want to update on purpose, not on autopilot.
 
+> ⚠️ **Watchtower is currently not deploying anything** (as of 2026-08-11). It
+> runs and reports Healthy, but its log is empty and a confirmed-new image sat
+> unpulled for 10+ minutes across a forced restart. **Do not assume a push has
+> reached production** — verify against the live site, and deploy by hand using
+> [§6](#6-deploying-manually-when-watchtower-isnt-doing-it) until this is fixed.
+> See the root `TODO.md` for what to investigate.
+
 **Checking it worked:** Container Manager → `watchtower` container → Logs —
-each poll logs what it checked and whether it found/applied an update.
+each poll logs what it checked and whether it found/applied an update. An
+**empty** log is not "nothing to do" — it means Watchtower isn't running its
+check at all, since it always prints a banner and schedule line on startup.
 
 **Manually triggering an update** (instead of waiting out the 30-minute poll —
 handy right after a push, or while testing the pipeline itself): either
@@ -153,6 +162,37 @@ way the bug did.
 → Settings → Actions → General → Workflow permissions → **"Read and write
 permissions"**. Without this, `GITHUB_TOKEN` can't push to `ghcr.io` and the
 `build-and-push` job fails on the login/push step.
+
+## 6. Deploying manually (when Watchtower isn't doing it)
+
+Container Manager will silently reuse a stale container or a stale cached
+image, with no error anywhere. Both failure modes look identical from the
+outside: your change simply doesn't appear on the live site. Two rules:
+
+- **`.env` changes need a container *recreate*, not a restart.** Environment
+  variables are baked in when a container is **created**. Project → Stop →
+  Start reuses the existing containers and keeps the old values.
+- **A new `:latest` image needs the old image *and* its container deleted.**
+  Build runs the equivalent of `docker compose up -d`, which will **not**
+  re-pull a `:latest` tag it already holds locally. Deleting only the image
+  isn't enough either — Docker refuses to remove an image that a running
+  container is using, so the delete quietly fails.
+
+**The sequence that actually works:**
+
+1. Project → **Stop**
+2. **Container** → delete the affected container(s)
+3. **Image** → delete the matching `ghcr.io/sluu1122/<app>:latest`, and confirm
+   the row actually disappears from the list
+4. Project → **Build** (with no local image, it must pull fresh)
+
+**Check it took before debugging anything else:** Container → the container →
+**General** → **Time Created**. If that timestamp predates your change, the
+container was never recreated and nothing else you investigate will matter.
+This one field short-circuits nearly every "my change didn't deploy" hunt.
+
+For an `.env`-only change (no new image), steps 1 and 4 alone are enough —
+Build recreates containers and re-reads `.env`.
 
 **Security note:** `watchtower` has the Docker socket mounted, which gives it
 root-equivalent control over everything on the NAS's Docker host. This is the
