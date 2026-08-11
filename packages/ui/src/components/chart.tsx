@@ -281,7 +281,11 @@ const ChartLegendContent = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "flex items-center justify-center gap-4",
+          // flex-wrap because a stacked-balance chart can carry a series per
+          // account (plus "Other accounts"), which is well past what one line
+          // holds on a phone. Row gap is smaller than column gap so wrapped
+          // legends read as one block rather than a list.
+          "flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5",
           verticalAlign === "top" ? "pb-3" : "pt-3",
           className
         )}

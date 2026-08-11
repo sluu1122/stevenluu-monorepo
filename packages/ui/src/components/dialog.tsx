@@ -48,7 +48,16 @@ const DialogContent = React.forwardRef<
         // Same reasoning as DialogOverlay above: no data-[state=closed]
         // exit classes, so Presence unmounts this synchronously on close
         // and the body pointer-events lock can never outlive it.
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=open]:duration-500 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+        // Sizing notes (animation classes above are deliberately untouched):
+        // - w-[calc(100%-2rem)] rather than w-full, so a phone gets a margin
+        //   instead of a full-bleed sheet with the close button jammed into
+        //   the corner.
+        // - rounded-lg unconditionally: the sm: gate made mobile square, which
+        //   only ever looked like a rendering bug.
+        // - max-h/overflow so a dialog taller than the viewport (or one whose
+        //   space is halved by the software keyboard) can still be scrolled to
+        //   its footer. svh, not vh, so mobile browser chrome is accounted for.
+        "fixed left-[50%] top-[50%] z-50 grid w-[calc(100%-2rem)] max-w-lg max-h-[85svh] overflow-y-auto translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=open]:duration-500 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-lg",
         className
       )}
       {...props}
@@ -83,7 +92,9 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      // gap, not sm:space-x-2: the old spacing was horizontal-only AND sm:-gated,
+      // so stacked mobile buttons had no separation at all and visually touched.
+      "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
       className
     )}
     {...props}
