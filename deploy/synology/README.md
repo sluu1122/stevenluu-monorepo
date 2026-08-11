@@ -165,18 +165,28 @@ permissions"**. Without this, `GITHUB_TOKEN` can't push to `ghcr.io` and the
 
 ## 6. Deploying manually (when Watchtower isn't doing it)
 
+> **The one rule that matters: always finish with Build, never Start.**
+> They sit next to each other and both sound like "turn it back on," but
+> **Start only starts containers that already exist**. It never creates one,
+> never re-reads `.env`, and never pulls an image. Every deployment failure in
+> this section traces back to reaching for Start.
+
 Container Manager will silently reuse a stale container or a stale cached
-image, with no error anywhere. Both failure modes look identical from the
-outside: your change simply doesn't appear on the live site. Two rules:
+image, with no error anywhere. All three failure modes below look identical
+from the outside: your change simply doesn't appear on the live site.
 
 - **`.env` changes need a container *recreate*, not a restart.** Environment
-  variables are baked in when a container is **created**. Project → Stop →
-  Start reuses the existing containers and keeps the old values.
+  variables are baked in when a container is **created**. Stop → Start reuses
+  the existing containers and keeps the old values, so an edited `.env` has no
+  effect whatsoever.
 - **A new `:latest` image needs the old image *and* its container deleted.**
   Build runs the equivalent of `docker compose up -d`, which will **not**
   re-pull a `:latest` tag it already holds locally. Deleting only the image
   isn't enough either — Docker refuses to remove an image that a running
   container is using, so the delete quietly fails.
+- **After deleting a container, Start leaves the service down entirely.**
+  There is nothing for it to start, so the container never comes back and the
+  tunnel returns a **502** for that hostname. Only Build recreates it.
 
 **The sequence that actually works:**
 
@@ -184,7 +194,8 @@ outside: your change simply doesn't appear on the live site. Two rules:
 2. **Container** → delete the affected container(s)
 3. **Image** → delete the matching `ghcr.io/sluu1122/<app>:latest`, and confirm
    the row actually disappears from the list
-4. Project → **Build** (with no local image, it must pull fresh)
+4. Project → **Build** — *not Start*. With no local image, this pulls fresh and
+   recreates the container.
 
 **Check it took before debugging anything else:** Container → the container →
 **General** → **Time Created**. If that timestamp predates your change, the
