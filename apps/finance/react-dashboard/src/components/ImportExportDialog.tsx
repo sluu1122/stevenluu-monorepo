@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
-import { Download, Upload } from 'lucide-react';
+import { AlertTriangle, Download, RotateCcw, Upload } from 'lucide-react';
 import { Button } from '@repo/ui/components/button';
 import { Checkbox } from '@repo/ui/components/checkbox';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/tabs';
 import { RadioGroup, RadioGroupItem } from '@repo/ui/components/radio-group';
-import { useImportScenarios, useScenarios } from '../hooks/useScenarios';
+import { useImportScenarios, useResetToDemoScenarios, useScenarios } from '../hooks/useScenarios';
 import { useScenarioRepository } from '../hooks/useScenarioRepository';
 import { downloadExport, parseImportFile } from '../repository/exportImport';
 
@@ -20,8 +20,10 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
   const { data: scenarios = [] } = useScenarios();
   const repository = useScenarioRepository();
   const importScenarios = useImportScenarios();
+  const resetScenarios = useResetToDemoScenarios();
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [keepIds, setKeepIds] = useState<Set<string>>(new Set());
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [isDragging, setIsDragging] = useState(false);
   const [importIssues, setImportIssues] = useState<string[]>([]);
@@ -39,6 +41,10 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
       setSelectedIds(new Set(scenarios.map((s) => s.id)));
       setImportMode('merge');
       setImportIssues([]);
+      // Nothing kept by default: "reset" should mean reset unless you say
+      // otherwise, and an opt-in tick is harder to do by accident than an
+      // opt-out untick.
+      setKeepIds(new Set());
     }
   }
 
@@ -74,8 +80,14 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
     onOpenChange(false);
   }
 
+  async function resetToDemos() {
+    await resetScenarios.mutateAsync([...keepIds]);
+    onOpenChange(false);
+  }
+
   const allSelected = scenarios.length > 0 && selectedIds.size === scenarios.length;
   const someSelected = selectedIds.size > 0 && !allSelected;
+  const deleteCount = scenarios.filter((s) => !keepIds.has(s.id)).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,12 +97,15 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
         </DialogHeader>
 
         <Tabs defaultValue="export" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="export" className="cursor-pointer">
               Export
             </TabsTrigger>
             <TabsTrigger value="import" className="cursor-pointer">
               Import
+            </TabsTrigger>
+            <TabsTrigger value="reset" className="cursor-pointer">
+              Reset
             </TabsTrigger>
           </TabsList>
 
@@ -193,6 +208,50 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
             <DialogFooter>
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
+              </Button>
+            </DialogFooter>
+          </TabsContent>
+
+          <TabsContent value="reset" className="flex flex-col gap-3">
+            <div className="flex items-start gap-2.5 border border-loss/30 bg-loss-bg rounded-[9px] p-2.5">
+              <AlertTriangle className="size-4 text-loss shrink-0 mt-px" />
+              <p className="text-[12.5px] text-loss-dark">
+                This deletes every scenario you have, along with its grid overrides, and restores the three demo scenarios. It cannot be undone. Tick
+                anything below you want to survive, or export it first from the Export tab.
+              </p>
+            </div>
+
+            {scenarios.length > 0 && (
+              <>
+                <p className="text-[12.5px] text-dim px-1">Keep these scenarios:</p>
+                <div className="flex flex-col gap-0.5 max-h-[200px] overflow-y-auto border border-edge rounded-[9px] p-1.5">
+                  {scenarios.map((scenario) => (
+                    <label key={scenario.id} className="flex items-center gap-2.5 text-[13px] px-1.5 py-1 rounded-[7px] hover:bg-surface-pressed cursor-pointer">
+                      <Checkbox
+                        checked={keepIds.has(scenario.id)}
+                        onCheckedChange={(checked: boolean | 'indeterminate') =>
+                          setKeepIds((prev) => {
+                            const next = new Set(prev);
+                            if (checked === true) next.add(scenario.id);
+                            else next.delete(scenario.id);
+                            return next;
+                          })
+                        }
+                      />
+                      <span className="truncate text-ink-mid">{scenario.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={resetToDemos} disabled={resetScenarios.isPending} className="cursor-pointer">
+                <RotateCcw className="size-3.5" />
+                {deleteCount > 0 ? `Delete ${deleteCount} and reset` : 'Reset'}
               </Button>
             </DialogFooter>
           </TabsContent>

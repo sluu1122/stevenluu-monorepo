@@ -637,6 +637,26 @@ export class LocalStorageScenarioRepository implements ScenarioRepository {
     };
   }
 
+  async resetToDemoScenarios(keepIds: string[]): Promise<void> {
+    const blob = readBlob();
+    const keep = new Set(keepIds);
+    const kept = blob.scenarios.filter((s) => keep.has(s.id));
+    const keptIds = new Set(kept.map((s) => s.id));
+
+    // Kept scenarios first: if the active one was deleted,
+    // ActiveScenarioProvider falls back to scenarios[0], and landing on
+    // something the user chose to keep beats landing on a demo.
+    writeBlob({
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      scenarios: [...kept, ...createDemoScenarios()],
+      overrides: blob.overrides.filter((o) => keptIds.has(o.scenarioId)),
+    });
+    // The active-scenario id is deliberately left alone. If it survived the
+    // reset it should stay active, and if it didn't, the provider already
+    // handles a dangling id by falling back - see its comment.
+  }
+
   async importAll(bundle: ExportBundle, mode: 'merge' | 'replace'): Promise<void> {
     if (mode === 'replace') {
       writeBlob({ ...bundle, exportedAt: new Date().toISOString() });

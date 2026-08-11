@@ -68,3 +68,86 @@ describe('first-run demo seeding', () => {
     expect(remaining).toHaveLength(2);
   });
 });
+
+describe('reset to demo scenarios', () => {
+  /** A scenario of the user's own, distinguishable from the seeded demos. */
+  async function addOwnScenario(repo: LocalStorageScenarioRepository, name: string) {
+    const [template] = await repo.listScenarios();
+    return repo.saveScenario({ ...template, id: `scenario-${name}`, name });
+  }
+
+  it('replaces everything with a fresh set of three demos when nothing is kept', async () => {
+    const repo = new LocalStorageScenarioRepository();
+    await addOwnScenario(repo, 'Mine');
+
+    await repo.resetToDemoScenarios([]);
+
+    const after = await repo.listScenarios();
+    expect(after).toHaveLength(3);
+    expect(after.map((s) => s.name)).not.toContain('Mine');
+  });
+
+  it('mints new ids rather than restoring the previous demo objects', async () => {
+    const repo = new LocalStorageScenarioRepository();
+    const before = await repo.listScenarios();
+
+    await repo.resetToDemoScenarios([]);
+
+    const after = await repo.listScenarios();
+    expect(after.map((s) => s.id)).not.toEqual(before.map((s) => s.id));
+  });
+
+  it('spares a kept scenario and orders it ahead of the demos', async () => {
+    const repo = new LocalStorageScenarioRepository();
+    await addOwnScenario(repo, 'Mine');
+
+    await repo.resetToDemoScenarios(['scenario-Mine']);
+
+    const after = await repo.listScenarios();
+    expect(after).toHaveLength(4);
+    // First, so ActiveScenarioProvider's fallback lands on the user's own
+    // scenario rather than a demo.
+    expect(after[0].name).toBe('Mine');
+  });
+
+  it('keeps the overrides belonging to a kept scenario and drops the rest', async () => {
+    const repo = new LocalStorageScenarioRepository();
+    const [demo] = await repo.listScenarios();
+    const mine = await addOwnScenario(repo, 'Mine');
+
+    const override = (scenarioId: string, id: string) => ({
+      id,
+      scenarioId,
+      personId: 'person-1',
+      year: 2040,
+      field: 'spendingNominal' as const,
+      value: 50_000,
+      createdAt: new Date().toISOString(),
+    });
+    await repo.saveOverride(override(mine.id, 'override-mine'));
+    await repo.saveOverride(override(demo.id, 'override-demo'));
+
+    await repo.resetToDemoScenarios([mine.id]);
+
+    expect(await repo.listOverrides(mine.id)).toHaveLength(1);
+    expect(await repo.listOverrides(demo.id)).toEqual([]);
+  });
+
+  it('still produces the demos when resetting an empty store', async () => {
+    const repo = new LocalStorageScenarioRepository();
+    for (const scenario of await repo.listScenarios()) await repo.deleteScenario(scenario.id);
+    expect(await repo.listScenarios()).toEqual([]);
+
+    await repo.resetToDemoScenarios([]);
+
+    expect(await repo.listScenarios()).toHaveLength(3);
+  });
+
+  it('ignores ids that no longer exist instead of resurrecting them', async () => {
+    const repo = new LocalStorageScenarioRepository();
+
+    await repo.resetToDemoScenarios(['scenario-that-was-deleted']);
+
+    expect(await repo.listScenarios()).toHaveLength(3);
+  });
+});

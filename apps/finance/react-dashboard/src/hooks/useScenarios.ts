@@ -27,6 +27,17 @@ export function useDeleteScenario() {
   });
 }
 
+export function useResetToDemoScenarios() {
+  const repository = useScenarioRepository();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (keepIds: string[]) => repository.resetToDemoScenarios(keepIds),
+    // Overrides are dropped alongside the scenarios they belonged to, so
+    // invalidate everything rather than just the scenario list.
+    onSuccess: () => queryClient.invalidateQueries(),
+  });
+}
+
 export function useImportScenarios() {
   const repository = useScenarioRepository();
   const queryClient = useQueryClient();

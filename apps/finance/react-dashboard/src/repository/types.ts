@@ -16,4 +16,11 @@ export interface ScenarioRepository {
   /** Pass every scenario's id to export a full backup, or a subset for a partial one. */
   exportScenarios(ids: string[]): Promise<ExportBundle>;
   importAll(bundle: ExportBundle, mode: 'merge' | 'replace'): Promise<void>;
+  /**
+   * Wipe stored scenarios back to a freshly-seeded set of demos, sparing the
+   * ids in `keepIds` (and their overrides). Pass an empty array for a full
+   * reset. Kept scenarios are ordered ahead of the demos so whichever one was
+   * active is still likely to be picked up as the fallback.
+   */
+  resetToDemoScenarios(keepIds: string[]): Promise<void>;
 }
