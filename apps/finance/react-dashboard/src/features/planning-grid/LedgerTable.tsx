@@ -1,29 +1,13 @@
-import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/components/table';
-import { Pencil } from 'lucide-react';
 import { LedgerColumnGroupHeader } from './LedgerColumnGroupHeader';
-import { CellOverrideBadge } from './CellOverrideBadge';
 import { recallGridScroll, rememberGridScroll } from './gridScrollMemory';
+import { buildLedgerColumns, BUCKET_TINTS, type LedgerColumn } from './ledgerColumns';
 import { cn } from '../../lib/utils';
 import { restoreScrollPosition } from '../../lib/restoreScroll';
-import { bucketHeading, categorizeBuckets, sumAccountEnd } from '../../lib/investmentCategories';
 import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { AccountBucket, GridOverride } from '../../engine/schema';
 import type { LedgerYearRow } from '../../engine/types';
-
-interface LedgerColumn {
-  id: string;
-  header: ReactNode;
-  render: (row: LedgerYearRow) => ReactNode;
-  /** Tints a whole account's column run so its Start/Net/End read as one unit. */
-  tintIndex?: number;
-}
-
-interface LedgerColumnGroup {
-  key: string;
-  label: string;
-  columns: LedgerColumn[];
-}
 
 /** Starting widths for Age / Year / Yrs to-in Ret.; refined to real whole-pixel widths on mount (see useFrozenColumns). */
 const FROZEN_COL_WIDTHS = [52, 64, 84] as const;
@@ -54,23 +38,6 @@ const ROW_RULE_SHADOW = 'inset 0 -1px 0 0 var(--brand-page-fg)';
 const shadows = (...parts: (string | false | null | undefined)[]) => {
   const used = parts.filter(Boolean);
   return used.length > 0 ? used.join(', ') : undefined;
-};
-
-/**
- * Two alternating tints, applied per account so each bucket's three columns
- * read as one block and the boundary between neighbouring accounts is visible.
- * Deliberately far weaker than any semantic color in the grid (the withdrawal
- * highlight, the loss/gain text) so it never competes with them for attention.
- */
-const BUCKET_TINTS = ['bg-transparent', 'bg-surface-pressed'];
-
-/** The order asset groups are rendered in - also the order tints alternate along. */
-const ASSET_GROUP_ORDER = ['taxable', 'taxDeferred', 'taxFree'] as const;
-
-const ASSET_GROUP_LABEL: Record<AccountBucket['taxTreatment'], string> = {
-  taxable: 'Taxable Assets',
-  taxDeferred: 'Tax-Deferred Assets',
-  taxFree: 'Tax-Free Assets',
 };
 
 /**
@@ -202,10 +169,6 @@ export function LedgerTable({
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  function findOverride(year: number, field: string) {
-    return overrides.find((o) => o.personId === personId && o.year === year && o.field === field);
-  }
-
   /**
    * Click-drag to pan the grid. Only runs on the scrollable body area - the
    * frozen columns keep their click-to-open-breakdown behavior, so the two
@@ -273,197 +236,16 @@ export function LedgerTable({
     window.addEventListener('mouseup', onUp);
   }
 
-  const isShared = (bucket: AccountBucket) => sharedBucketIds?.has(bucket.id) ?? false;
-  const sharedBuckets = allBuckets.filter(isShared);
-  const ownedBuckets = allBuckets.filter((b) => !isShared(b));
-
-  // Shared accounts get their own group rather than being folded in by tax
-  // treatment - they're not counted in any person's Total Net Worth, so
-  // keeping them visually separate is what makes that total legible.
-  const bucketsByTreatment: Partial<Record<AccountBucket['taxTreatment'], AccountBucket[]>> = {};
-  for (const bucket of ownedBuckets) {
-    (bucketsByTreatment[bucket.taxTreatment] ??= []).push(bucket);
-  }
-
-  // Tints must alternate in the order the columns are actually RENDERED, which
-  // is by tax treatment and not the order `allBuckets` happens to be in (that's
-  // grouped by person). Keying off allBuckets gave every person's RRSP the same
-  // parity, so inside the Tax-Deferred group neighbouring accounts shared a tint
-  // and the banding read as "per person" instead of "per account".
-  const orderedBuckets = [...ASSET_GROUP_ORDER.flatMap((treatment) => bucketsByTreatment[treatment] ?? []), ...sharedBuckets];
-  const tintByBucketId = new Map(orderedBuckets.map((bucket, i) => [bucket.id, i % BUCKET_TINTS.length]));
-
-  /** The Start / Net Change / End trio rendered for any account, owned or shared. */
-  function bucketColumns(bucket: AccountBucket): LedgerColumn[] {
-    const tintIndex = tintByBucketId.get(bucket.id) ?? 0;
-    const heading = bucketHeading(bucket, bucketOwnerLabels);
-    const subHeader = (text: string) => (
-      <span className="flex flex-col">
-        <span>{heading}</span>
-        <span className="text-[10px] font-normal normal-case text-dim">{text}</span>
-      </span>
-    );
-
-    return [
-      {
-        id: `${bucket.id}-start`,
-        tintIndex,
-        header: subHeader('Start'),
-        render: (row) => money.format(row.accountStart[bucket.id] ?? 0),
-      },
-      {
-        id: `${bucket.id}-net`,
-        tintIndex,
-        // "Net Flow", not "Net Change": this is money moving in and out, which
-        // is what was asked for - it deliberately excludes market growth, so
-        // Start + this != End. The hover spells out all three legs so the row
-        // still reconciles.
-        header: subHeader('Net Flow'),
-        render: (row) => {
-          const withdrawal = row.withdrawals[bucket.id] ?? 0;
-          const deposit = row.contributions[bucket.id] ?? 0;
-          const growth = row.growth[bucket.id] ?? 0;
-          const net = deposit - withdrawal;
-
-          // Both legs shown on hover: a year can both draw from an account and
-          // pay into it (a meltdown's proceeds landing where the buffer just
-          // drew from), and the net alone would hide that entirely.
-          const legs: string[] = [];
-          if (withdrawal > 0) legs.push(`Withdrawn ${money.format(withdrawal)}`);
-          if (deposit > 0) legs.push(`Deposited ${money.format(deposit)}`);
-          if (growth !== 0) legs.push(`Growth ${money.format(growth)}`);
-          const detail = legs.length > 0 ? legs.join(' · ') : 'No movement this year';
-
-          if (withdrawal === 0 && deposit === 0) {
-            return (
-              <span title={detail} className="text-dim">
-                —
-              </span>
-            );
-          }
-
-          const highlight = row.isRetired && withdrawal > 0;
-          return (
-            <span
-              title={detail}
-              className={cn(
-                'inline-flex items-center gap-1',
-                net < 0 ? 'text-loss' : 'text-gain',
-                highlight && 'px-1.5 py-0.5 rounded-[6px] font-semibold bg-[#FEF3C7] text-[#92400E]',
-              )}
-            >
-              {net > 0 ? '+' : net < 0 ? '−' : ''}
-              {money.format(Math.abs(net))}
-              {withdrawal > 0 && deposit > 0 && <span className="text-[9px] text-dim">↕</span>}
-            </span>
-          );
-        },
-      },
-      {
-        id: `${bucket.id}-end`,
-        tintIndex,
-        header: subHeader('End'),
-        render: (row) => money.format(row.accountEnd[bucket.id] ?? 0),
-      },
-    ];
-  }
-
-  const { cashBuffer: cashBufferBuckets, taxable: taxableInvestmentBuckets, taxDeferred: taxDeferredInvestmentBuckets, taxFree: taxFreeInvestmentBuckets } = categorizeBuckets(allBuckets);
-  const investmentBuckets = [...taxableInvestmentBuckets, ...taxDeferredInvestmentBuckets, ...taxFreeInvestmentBuckets];
-
-  const groups: LedgerColumnGroup[] = [
-    {
-      key: 'expenses',
-      label: 'Expenses',
-      columns: [
-        {
-          id: 'spendingNominal',
-          header: 'Nominal',
-          render: (row) => {
-            if (!allowOverrides) return money.format(row.spendingNominal);
-            const override = findOverride(row.year, 'spendingNominal');
-            return (
-              <button
-                type="button"
-                className="flex items-center hover:underline decoration-dotted underline-offset-2 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditOverride(row);
-                }}
-              >
-                {money.format(row.spendingNominal)}
-                <Pencil className="ml-1 size-2.5 text-dim" />
-                {override && <CellOverrideBadge />}
-              </button>
-            );
-          },
-        },
-        { id: 'spendingReal', header: 'Real', render: (row) => money.format(row.spendingReal) },
-      ],
-    },
-    {
-      key: 'income',
-      label: 'Income & Benefits',
-      columns: [
-        {
-          id: 'incomes',
-          header: 'Incomes',
-          render: (row) => money.format(row.incomes.reduce((sum, i) => sum + i.amount, 0)),
-        },
-        {
-          id: 'benefits',
-          header: 'Benefits',
-          render: (row) => money.format(row.benefits.reduce((sum, b) => sum + b.amount, 0)),
-        },
-      ],
-    },
-    ...(ASSET_GROUP_ORDER
-      .map((treatment): LedgerColumnGroup | null => {
-        const buckets = bucketsByTreatment[treatment];
-        if (!buckets || buckets.length === 0) return null;
-        return { key: treatment, label: ASSET_GROUP_LABEL[treatment], columns: buckets.flatMap(bucketColumns) };
-      })
-      .filter((g): g is LedgerColumnGroup => g !== null)),
-    ...(sharedBuckets.length > 0
-      ? [{ key: 'shared', label: 'Shared Accounts', columns: sharedBuckets.flatMap(bucketColumns) } satisfies LedgerColumnGroup]
-      : []),
-    {
-      key: 'cashBuffer',
-      label: 'Cash Buffer',
-      columns: [{ id: 'cashBufferReplenishment', header: 'Replenishment', render: (row) => (row.cashBufferReplenishment > 0 ? money.format(row.cashBufferReplenishment) : '—') }],
-    },
-    {
-      key: 'required',
-      label: 'Required Distributions',
-      columns: [
-        {
-          id: 'requiredDistributionTotal',
-          header: 'Minimum',
-          render: (row) => (row.requiredDistributionTotal > 0 ? money.format(row.requiredDistributionTotal) : '—'),
-        },
-      ],
-    },
-    {
-      key: 'taxes',
-      label: 'Taxes',
-      columns: [
-        { id: 'taxFederal', header: 'Federal', render: (row) => money.format(row.taxesPaid.federal) },
-        { id: 'taxState', header: 'State/Prov.', render: (row) => money.format(row.taxesPaid.stateOrProvincial) },
-        { id: 'taxTotal', header: 'Total', render: (row) => money.format(row.taxesPaid.total) },
-      ],
-    },
-    {
-      key: 'combined',
-      label: 'Combined',
-      columns: [
-        { id: 'combined-cashBuffer', header: 'Total Cash', render: (row) => money.format(sumAccountEnd(row, cashBufferBuckets)) },
-        { id: 'combined-taxable', header: 'Taxable Investments', render: (row) => money.format(sumAccountEnd(row, taxableInvestmentBuckets)) },
-        { id: 'combined-taxDeferred', header: 'Tax-Deferred Investments', render: (row) => money.format(sumAccountEnd(row, taxDeferredInvestmentBuckets)) },
-        { id: 'combined-taxFree', header: 'Tax-Free Investments', render: (row) => money.format(sumAccountEnd(row, taxFreeInvestmentBuckets)) },
-        { id: 'combined-totalInvestments', header: 'Total Investments', render: (row) => money.format(sumAccountEnd(row, investmentBuckets)) },
-      ],
-    },
-  ];
+  const groups = buildLedgerColumns({
+    money,
+    buckets: allBuckets,
+    bucketOwnerLabels,
+    sharedBucketIds,
+    overrides,
+    personId,
+    allowOverrides,
+    onEditOverride,
+  });
 
   const visibleColumnsByGroup = groups.map((group) => (collapsed[group.key] ? [] : group.columns));
   const tintClass = (col: LedgerColumn) => (col.tintIndex === undefined ? undefined : BUCKET_TINTS[col.tintIndex]);
