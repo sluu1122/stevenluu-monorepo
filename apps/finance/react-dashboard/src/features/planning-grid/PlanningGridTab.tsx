@@ -3,7 +3,9 @@ import { AlertTriangle, FileText } from 'lucide-react';
 import { DashCard } from '../../components/DashCard';
 import { Button } from '@repo/ui/components/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
+import { Sheet, SheetContent, SheetTitle } from '@repo/ui/components/sheet';
 import { useActiveScenario } from '../../hooks/useActiveScenario';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import { useScenarios, useSaveScenario } from '../../hooks/useScenarios';
 import { useGridOverrides, useSaveOverride, useDeleteOverride } from '../../hooks/useGridOverrides';
 import { usePersonView } from '../../hooks/useLedger';
@@ -12,6 +14,7 @@ import { generateId } from '../../engine/id';
 import { PersonViewSelector } from '../../components/PersonViewSelector';
 import { DisplayCurrencyToggle } from '../../components/DisplayCurrencyToggle';
 import { LedgerTable } from './LedgerTable';
+import { LedgerYearCards } from './LedgerYearCards';
 import { FormulaBreakdownPanel } from './FormulaBreakdownPanel';
 import { OverrideEditDialog } from './OverrideEditDialog';
 import { exportGridCsv } from './exportGridCsv';
@@ -28,6 +31,7 @@ export function PlanningGridTab() {
 
   const { rows, warnings, error, person, buckets, bucketOwnerLabels, sharedBucketIds, combined, label } = usePersonView(activeScenario, overrides);
   const money = useMoney(activeScenario);
+  const isMobile = useIsMobile();
 
   // Held as a year rather than the row object, so the panel re-reads the live
   // row whenever the ledger recomputes instead of showing a stale snapshot.
@@ -54,7 +58,7 @@ export function PlanningGridTab() {
   }
 
   return (
-    <div className="flex flex-col gap-4 flex-1 min-h-0">
+    <div className="flex flex-col gap-4 lg:flex-1 lg:min-h-0">
       {error && (
         <DashCard className="border-loss/30 bg-loss-bg flex items-start gap-2.5 py-3">
           <AlertTriangle className="size-4 text-loss shrink-0 mt-0.5" />
@@ -133,39 +137,87 @@ export function PlanningGridTab() {
             </div>
           </div>
 
-          {/* Grid and breakdown share the row: the panel sits beside the grid so
-              both scroll independently, stacking below it on narrow screens. */}
-          <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-4">
-            <LedgerTable
-              money={money}
-              buckets={buckets}
-              bucketOwnerLabels={combined ? bucketOwnerLabels : undefined}
-              sharedBucketIds={sharedBucketIds}
-              rows={rows}
-              overrides={overrides}
-              personId={person?.id ?? null}
-              // A combined row's spending is the sum across everyone, so there's
-              // no single person whose override it would be - pick one person to edit it.
-              allowOverrides={!combined}
-              selectedYear={auditYear}
-              // Same revision App.tsx keys its own scroll memory off: a save
-              // bumps updatedAt, which is the signal that every number in the
-              // grid has been recomputed and a remembered offset is stale.
-              scrollMemoryKey={`${activeScenario.id}|${activeScenario.updatedAt}`}
-              onOpenAudit={(row) => setAuditYear(row.year)}
-              onEditOverride={(row) => setOverrideYear(row.year)}
-            />
-            {auditRow && (
-              <FormulaBreakdownPanel
-                row={auditRow}
-                baseCurrency={activeScenario.currency}
+          {/*
+            Grid and breakdown share the row at lg+, where the panel sits beside
+            the grid so both scroll independently. Below lg the fill-the-viewport
+            sizing is dropped entirely: the card list scrolls with <main>, whose
+            per-tab offset App.tsx already remembers, rather than owning a nested
+            scroller that would need its own memory.
+          */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:flex-1 lg:min-h-0">
+            {isMobile ? (
+              <LedgerYearCards
+                money={money}
                 buckets={buckets}
                 bucketOwnerLabels={combined ? bucketOwnerLabels : undefined}
                 sharedBucketIds={sharedBucketIds}
+                rows={rows}
+                overrides={overrides}
+                personId={person?.id ?? null}
+                allowOverrides={!combined}
+                selectedYear={auditYear}
+                onOpenAudit={(row) => setAuditYear(row.year)}
+                onEditOverride={(row) => setOverrideYear(row.year)}
+              />
+            ) : (
+              <LedgerTable
                 money={money}
-                onClose={() => setAuditYear(null)}
+                buckets={buckets}
+                bucketOwnerLabels={combined ? bucketOwnerLabels : undefined}
+                sharedBucketIds={sharedBucketIds}
+                rows={rows}
+                overrides={overrides}
+                personId={person?.id ?? null}
+                // A combined row's spending is the sum across everyone, so there's
+                // no single person whose override it would be - pick one person to edit it.
+                allowOverrides={!combined}
+                selectedYear={auditYear}
+                // Same revision App.tsx keys its own scroll memory off: a save
+                // bumps updatedAt, which is the signal that every number in the
+                // grid has been recomputed and a remembered offset is stale.
+                scrollMemoryKey={`${activeScenario.id}|${activeScenario.updatedAt}`}
+                onOpenAudit={(row) => setAuditYear(row.year)}
+                onEditOverride={(row) => setOverrideYear(row.year)}
               />
             )}
+
+            {/*
+              On mobile the panel would otherwise stack below sixty cards, which
+              is effectively off-screen - so it comes up as a bottom sheet
+              instead. Sheet's own p-6 is dropped because the panel already
+              carries its own padding.
+            */}
+            {auditRow &&
+              (isMobile ? (
+                <Sheet open onOpenChange={(open: boolean) => !open && setAuditYear(null)}>
+                  <SheetContent side="bottom" className="p-0 max-h-[85svh] flex flex-col">
+                    <SheetTitle className="sr-only">
+                      Calculation breakdown for {auditRow.year}
+                    </SheetTitle>
+                    <FormulaBreakdownPanel
+                      row={auditRow}
+                      baseCurrency={activeScenario.currency}
+                      buckets={buckets}
+                      bucketOwnerLabels={combined ? bucketOwnerLabels : undefined}
+                      sharedBucketIds={sharedBucketIds}
+                      money={money}
+                      onClose={() => setAuditYear(null)}
+                      className="border-0 rounded-none"
+                      showClose={false}
+                    />
+                  </SheetContent>
+                </Sheet>
+              ) : (
+                <FormulaBreakdownPanel
+                  row={auditRow}
+                  baseCurrency={activeScenario.currency}
+                  buckets={buckets}
+                  bucketOwnerLabels={combined ? bucketOwnerLabels : undefined}
+                  sharedBucketIds={sharedBucketIds}
+                  money={money}
+                  onClose={() => setAuditYear(null)}
+                />
+              ))}
           </div>
         </>
       )}

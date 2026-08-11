@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import { Button } from '@repo/ui/components/button';
+import { cn } from '../../lib/utils';
 import { formatCurrency } from '../../lib/format';
 import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { AccountBucket, Currency } from '../../engine/schema';
@@ -16,6 +17,13 @@ interface FormulaBreakdownPanelProps {
   sharedBucketIds?: Set<string>;
   money: MoneyFormatter;
   onClose: () => void;
+  /** Lets the mobile sheet drop the standalone panel's own border and rounding. */
+  className?: string;
+  /**
+   * False inside the mobile Sheet, which renders its own close button in the
+   * same corner - without this the two X icons sit on top of each other.
+   */
+  showClose?: boolean;
 }
 
 interface AccountFlow {
@@ -33,7 +41,17 @@ interface AccountFlow {
  * sheet - so a row's math stays on screen while you keep scrolling the grid to
  * compare it against neighbouring years.
  */
-export function FormulaBreakdownPanel({ row, baseCurrency, buckets, bucketOwnerLabels, sharedBucketIds, money, onClose }: FormulaBreakdownPanelProps) {
+export function FormulaBreakdownPanel({
+  row,
+  baseCurrency,
+  buckets,
+  bucketOwnerLabels,
+  sharedBucketIds,
+  money,
+  onClose,
+  className,
+  showClose = true,
+}: FormulaBreakdownPanelProps) {
   // Only accounts that actually moved. A household with a dozen accounts
   // touches two or three in a typical year, and listing the dormant ones would
   // bury the ones that matter.
@@ -53,7 +71,7 @@ export function FormulaBreakdownPanel({ row, baseCurrency, buckets, bucketOwnerL
   const totalIn = flows.reduce((sum, f) => sum + f.contribution, 0);
 
   return (
-    <aside className="border border-edge rounded-[14px] bg-surface flex flex-col min-h-0 w-full lg:w-[380px] lg:shrink-0">
+    <aside className={cn('border border-edge rounded-[14px] bg-surface flex flex-col min-h-0 w-full lg:w-[380px] lg:shrink-0', className)}>
       <div className="flex items-start justify-between gap-2 px-4 py-3 border-b border-edge shrink-0">
         <div className="min-w-0">
           <h3 className="text-[14px] font-semibold text-ink">
@@ -70,9 +88,11 @@ export function FormulaBreakdownPanel({ row, baseCurrency, buckets, bucketOwnerL
             {money.isConverted && <span className="block mt-0.5">Shown in {baseCurrency}, the currency this plan is calculated in.</span>}
           </p>
         </div>
-        <Button type="button" variant="ghost" size="icon" className="cursor-pointer size-7 shrink-0 text-dim hover:text-ink" onClick={onClose} aria-label="Close breakdown">
-          <X className="size-4" />
-        </Button>
+        {showClose && (
+          <Button type="button" variant="ghost" size="icon" className="cursor-pointer size-9 sm:size-7 shrink-0 text-dim hover:text-ink" onClick={onClose} aria-label="Close breakdown">
+            <X className="size-4" />
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 flex flex-col gap-3">
