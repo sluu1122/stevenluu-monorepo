@@ -16,11 +16,15 @@ import { useScenarios } from './hooks/useScenarios';
 import { useBodyPointerEventsWatchdog } from './hooks/useBodyPointerEventsWatchdog';
 import { restoreScrollPosition } from './lib/restoreScroll';
 
+// `short` is what renders below sm. The four full labels need ~518px of pill,
+// which a 375px phone can't give them - and a scrolling tab strip hides the
+// last two tabs behind a swipe nobody knows to make. The short set fits on one
+// line, so no tab is ever off-screen.
 const TABS = [
-  { value: 'setup', label: 'Scenario Setup' },
-  { value: 'grid', label: 'Planning Grid' },
-  { value: 'charts', label: 'Charts & Analytics' },
-  { value: 'summary', label: 'Client Summary' },
+  { value: 'setup', label: 'Scenario Setup', short: 'Setup' },
+  { value: 'grid', label: 'Planning Grid', short: 'Grid' },
+  { value: 'charts', label: 'Charts & Analytics', short: 'Charts' },
+  { value: 'summary', label: 'Client Summary', short: 'Summary' },
 ] as const;
 
 type TabValue = (typeof TABS)[number]['value'];
@@ -117,7 +121,10 @@ function AppShell() {
         className="relative flex-1 min-w-0 min-h-0 flex flex-col print:h-auto"
       >
         {/* Floating, centered pill - no backdrop, so it never hides content behind it except its own small footprint. */}
-        <div className="pointer-events-none absolute inset-x-0 top-4 sm:top-[26px] z-30 flex justify-center px-14 print:hidden">
+        {/* Asymmetric padding below sm: the only thing needing clearance is the
+            nav toggle on the LEFT, so the old symmetric px-14 was throwing away
+            56px on the right for nothing - which is most of a tab. */}
+        <div className="pointer-events-none absolute inset-x-0 top-4 sm:top-[26px] z-30 flex justify-center pl-[60px] pr-3 sm:px-14 print:hidden">
           {/*
             overflow-x-auto alone leaves overflow-y at its default 'visible', but a
             non-visible overflow-x forces the other axis to compute as 'auto' too -
@@ -128,7 +135,8 @@ function AppShell() {
           <TabsList className="pointer-events-auto shadow-md border border-edge justify-start overflow-x-auto overflow-y-hidden max-w-full">
             {TABS.map((tab) => (
               <TabsTrigger key={tab.value} value={tab.value} className="cursor-pointer">
-                {tab.label}
+                <span className="sm:hidden">{tab.short}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
@@ -142,7 +150,7 @@ function AppShell() {
             size="icon"
             onClick={() => setNavOpen(true)}
             aria-label="Open navigation"
-            className="cursor-pointer w-9 h-9 rounded-[9px] text-ink bg-surface-raised shadow-md hover:bg-surface-pressed hover:text-ink"
+            className="cursor-pointer w-11 h-11 rounded-[12px] text-ink bg-surface-raised shadow-md hover:bg-surface-pressed hover:text-ink"
           >
             <Menu className="size-[18px]" />
           </Button>
@@ -150,7 +158,7 @@ function AppShell() {
 
         <main
           ref={mainRef}
-          className="flex-1 min-h-0 pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8 pb-10 flex flex-col overflow-y-auto overscroll-contain print:overflow-visible print:h-auto print:p-0"
+          className="flex-1 min-h-0 pt-20 sm:pt-24 px-4 sm:px-6 lg:px-8 pb-[max(2.5rem,env(safe-area-inset-bottom))] flex flex-col overflow-y-auto overscroll-contain print:overflow-visible print:h-auto print:p-0"
         >
           {/*
             Setup stays mounted while you're on another tab, so coming back
@@ -162,7 +170,10 @@ function AppShell() {
           <TabsContent value="setup" forceMount className="max-w-[1240px] w-full mx-auto data-[state=inactive]:hidden">
             <ScenarioSetupTab />
           </TabsContent>
-          <TabsContent value="grid" className="flex-1 min-h-0 flex flex-col">
+          {/* Fills the viewport only at lg+, where the Planning Grid is a table
+              with its own internal scroller. Below that it's a card list that
+              scrolls with <main> like every other tab. */}
+          <TabsContent value="grid" className="flex flex-col lg:flex-1 lg:min-h-0">
             <PlanningGridTab />
           </TabsContent>
           <TabsContent value="charts" className="max-w-[1240px] w-full mx-auto">
