@@ -7,6 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/components/pop
 import { Sheet, SheetContent, SheetTitle } from '@repo/ui/components/sheet';
 import { Separator } from '@repo/ui/components/separator';
 import { cn } from '../lib/utils';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { ThemeToggle } from './ThemeToggle';
 import { ScenarioSwitcher } from './ScenarioSwitcher';
 import { AboutDialog } from './AboutDialog';
@@ -233,19 +234,13 @@ function CollapsedSidebarContent({ onExpand }: { onExpand: () => void }) {
 export function Sidebar({ open, onClose, activeLabel, collapsed, onToggleCollapsed }: SidebarProps) {
   // The Sheet only exists below lg; if the viewport crosses into lg while it's
   // open, close it so the portal-rendered overlay doesn't linger on desktop.
+  // Reading the query as derived state collapses what used to be two branches
+  // here (already-desktop on open, and crossing into desktop while open) into
+  // the one condition that actually matters.
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
   useEffect(() => {
-    if (!open) return;
-    const mq = window.matchMedia('(min-width: 1024px)');
-    if (mq.matches) {
-      onClose();
-      return;
-    }
-    const onChange = (e: MediaQueryListEvent) => {
-      if (e.matches) onClose();
-    };
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, [open, onClose]);
+    if (open && isDesktop) onClose();
+  }, [open, isDesktop, onClose]);
 
   // A body-pointer-events-stuck safety net used to live here as a
   // Sidebar-specific effect. It's now a single app-wide watchdog
