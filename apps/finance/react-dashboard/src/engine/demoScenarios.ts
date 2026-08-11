@@ -2,9 +2,28 @@ import { createDefaultPersonPlan, createDefaultScenario, deriveReplenishmentOrde
 import { createBlankAccountBucket } from './accountKindMeta';
 import { getDefaultFederalTable } from './taxBrackets';
 import { CANADIAN_TAX_TABLES, US_STATE_TAX_TABLES } from './regionalTaxTables';
-import type { Scenario } from './schema';
+import type { PersonPlan, Scenario } from './schema';
 
 const CURRENT_YEAR = new Date().getFullYear();
+
+/**
+ * Point a person's leftover income at their taxable investment account instead
+ * of leaving `surplusDestinationAccountBucketId` null, which banks it all into
+ * the cash buffer at cash yields (see `createDefaultPersonPlan`). Every demo
+ * person here out-earns their spending by a wide margin, so the default would
+ * strand decades of savings in a savings account and make the projections look
+ * far worse than the inputs imply.
+ *
+ * Keyed off the scenario's country rather than whichever taxable bucket comes
+ * first in the array: the cross-border person holds both a US brokerage and a
+ * CA non-registered account, and a Canadian resident would be contributing to
+ * the Canadian one.
+ */
+function bankSurplusIntoTaxableInvestments(person: PersonPlan, country: 'US' | 'CA'): void {
+  const kind = country === 'US' ? 'US_TAXABLE_BROKERAGE' : 'CA_NON_REGISTERED';
+  const taxable = person.accountBuckets.find((bucket) => bucket.kind === kind);
+  if (taxable) person.surplusDestinationAccountBucketId = taxable.id;
+}
 
 /**
  * Three scenarios exercising the engine's main axes - a single US filer, a
@@ -25,6 +44,7 @@ function createUsSingleDemoScenario(): Scenario {
   person.annualIncomeNominal = 95_000;
   person.incomeGrowthRatePct = 2.5;
   person.retirementStartYear = person.birthYear + 65;
+  bankSurplusIntoTaxableInvestments(person, 'US');
 
   // California, so the demo actually exercises a graduated state bracket walk
   // instead of the no-tax Texas default.
@@ -45,6 +65,9 @@ function createUsCoupleDemoScenario(): Scenario {
   person2.annualIncomeNominal = 85_000;
   person2.incomeGrowthRatePct = 2.5;
   person2.retirementStartYear = person2.birthYear + 65;
+
+  bankSurplusIntoTaxableInvestments(person1, 'US');
+  bankSurplusIntoTaxableInvestments(person2, 'US');
 
   scenario.persons = [person1, person2];
   scenario.householdSpendingRealAtRetirement = 85_000;
@@ -93,6 +116,11 @@ function createCrossBorderCoupleDemoScenario(): Scenario {
   // CPP is earnings-based - a spouse who never worked draws only a token
   // amount; OAS is residency-based and stays at the default full rate.
   person2.benefits = person2.benefits.map((benefit) => (benefit.type === 'CA_CPP' ? { ...benefit, monthlyBenefitAtClaimAge: 150 } : benefit));
+
+  // Person 2 has no income of their own, so no surplus of their own to bank -
+  // set anyway so the pair stay consistent if someone gives them an income.
+  bankSurplusIntoTaxableInvestments(person1, 'CA');
+  bankSurplusIntoTaxableInvestments(person2, 'CA');
 
   scenario.persons = [person1, person2];
   scenario.householdSpendingRealAtRetirement = 70_000;
