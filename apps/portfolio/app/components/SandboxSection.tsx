@@ -2,25 +2,25 @@ import { Reveal } from './Reveal';
 
 const sandboxes = [
   {
-    href: process.env.NEXT_PUBLIC_ANGULAR_SANDBOX_URL || 'https://angular.stevenluu.com',
+    href: process.env.NEXT_PUBLIC_HEALTHCARE_SANDBOX_URL || 'https://healthcare.stevenluu.com',
     monogram: 'Ng',
     monogramStyle: { background: 'linear-gradient(160deg,#FFF0F2,#FCE3E6)', border: '1px solid #F6D7DB', color: 'var(--color-angular-red)' },
     hoverClass: 'hover:border-angular-hover-border',
     title: 'Enterprise Angular Showcase',
     description: 'Large-scale architecture patterns for complex, data-dense enterprise applications.',
     tags: ['Zoneless Angular', 'NgRx SignalStore'],
-    domain: 'angular.stevenluu.com',
+    domain: 'healthcare.stevenluu.com',
     delay: 0,
   },
   {
-    href: process.env.NEXT_PUBLIC_REACT_SANDBOX_URL || 'https://react.stevenluu.com',
+    href: process.env.NEXT_PUBLIC_FINANCE_SANDBOX_URL || 'https://finance.stevenluu.com',
     monogram: 'Re',
     monogramStyle: { background: 'linear-gradient(160deg,#EBF8FD,#DDF0F8)', border: '1px solid #CDE9F3', color: 'var(--color-react-blue)' },
     hoverClass: 'hover:border-react-hover-border',
     title: 'High-Performance React Showcase',
     description: 'Bleeding-edge React patterns tuned for speed, concurrency, and data fetching.',
     tags: ['React 19', 'Vite', 'TanStack Query'],
-    domain: 'react.stevenluu.com',
+    domain: 'finance.stevenluu.com',
     delay: 100,
   },
 ];

@@ -85,12 +85,16 @@ its **internal** container port (not the published host port):
 | ------------------------------- | ---- | ------------------------------ |
 | `stevenluu.com` (apex, blank)   | HTTP | `http://portfolio:3000`        |
 | `www.stevenluu.com`             | HTTP | `http://portfolio:3000`        |
-| `angular.stevenluu.com`         | HTTP | `http://angular-dashboard:80`  |
-| `react.stevenluu.com`           | HTTP | `http://react-dashboard:80`    |
+| `healthcare.stevenluu.com`      | HTTP | `http://angular-dashboard:80`  |
+| `finance.stevenluu.com`         | HTTP | `http://react-dashboard:80`    |
 | `ai-api.stevenluu.com`          | HTTP | `http://ai-api:3001`           |
 | `cpt-api.stevenluu.com`         | HTTP | `http://cpt-api:3002`          |
 | `icd-api.stevenluu.com`         | HTTP | `http://icd-api:3003`          |
 | `patients-api.stevenluu.com`    | HTTP | `http://patients-api:3004`     |
+
+`angular.stevenluu.com` and `react.stevenluu.com` are the two original
+hostnames, kept alive as permanent redirects to the two rows above rather than
+deleted — see [Renaming a public hostname with a permanent redirect](#renaming-a-public-hostname-with-a-permanent-redirect).
 
 Notes:
 - For the apex, set the hostname's **Domain** to `stevenluu.com` and leave the
@@ -124,8 +128,8 @@ Once Cloudflare shows the site **Active**:
 
 1. From your **phone on cellular** (off home wifi), load:
    - `https://stevenluu.com` and `https://www.stevenluu.com` → portfolio
-   - `https://angular.stevenluu.com` → dashboard, exercise the worklist + AI summary
-   - `https://react.stevenluu.com` → finance dashboard
+   - `https://healthcare.stevenluu.com` → dashboard, exercise the worklist + AI summary
+   - `https://finance.stevenluu.com` → finance dashboard
 2. Confirm the padlock shows a **Cloudflare-issued** certificate (Universal SSL),
    not the old Let's Encrypt one.
 3. Confirm your IP is hidden: run `nslookup stevenluu.com` — it should now return
@@ -151,6 +155,41 @@ required:
    `docker-compose.nas.yml` (they're no longer reached from the host — the tunnel
    uses the internal network). Keeping them is harmless; removing them is tidier
    and closes even LAN-side access to the raw app ports.
+
+## Renaming a public hostname with a permanent redirect
+
+Used once already: `angular.stevenluu.com` → `healthcare.stevenluu.com` and
+`react.stevenluu.com` → `finance.stevenluu.com`, when the addresses were
+renamed to describe the apps rather than the frontend framework each happens
+to use. Follow the same steps for any future rename that needs the old
+address to keep working.
+
+1. **Add a new public hostname** (Public Hostname tab, same as any other
+   route) pointing the new name at the **same** internal service the old name
+   already uses. Both names now resolve to the same container.
+2. **Add a Redirect Rule** — dashboard **Rules → Redirect Rules → Create
+   rule → Single Redirect** (not the Zero Trust / Tunnel screens):
+   - When incoming requests match: custom filter expression
+     `(http.host eq "old.stevenluu.com")`
+   - Then: **Dynamic** redirect, expression
+     `concat("https://new.stevenluu.com", http.request.uri.path)`, with
+     **preserve query string** on, status code **301**.
+
+   Redirect Rules run at Cloudflare's edge before a request is proxied to any
+   origin — including a Tunnel-routed one — so the rule always wins over the
+   old hostname's still-configured route. That's deliberate: it means step 1's
+   old route (and its DNS record) never needs touching or deleting, which
+   keeps this fully reversible by just removing the Redirect Rule. Two rules
+   comfortably fits the Free plan's limit.
+3. **Update `ALLOWED_ORIGINS`** in the NAS `.env` if the renamed app calls any
+   of the Express APIs — swap in the new origin. The old origin doesn't need
+   to stay in the comma-separated list: since the redirect fires before any
+   HTML/JS loads, the browser never actually executes the app's JS from the
+   old origin again, so its API calls will only ever originate from the new
+   one. Restart the project in Container Manager to pick up the change.
+4. **Verify**: `curl -I https://old.stevenluu.com/` should return `301` with
+   `location: https://new.stevenluu.com/`, and the new hostname should load
+   and function identically to how the old one did.
 
 ## Rollback
 

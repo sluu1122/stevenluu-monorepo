@@ -34,8 +34,8 @@ arch mismatch is the most common "works here, fails on the NAS" failure mode.
 
 ```powershell
 docker buildx build --platform linux/amd64 -f apps/portfolio/Dockerfile `
-  --build-arg NEXT_PUBLIC_ANGULAR_SANDBOX_URL=https://angular.stevenluu.com `
-  --build-arg NEXT_PUBLIC_REACT_SANDBOX_URL=https://react.stevenluu.com `
+  --build-arg NEXT_PUBLIC_HEALTHCARE_SANDBOX_URL=https://healthcare.stevenluu.com `
+  --build-arg NEXT_PUBLIC_FINANCE_SANDBOX_URL=https://finance.stevenluu.com `
   -t ghcr.io/sluu1122/portfolio:latest --push .
 ```
 
@@ -73,12 +73,17 @@ public hostname to a Docker service on the internal `appnet` network:
 | Public hostname | → | Service |
 |---|---|---|
 | `stevenluu.com`, `www.stevenluu.com` | | `portfolio:3000` |
-| `angular.stevenluu.com` | | `angular-dashboard:80` |
-| `react.stevenluu.com` | | `react-dashboard:80` |
+| `healthcare.stevenluu.com` | | `angular-dashboard:80` |
+| `finance.stevenluu.com` | | `react-dashboard:80` |
 | `ai-api.stevenluu.com` | | `ai-api:3001` |
 | `cpt-api.stevenluu.com` | | `cpt-api:3002` |
 | `icd-api.stevenluu.com` | | `icd-api:3003` |
 | `patients-api.stevenluu.com` | | `patients-api:3004` |
+
+`angular.stevenluu.com` and `react.stevenluu.com` are the old addresses these
+were renamed from — they still resolve, but as a 301 to the hostnames above
+rather than a direct route. See [cloudflare-tunnel.md](cloudflare-tunnel.md#renaming-a-public-hostname-with-a-permanent-redirect)
+for how that's set up.
 
 The tunnel token lives in the NAS `.env` as `CLOUDFLARE_TUNNEL_TOKEN` (gitignored).
 No DSM reverse proxy, DDNS, Let's Encrypt cert, or router port-forwarding is needed —
@@ -89,8 +94,8 @@ proxied DNS records automatically.
 
 - Container Manager shows all 11 containers running (or exited-0 for `ollama-init`),
   and the tunnel shows **Healthy** in Cloudflare (Zero Trust → Networks → Tunnels).
-- `https://stevenluu.com`, `https://angular.stevenluu.com`, and
-  `https://react.stevenluu.com` all load over HTTPS with a valid Cloudflare cert.
+- `https://stevenluu.com`, `https://healthcare.stevenluu.com`, and
+  `https://finance.stevenluu.com` all load over HTTPS with a valid Cloudflare cert.
 - On the live Angular site, open devtools → Network tab → confirm a request to
   `assets/config.json` returns real public API URLs (not `localhost`, not literal
   `${CPT_API_URL}` placeholder text — the latter means the nginx entrypoint script

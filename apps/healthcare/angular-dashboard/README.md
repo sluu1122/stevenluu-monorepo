@@ -2,7 +2,7 @@
 
 Clinical operations dashboard built with Angular 22 and PrimeNG. Covers the core healthcare revenue-cycle workflow: patient intake, insurance authorization, and case management.
 
-**Live:** https://angular.stevenluu.com
+**Live:** https://healthcare.stevenluu.com
 **Dev URL:** http://localhost:4200
 
 ## Features

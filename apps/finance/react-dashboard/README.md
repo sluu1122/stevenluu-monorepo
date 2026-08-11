@@ -2,7 +2,7 @@
 
 A deterministic, dual-country (US/Canada) retirement and financial-scenario planning engine — year-by-year ledger projections with tax-aware withdrawal waterfalls, cash-buffer rules, cell-level overrides with a formula-audit trail, and scenario comparison. All calculation is pure TypeScript running locally in the browser; there is no AI/LLM involved in any projection.
 
-**Live:** https://react.stevenluu.com
+**Live:** https://finance.stevenluu.com
 **Dev URL:** http://localhost:5173
 
 ## Features

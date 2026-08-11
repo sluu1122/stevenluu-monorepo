@@ -5,8 +5,8 @@ A personal full-stack monorepo built with Turborepo. Contains a Next.js portfoli
 **Live** — self-hosted with Docker on a Synology NAS:
 
 - [stevenluu.com](https://stevenluu.com) — portfolio
-- [angular.stevenluu.com](https://angular.stevenluu.com) — clinical operations dashboard
-- [react.stevenluu.com](https://react.stevenluu.com) — finance sandbox
+- [healthcare.stevenluu.com](https://healthcare.stevenluu.com) — clinical operations dashboard
+- [finance.stevenluu.com](https://finance.stevenluu.com) — finance sandbox
 
 ## Apps
 

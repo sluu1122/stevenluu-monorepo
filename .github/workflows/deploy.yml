@@ -36,8 +36,8 @@ jobs:
           - name: portfolio
             dockerfile: apps/portfolio/Dockerfile
             build-args: |
-              NEXT_PUBLIC_ANGULAR_SANDBOX_URL=https://angular.stevenluu.com
-              NEXT_PUBLIC_REACT_SANDBOX_URL=https://react.stevenluu.com
+              NEXT_PUBLIC_HEALTHCARE_SANDBOX_URL=https://healthcare.stevenluu.com
+              NEXT_PUBLIC_FINANCE_SANDBOX_URL=https://finance.stevenluu.com
           - name: react-dashboard
             dockerfile: apps/finance/react-dashboard/Dockerfile
           - name: angular-dashboard
