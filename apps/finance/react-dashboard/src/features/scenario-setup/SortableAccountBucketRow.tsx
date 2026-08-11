@@ -90,7 +90,7 @@ export function SortableAccountBucketRow({
     >
       <button
         type="button"
-        className="mt-2.5 shrink-0 cursor-grab active:cursor-grabbing touch-none text-dim hover:text-ink"
+        className="mt-1 shrink-0 p-2.5 -m-1.5 cursor-grab active:cursor-grabbing touch-none text-dim hover:text-ink"
         aria-label={`Drag to reorder ${bucket.label}`}
         {...attributes}
         {...listeners}

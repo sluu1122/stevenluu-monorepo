@@ -7,6 +7,7 @@ import { CompatLine, CompatXAxis, CompatYAxis } from '@repo/ui/lib/rechartsCompa
 import { buildScenarioLedger } from '../../engine/ledger';
 import { combineLedgers } from '../../engine/combineLedgers';
 import { getPrimaryPerson } from '../../engine/household';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import { formatCompactCurrency } from '../../lib/format';
 import { useMoney } from '../../hooks/useDisplayCurrency';
 import type { Scenario } from '../../engine/schema';
@@ -24,6 +25,7 @@ interface ScenarioComparisonToggleProps {
 export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: ScenarioComparisonToggleProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const money = useMoney(activeScenario);
+  const isMobile = useIsMobile();
 
   if (otherScenarios.length === 0) return null;
 
@@ -121,7 +123,7 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: Sce
           <LineChart data={data} margin={{ left: 4, right: 4, top: 8, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
             <CompatXAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
-            <CompatYAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
+            <CompatYAxis tickLine={false} axisLine={false} tickMargin={8} width={isMobile ? 40 : 64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
             <ChartTooltip content={renderTooltip} />
             <ChartLegend content={<ChartLegendContent />} />
             {series.map((s) => (

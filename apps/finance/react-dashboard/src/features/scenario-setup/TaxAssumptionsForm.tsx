@@ -63,7 +63,7 @@ export function TaxAssumptionsForm() {
         Federal brackets seeded from {country === 'US' ? 'Tax Foundation' : 'CRA'} 2026 figures - rates are editable. {regionNoun} tax uses that
         region's own progressive table, with its basic personal amount granted as a credit.
       </p>
-      <div className="grid grid-cols-2 gap-4 mb-5 max-w-[420px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5 max-w-[420px]">
         {country === 'US' && (
           <div className="space-y-1.5">
             <Label>Filing status</Label>

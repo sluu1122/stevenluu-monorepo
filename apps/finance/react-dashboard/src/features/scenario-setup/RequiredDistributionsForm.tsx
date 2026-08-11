@@ -46,7 +46,7 @@ export function RequiredDistributionsForm({ personIndex }: { personIndex: number
           </div>
 
           {rule.enabled && (
-            <div className="grid grid-cols-2 gap-4 max-w-[520px]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[520px]">
               <div className="space-y-1.5">
                 <Label>Start age</Label>
                 <Input

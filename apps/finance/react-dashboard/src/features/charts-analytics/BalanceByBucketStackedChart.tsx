@@ -1,6 +1,7 @@
 import { AreaChart, CartesianGrid } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@repo/ui/components/chart';
 import { CompatArea, CompatXAxis, CompatYAxis } from '@repo/ui/lib/rechartsCompat';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import { formatCompactCurrency } from '../../lib/format';
 import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { AccountBucket } from '../../engine/schema';
@@ -30,6 +31,8 @@ interface BalanceByBucketStackedChartProps {
 }
 
 export function BalanceByBucketStackedChart({ rows, buckets, money, bucketOwnerLabels }: BalanceByBucketStackedChartProps) {
+  const isMobile = useIsMobile();
+
   function seriesLabel(bucket: AccountBucket) {
     const owner = bucketOwnerLabels?.[bucket.id];
     return owner ? `${owner} · ${bucket.label}` : bucket.label;
@@ -99,7 +102,7 @@ export function BalanceByBucketStackedChart({ rows, buckets, money, bucketOwnerL
       <AreaChart data={data} margin={{ left: 4, right: 4, top: 8, bottom: 0 }}>
         <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
         <CompatXAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
-        <CompatYAxis tickLine={false} axisLine={false} tickMargin={8} width={64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
+        <CompatYAxis tickLine={false} axisLine={false} tickMargin={8} width={isMobile ? 40 : 64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
         <ChartTooltip content={renderTooltip} />
         <ChartLegend content={<ChartLegendContent />} />
         {series.map((s) => (

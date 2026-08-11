@@ -32,7 +32,7 @@ function SortableKind({ kind, index, included, accounts, onToggle }: SortableKin
     >
       <button
         type="button"
-        className="mt-0.5 cursor-grab active:cursor-grabbing touch-none text-dim hover:text-ink"
+        className="p-2.5 -m-1.5 cursor-grab active:cursor-grabbing touch-none text-dim hover:text-ink"
         aria-label={`Drag to reorder ${meta.label} in the withdrawal order`}
         {...attributes}
         {...listeners}

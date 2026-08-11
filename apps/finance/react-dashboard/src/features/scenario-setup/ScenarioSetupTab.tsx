@@ -113,8 +113,17 @@ export function ScenarioSetupTab() {
         a hidden tab's values registered, so switching tabs never drops edits
         and a single Save covers the whole scenario.
       */}
-      <form onSubmit={onSubmit} className="flex flex-col gap-5">
-        <div className="fixed bottom-6 right-6 z-40 print:hidden flex items-center gap-3 rounded-full border border-edge bg-surface-raised shadow-lg px-3 py-2">
+      {/* pb on the form, not margin on the pill: the pill is `fixed`, so it's
+          out of flow and can't push anything. Without the padding it sits on
+          top of the last field on a phone. */}
+      <form onSubmit={onSubmit} className="flex flex-col gap-5 pb-20 sm:pb-0">
+        {/*
+          Stays `fixed` rather than `sticky` - <main> is the scroll container,
+          not the document, so sticky would resolve against the wrong box.
+          Spanning to left-4 below sm gives the "n fields need attention" text
+          room instead of letting it squeeze the button.
+        */}
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:bottom-6 sm:right-6 z-40 print:hidden flex items-center justify-end gap-3 rounded-full border border-edge bg-surface-raised shadow-lg px-3 py-2">
           {invalidFieldCount > 0 && (
             <span className="text-[13px] text-loss pl-1">
               {invalidFieldCount} field{invalidFieldCount > 1 ? 's need' : ' needs'} attention
@@ -127,7 +136,10 @@ export function ScenarioSetupTab() {
 
         <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="flex flex-col gap-5">
           <div className="flex items-center gap-2 flex-wrap">
-            <TabsList className="justify-start overflow-x-auto">
+            {/* Wrap rather than scroll: TabsList is a fixed h-10, so an
+                overflowing scrollbar was rendering inside that 40px and
+                clipping the trigger text. h-auto lets a second row exist. */}
+            <TabsList className="justify-start flex-wrap h-auto">
               <TabsTrigger value={SCENARIO_TAB} className="cursor-pointer">
                 Household
               </TabsTrigger>

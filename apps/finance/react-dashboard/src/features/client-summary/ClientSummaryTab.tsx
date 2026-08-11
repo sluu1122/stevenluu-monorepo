@@ -35,8 +35,8 @@ export function ClientSummaryTab() {
     <div className="flex flex-col gap-5">
       <PersonViewSelector persons={activeScenario.persons} selectedPerson={person} />
 
-      <div className="flex items-center justify-between gap-3 print:hidden">
-        <div>
+      <div className="flex items-center justify-between gap-3 flex-wrap print:hidden">
+        <div className="min-w-0">
           <h2 className="text-[17px] font-semibold text-ink">
             {activeScenario.name}
             {showsMultiplePersons ? ` - ${label}` : ''}

@@ -109,7 +109,7 @@ export function IncomeAndBenefitsForm({ personIndex }: { personIndex: number }) 
                   <Trash2 className="size-4 text-loss" />
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-3 max-w-[420px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-[420px]">
                 <div className="space-y-1.5">
                   <Label>Claim age</Label>
                   <Input

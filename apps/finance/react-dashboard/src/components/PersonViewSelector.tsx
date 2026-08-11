@@ -34,14 +34,17 @@ export function PersonViewSelector({ persons, selectedPerson, onRetirementYearCh
     onRetirementYearChange(base + delta);
   }
 
+  // No shrink-0 here: it stopped this row ever being squeezed, which meant its
+  // own flex-wrap never triggered and the whole selector (~700px with two
+  // people) overflowed instead of wrapping. Both callers already wrap.
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 shrink-0 print:hidden">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 min-w-0 print:hidden">
       {hasMultiplePersons && (
         <>
           <div className="flex items-center gap-2">
             <Label className="!mt-0 whitespace-nowrap text-[12.5px] text-dim">Showing</Label>
             <Select value={selectedPerson?.id ?? ''} onValueChange={setSelectedPersonId}>
-              <SelectTrigger className="cursor-pointer w-[180px]">
+              <SelectTrigger className="cursor-pointer w-full max-w-[180px] sm:w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -63,7 +66,7 @@ export function PersonViewSelector({ persons, selectedPerson, onRetirementYearCh
       {onRetirementYearChange && (
         <div className="flex items-center gap-2 sm:ml-auto">
           <Label className="!mt-0 whitespace-nowrap text-[12.5px] text-dim">Retirement year</Label>
-          <Button type="button" variant="ghost" size="icon" className="size-7 cursor-pointer" onClick={() => step(-1)} aria-label="Move retirement year earlier">
+          <Button type="button" variant="ghost" size="icon" className="size-9 sm:size-7 cursor-pointer" onClick={() => step(-1)} aria-label="Move retirement year earlier">
             <Minus className="size-3.5" />
           </Button>
           <Input
@@ -73,7 +76,7 @@ export function PersonViewSelector({ persons, selectedPerson, onRetirementYearCh
             onChange={(e) => onRetirementYearChange(e.target.value === '' ? null : Math.round(Number(e.target.value)))}
             className="w-24 text-center"
           />
-          <Button type="button" variant="ghost" size="icon" className="size-7 cursor-pointer" onClick={() => step(1)} aria-label="Move retirement year later">
+          <Button type="button" variant="ghost" size="icon" className="size-9 sm:size-7 cursor-pointer" onClick={() => step(1)} aria-label="Move retirement year later">
             <Plus className="size-3.5" />
           </Button>
         </div>

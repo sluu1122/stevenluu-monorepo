@@ -28,7 +28,7 @@ export function TaxableAccountTaxationForm() {
 
       {enabled && (
         <>
-          <div className="grid grid-cols-2 gap-4 max-w-[420px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[420px]">
             <div className="space-y-1.5">
               <Label>Annual distribution yield %</Label>
               <Input type="number" step="0.1" {...register('taxableAccountTaxation.annualDistributionYieldPct', { valueAsNumber: true })} />

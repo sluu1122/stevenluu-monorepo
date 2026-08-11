@@ -24,11 +24,11 @@ function SortableSource({ bucket, index, included, isShared, onToggle }: Sortabl
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn('flex items-center gap-2 px-3 py-2 rounded-[9px] bg-surface-muted text-[13px] text-ink', isDragging && 'opacity-50 relative z-10')}
+      className={cn('flex flex-wrap items-center gap-2 px-3 py-2 rounded-[9px] bg-surface-muted text-[13px] text-ink', isDragging && 'opacity-50 relative z-10')}
     >
       <button
         type="button"
-        className="cursor-grab active:cursor-grabbing touch-none text-dim hover:text-ink"
+        className="p-2.5 -m-1.5 cursor-grab active:cursor-grabbing touch-none text-dim hover:text-ink"
         aria-label={`Drag to reorder ${bucket.label} in the replenishment order`}
         {...attributes}
         {...listeners}
@@ -36,7 +36,7 @@ function SortableSource({ bucket, index, included, isShared, onToggle }: Sortabl
         <GripVertical className="size-4" />
       </button>
       <Checkbox checked={included} onCheckedChange={(checked: boolean) => onToggle(checked)} aria-label={`Use ${bucket.label} to replenish cash`} />
-      <span className={cn(!included && 'text-dim line-through')}>
+      <span className={cn('min-w-0', !included && 'text-dim line-through')}>
         {included ? `${index + 1}. ` : ''}
         {bucket.label}
       </span>
