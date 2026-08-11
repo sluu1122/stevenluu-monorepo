@@ -1,4 +1,5 @@
 import { Controller, useFormContext } from 'react-hook-form';
+import { Info } from 'lucide-react';
 import { DashCard } from '../../components/DashCard';
 import { Input } from '@repo/ui/components/input';
 import { Label } from '@repo/ui/components/label';
@@ -12,6 +13,13 @@ export function PersonDetailsForm({ personIndex }: { personIndex: number }) {
   const sharedBuckets = watch('sharedAccountBuckets') ?? [];
   const surplusDestinationId = watch(`persons.${personIndex}.surplusDestinationAccountBucketId`);
   const ownCashBucket = ownBuckets.find((b) => b.isCashBuffer);
+
+  // Deliberately keyed off form state alone rather than the projected surplus:
+  // the ledger reflects the last *saved* scenario, so a magnitude threshold
+  // would lag whatever the user is typing right now by a full save. Anyone
+  // earning with no destination set is banking surplus to cash regardless -
+  // only the size of the effect is unknown, so this informs rather than alarms.
+  const surplusFallsBackToCash = surplusDestinationId == null && (watch(`persons.${personIndex}.annualIncomeNominal`) ?? 0) > 0;
 
   return (
     <DashCard>
@@ -95,6 +103,16 @@ export function PersonDetailsForm({ personIndex }: { personIndex: number }) {
             Where money left over after this person's spending and tax goes each year. Point it at a shared account to have their earnings fund the
             household.
           </p>
+          {surplusFallsBackToCash && (
+            <p className="flex items-start gap-1.5 text-[11.5px] text-indigo">
+              <Info className="size-3.5 shrink-0 mt-[1px]" />
+              <span>
+                Left on the default, this surplus piles up in {ownCashBucket ? ownCashBucket.label : 'the cash buffer'} at cash returns instead of
+                being invested, which compounds into a large difference over a full career. Pick an investment account if the money would really be
+                invested.
+              </span>
+            </p>
+          )}
         </div>
       </div>
     </DashCard>
