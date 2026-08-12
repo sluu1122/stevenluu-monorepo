@@ -11,6 +11,21 @@ import { Area, Legend, Line, Tooltip, XAxis, YAxis } from "recharts"
  * commit that pinned this version for the full story). Re-exported here as
  * plain ComponentType so JSX usage type-checks; this only patches the
  * compile-time type, not the actual rendered output.
+ *
+ * Retested against recharts 3.10.1 on 2026-08-12: still broken, so the pin
+ * stays. Same source and same version rendered fully under `vite dev` and
+ * emitted only recharts-responsive-container / recharts-wrapper - no
+ * surface, no marks, no console error - under `vite build`, which is the
+ * original bug unchanged. ResponsiveContainer's initialDimension default of
+ * {width: -1, height: -1} was ruled out as the cause. The full port (this
+ * file deleted, real components imported, tooltip renderers moved to
+ * TooltipContentProps) type-checks cleanly and is kept on the `recharts-v3`
+ * branch, so a future retry is a rebase rather than a rewrite - check
+ * whether the blank-chart bug is fixed BEFORE redoing any of that work.
+ *
+ * Note for that retry: `npx shadcn@latest add chart` reinstalls recharts v2
+ * and ships a v2-targeted chart.tsx, so running the CLI mid-upgrade silently
+ * downgrades packages/ui.
  */
 function asComponent<P>(component: unknown): ComponentType<P> {
   return component as ComponentType<P>
