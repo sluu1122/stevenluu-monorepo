@@ -130,4 +130,92 @@ describe('createDemoScenarios', () => {
       }
     });
   });
+
+  describe('describe plausible households', () => {
+    it('every scenario spends something before retiring', () => {
+      // The demos used to spend nothing at all until the day they retired,
+      // which made every working year pure accumulation.
+      for (const scenario of scenarios) {
+        expect(scenario.householdSpendingRealBeforeRetirement, scenario.name).toBeGreaterThan(0);
+      }
+    });
+
+    it('scales starting balances to income rather than to the seed defaults', () => {
+      // `SEED_AMOUNTS_BY_KIND` gives every new person $730k, which against a
+      // $95k salary described an heir rather than a saver. Asserted as a ratio
+      // so it keeps meaning something if the salaries are ever retuned.
+      for (const scenario of scenarios) {
+        const income = scenario.persons.reduce((sum, p) => sum + (p.annualIncomeNominal ?? 0), 0);
+        const balances = scenario.persons.flatMap((p) => p.accountBuckets).reduce((sum, b) => sum + (b.startingBalance ?? 0), 0);
+        expect(balances / income, `${scenario.name}: ${Math.round(balances)} on ${Math.round(income)} income`).toBeLessThan(2.5);
+      }
+    });
+
+    // Each demo takes a different position on the replacement ratio, so between
+    // them they show the three shapes a real plan can have.
+    it.each([
+      ['US Single Filer', 'lower'],
+      ['US Married Couple (MFJ)', 'same'],
+      ['Cross-Border Couple (Canada + US Accounts)', 'higher'],
+    ] as const)('%s spends %s in retirement than before it', (name, direction) => {
+      const scenario = scenarios.find((s) => s.name === name)!;
+      const before = scenario.householdSpendingRealBeforeRetirement;
+      const after = scenario.householdSpendingRealAtRetirement;
+      if (direction === 'lower') expect(after).toBeLessThan(before);
+      else if (direction === 'same') expect(after).toBe(before);
+      else expect(after).toBeGreaterThan(before);
+    });
+
+    it('leaves every scenario solvent at the end of the projection', () => {
+      // Asserted on the HOUSEHOLD, not per person. One member's accounts
+      // reaching zero is ordinary - the withdrawal order drains accounts in
+      // sequence, and the cross-border couple's non-earning spouse holds only a
+      // small TFSA that is spent well before the projection ends. What must not
+      // happen is the household as a whole running out, which would have
+      // emitted a spending shortfall.
+      for (const scenario of scenarios) {
+        const ledgers = buildScenarioLedger(scenario, []);
+        const household = ledgers.reduce((sum, l) => sum + l.result.rows[l.result.rows.length - 1].totalNetWorth, 0);
+        expect(household, `${scenario.name} ends at ${Math.round(household)}`).toBeGreaterThan(0);
+        for (const { plan, result } of ledgers) {
+          const final = result.rows[result.rows.length - 1];
+          expect(final.totalNetWorth, `${scenario.name} / ${plan.label} went negative`).toBeGreaterThanOrEqual(0);
+        }
+      }
+    });
+
+    // The three endgames must stay visibly different, or the varied-replacement
+    // design above is invisible in the output.
+    //
+    // Measured in REAL terms and against the balance at retirement, not against
+    // the peak: post-retirement growth is 5% nominal against 2.5% inflation, so
+    // a nominal balance climbs in almost every survivable plan and "ends below
+    // its peak" is unreachable without absurd spending. What actually differs is
+    // how much purchasing power the retirement years add or consume.
+    it('gives the three demos three different endgames', () => {
+      const ratios = new Map<string, number>();
+      for (const scenario of scenarios) {
+        const ledgers = buildScenarioLedger(scenario, []);
+        const years = ledgers[0].result.rows.map((r) => r.year);
+        const inflation = 1 + (scenario.inflation.flatRatePct ?? 0) / 100;
+        const realAt = (i: number) =>
+          ledgers.reduce((sum, l) => sum + (l.result.rows[i]?.totalNetWorth ?? 0), 0) / Math.pow(inflation, years[i] - years[0]);
+        const retirementIndex = years.indexOf(ledgers[0].plan.retirementStartYear!);
+        ratios.set(scenario.name, realAt(years.length - 1) / realAt(retirementIndex));
+      }
+
+      const single = ratios.get('US Single Filer')!;
+      const couple = ratios.get('US Married Couple (MFJ)')!;
+      const crossBorder = ratios.get('Cross-Border Couple (Canada + US Accounts)')!;
+
+      // Spends least in retirement, so grows the most.
+      expect(single, `single ${single.toFixed(2)}x`).toBeGreaterThan(1.4);
+      // Spends the same throughout: still ahead, but visibly less so.
+      expect(couple, `couple ${couple.toFixed(2)}x`).toBeGreaterThan(1.1);
+      expect(couple, `couple ${couple.toFixed(2)}x should trail single ${single.toFixed(2)}x`).toBeLessThan(single);
+      // Spends more in retirement, so consumes real purchasing power - the only
+      // one of the three that draws itself down.
+      expect(crossBorder, `cross-border ${crossBorder.toFixed(2)}x`).toBeLessThan(1);
+    });
+  });
 });
