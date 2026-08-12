@@ -91,4 +91,43 @@ describe('createDemoScenarios', () => {
     expect(earner.annualIncomeNominal).toBeGreaterThan(0);
     expect(dependent.annualIncomeNominal).toBe(0);
   });
+
+  // A first-time visitor sees these three scenarios before anything else, so a
+  // wall of red warnings on load is a product defect even when the arithmetic
+  // underneath is right.
+  describe('load clean', () => {
+    it.each(['US Single Filer', 'US Married Couple (MFJ)', 'Cross-Border Couple (Canada + US Accounts)'])('%s projects without any warnings', (name) => {
+      const scenario = scenarios.find((s) => s.name === name)!;
+      for (const { plan, result } of buildScenarioLedger(scenario, [])) {
+        expect(result.warnings, `${name} / ${plan.label}: ${result.warnings.map((w) => `${w.year} ${w.message}`).join(' | ')}`).toEqual([]);
+      }
+    });
+
+    // The specific misconfiguration that produced 29 identical notices per
+    // person: the surplus lands in an account that also has its own scheduled
+    // contribution, so the same dollars are claimed twice and the engine
+    // (correctly) refuses to fund the second claim.
+    it('never points a surplus destination at an account that also has a scheduled contribution', () => {
+      for (const scenario of scenarios) {
+        for (const person of scenario.persons) {
+          const destination = person.accountBuckets.find((b) => b.id === person.surplusDestinationAccountBucketId);
+          if (!destination) continue;
+          expect(destination.annualContributionWhileWorking, `${scenario.name} / ${person.label} / ${destination.label}`).toBe(0);
+        }
+      }
+    });
+
+    it('still banks the surplus somewhere taxable rather than leaving it in cash', () => {
+      for (const scenario of scenarios) {
+        for (const person of scenario.persons) {
+          if (person.annualIncomeNominal <= 0) continue;
+          const destination = person.accountBuckets.find((b) => b.id === person.surplusDestinationAccountBucketId);
+          expect(destination, `${scenario.name} / ${person.label} has no surplus destination`).toBeDefined();
+          expect(destination!.taxTreatment, `${scenario.name} / ${person.label}`).toBe('taxable');
+          // Optional in the schema, so absent means "not a cash buffer".
+          expect(destination!.isCashBuffer).toBeFalsy();
+        }
+      }
+    });
+  });
 });

@@ -22,7 +22,16 @@ const CURRENT_YEAR = new Date().getFullYear();
 function bankSurplusIntoTaxableInvestments(person: PersonPlan, country: 'US' | 'CA'): void {
   const kind = country === 'US' ? 'US_TAXABLE_BROKERAGE' : 'CA_NON_REGISTERED';
   const taxable = person.accountBuckets.find((bucket) => bucket.kind === kind);
-  if (taxable) person.surplusDestinationAccountBucketId = taxable.id;
+  if (!taxable) return;
+  person.surplusDestinationAccountBucketId = taxable.id;
+
+  // Drop this account's own scheduled contribution. The surplus is already
+  // everything left after spending and tax, so a separate scheduled
+  // contribution into the SAME account is the same dollars asked for twice.
+  // The engine correctly refuses to fund it (an account can't fund its own
+  // contribution, and the default seed leaves no other taxable account to draw
+  // on), which produced a contribution notice every projected year.
+  taxable.annualContributionWhileWorking = 0;
 }
 
 /**
