@@ -7,11 +7,22 @@ networks:
 volumes:
   ollama_data:
 
-x-logging: &default-logging
-  driver: json-file
-  options:
-    max-size: "10m"
-    max-file: "3"
+# NOTE: do not add a `logging:` block here.
+#
+# An `x-logging` anchor pinning `driver: json-file` used to be applied to all
+# services below. Container Manager's Log tab populates from DSM's own log
+# store, written by the driver DSM configures by default - overriding the driver
+# sends output somewhere the GUI never reads, so every Log tab read
+# "No logs available" even for containers that were demonstrably working.
+#
+# That cost real debugging time: Watchtower was diagnosed as broken and
+# "silently deploying nothing" largely because its log looked empty, when the
+# log was simply invisible. Confirmed on 2026-08-12 - `ollama-init` was the only
+# service without the override and the only one with visible logs, while
+# `cloudflared` showed nothing while provably serving all 8 public hostnames.
+#
+# If log growth needs capping, do it at the DSM/daemon level rather than by
+# overriding the driver per service.
 
 services:
   # Cloudflare Tunnel: makes an OUTBOUND connection to Cloudflare's edge, so the
@@ -25,11 +36,15 @@ services:
     networks: [appnet]
     command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     mem_limit: 256m
-    logging: *default-logging
 
   # Auto-updates the 7 labeled app services below when CI pushes a new image
-  # to ghcr.io — reuses Container Manager's existing ghcr.io registry login via
-  # the mounted Docker socket, no separate credentials needed. Deliberately not
+  # to ghcr.io. No registry credentials are configured because none are needed:
+  # all 7 packages are public on ghcr.io and pull anonymously (verified
+  # 2026-08-12). Note that Watchtower does NOT pick up credentials from the
+  # mounted Docker socket — an earlier version of this comment claimed it did.
+  # If these packages are ever made private, Watchtower will start silently
+  # finding no updates until it is given its own auth, via a mounted
+  # /config.json or REPO_USER/REPO_PASS. Deliberately not
   # applied to ollama (large, never re-pushed) or cloudflared (infra we want to
   # update deliberately, not on autopilot). See cloudflare-tunnel.md's neighbor,
   # this file's own comments, and the root README's "Continuous deployment"
@@ -53,7 +68,6 @@ services:
       - WATCHTOWER_HTTP_API_PERIODIC_POLLS=true
       - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN}
     mem_limit: 128m
-    logging: *default-logging
 
   portfolio:
     image: ghcr.io/sluu1122/portfolio:latest
@@ -61,7 +75,6 @@ services:
     networks: [appnet]
     ports: ["3000:3000"]
     mem_limit: 512m
-    logging: *default-logging
     labels: ["com.centurylinklabs.watchtower.enable=true"]
 
   react-dashboard:
@@ -70,7 +83,6 @@ services:
     networks: [appnet]
     ports: ["8081:80"]
     mem_limit: 128m
-    logging: *default-logging
     labels: ["com.centurylinklabs.watchtower.enable=true"]
 
   angular-dashboard:
@@ -79,7 +91,6 @@ services:
     networks: [appnet]
     ports: ["8082:80"]
     mem_limit: 128m
-    logging: *default-logging
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - CPT_API_URL=${CPT_API_URL}
@@ -95,7 +106,6 @@ services:
     networks: [appnet]
     ports: ["3001:3001"]
     mem_limit: 512m
-    logging: *default-logging
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - PORT=3001
@@ -115,7 +125,6 @@ services:
     networks: [appnet]
     ports: ["3002:3002"]
     mem_limit: 256m
-    logging: *default-logging
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - PORT=3002
@@ -132,7 +141,6 @@ services:
     networks: [appnet]
     ports: ["3003:3003"]
     mem_limit: 256m
-    logging: *default-logging
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - PORT=3003
@@ -149,7 +157,6 @@ services:
     networks: [appnet]
     ports: ["3004:3004"]
     mem_limit: 256m
-    logging: *default-logging
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     environment:
       - PORT=3004
@@ -170,7 +177,6 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     mem_limit: 6g
-    logging: *default-logging
 
   # One-shot: waits for ollama to be ready, then pulls the model ai-api expects.
   # Replaces ai-api's own `postinstall` (suppressed at image build time via
