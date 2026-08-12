@@ -598,6 +598,8 @@ function computePersonRow(
   grossTaxableIncome: number,
   surplusToBank: number,
   socialSecurityBenefit: number,
+  /** Cumulative inflation from the projection's first year - what turns this row's nominal spending back into today's dollars. */
+  inflationFactor: number,
 ): { draft: DraftLedgerYearRow; warnings: EngineWarning[] } {
   const audit: AuditStep[] = [...needs.audit, ...replenishment.audit, ...share.audit];
   const warnings: EngineWarning[] = [...share.warnings];
@@ -713,7 +715,12 @@ function computePersonRow(
       yearsToOrInRetirement: retirementStartYear !== null ? year - retirementStartYear : Number.NaN,
       isRetired,
       spendingNominal,
-      spendingReal: spendingNominal,
+      // Today's dollars. This was `spendingNominal` for a long time, which made
+      // the Planning Grid's "Real" column a duplicate of its "Nominal" one.
+      // Divided rather than recomputed from the scenario's own real figure,
+      // because this is one PERSON's share of the household budget, not the
+      // whole budget - the share only exists in nominal terms.
+      spendingReal: inflationFactor > 0 ? spendingNominal / inflationFactor : spendingNominal,
       incomes,
       benefits,
       accountStart: pickBucketAmounts(accountStart, visibleBuckets),
@@ -1552,6 +1559,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         combinedGrossTaxableIncomeForMeltdown ?? grossTaxableByPersonId.get(person.id)!,
         surplusToBank,
         ssBenefitByPersonId.get(person.id) ?? 0,
+        household.inflationFactor,
       );
       warningsByPerson.get(person.id)!.push(...warnings);
       draftsByPersonId.set(person.id, draft);
