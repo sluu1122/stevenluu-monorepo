@@ -1,9 +1,19 @@
 name: Build and push images
 
 on:
+  # Every branch, not just main: `verify` and `e2e` are the checks that catch a
+  # production-build regression, and they are only useful if they run before the
+  # commit lands on main. Publishing stays gated to main (see build-and-push).
   push:
-    branches: [main]
+    branches: ['**']
   workflow_dispatch:
+
+# Supersede an in-flight run when a branch is pushed again, so a rapid series of
+# fixup pushes doesn't queue several runs of the same checks. Never cancels on
+# main, where a half-finished build-and-push would leave ghcr.io inconsistent.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -58,6 +68,10 @@ jobs:
 
   build-and-push:
     needs: [verify, e2e]
+    # Branch pushes run the checks but must never publish: without this, any
+    # branch would overwrite `:latest` on ghcr.io with unmerged code, and
+    # Watchtower would eventually deploy it to the NAS.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
