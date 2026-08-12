@@ -10,6 +10,7 @@ import { getPrimaryPerson } from '../../engine/household';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { formatCompactCurrency } from '../../lib/format';
 import { useMoney } from '../../hooks/useDisplayCurrency';
+import { NOMINAL, buildDeflate } from '../../lib/realTerms';
 import type { Scenario } from '../../engine/schema';
 
 // Same fixed categorical order used by BalanceByBucketStackedChart - here it
@@ -20,9 +21,13 @@ const MAX_COMPARISONS = 2;
 interface ScenarioComparisonToggleProps {
   activeScenario: Scenario;
   otherScenarios: Scenario[];
+  /** Whether to plot today's dollars. Unlike the other charts this takes a flag
+      rather than a ready-made deflator: each overlaid scenario carries its own
+      inflation assumption, so they cannot share one. */
+  realTerms?: boolean;
 }
 
-export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: ScenarioComparisonToggleProps) {
+export function ScenarioComparisonToggle({ activeScenario, otherScenarios, realTerms = false }: ScenarioComparisonToggleProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const money = useMoney(activeScenario);
   const isMobile = useIsMobile();
@@ -42,12 +47,18 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: Sce
   // simplicity - this chart is about comparing baseline assumptions, not
   // one-off lump-sum edits. Each scenario is compared on its whole-household
   // net worth (every person combined), not one person's slice of it.
-  const series = [activeScenario, ...comparisonScenarios].map((scenario, i) => ({
-    id: scenario.id,
-    label: scenario.name,
-    color: PALETTE[i % PALETTE.length],
-    rows: combineLedgers(buildScenarioLedger(scenario, []), getPrimaryPerson(scenario.persons).id, scenario.sharedAccountBuckets).rows,
-  }));
+  const series = [activeScenario, ...comparisonScenarios].map((scenario, i) => {
+    const rows = combineLedgers(buildScenarioLedger(scenario, []), getPrimaryPerson(scenario.persons).id, scenario.sharedAccountBuckets).rows;
+    return {
+      id: scenario.id,
+      label: scenario.name,
+      color: PALETTE[i % PALETTE.length],
+      rows,
+      // Built per scenario, from that scenario's own inflation assumption -
+      // deflating an overlay by the active scenario's rate would misstate it.
+      deflate: realTerms ? buildDeflate(scenario.inflation, rows.map((row) => row.year)) : NOMINAL,
+    };
+  });
 
   const yearSet = new Set<number>();
   series.forEach((s) => s.rows.forEach((row) => yearSet.add(row.year)));
@@ -60,7 +71,7 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios }: Sce
     const point: Record<string, number | undefined> = { year, age: activeSeries.rows.find((row) => row.year === year)?.age };
     for (const s of series) {
       const found = s.rows.find((row) => row.year === year)?.totalNetWorth;
-      point[s.id] = found === undefined ? undefined : money.convert(found);
+      point[s.id] = found === undefined ? undefined : s.deflate(money.convert(found), year);
     }
     return point;
   });

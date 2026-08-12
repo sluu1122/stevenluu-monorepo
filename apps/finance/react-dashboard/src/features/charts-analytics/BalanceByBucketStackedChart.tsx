@@ -6,6 +6,7 @@ import { formatCompactCurrency } from '../../lib/format';
 import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { AccountBucket } from '../../engine/schema';
 import type { LedgerYearRow } from '../../engine/types';
+import { NOMINAL, type Deflate } from '../../lib/realTerms';
 
 // Fixed categorical order (dataviz skill's validated 8-hue palette) - assigned
 // by bucket position, never cycled or re-derived from a filtered set.
@@ -28,9 +29,11 @@ interface BalanceByBucketStackedChartProps {
   money: MoneyFormatter;
   /** Set in the combined view, where two people can own identically-named accounts. */
   bucketOwnerLabels?: Record<string, string>;
+  /** Re-expresses each figure in today's dollars. Identity when showing nominal. */
+  deflate?: Deflate;
 }
 
-export function BalanceByBucketStackedChart({ rows, buckets, money, bucketOwnerLabels }: BalanceByBucketStackedChartProps) {
+export function BalanceByBucketStackedChart({ rows, buckets, money, bucketOwnerLabels, deflate = NOMINAL }: BalanceByBucketStackedChartProps) {
   const isMobile = useIsMobile();
 
   function seriesLabel(bucket: AccountBucket) {
@@ -53,10 +56,11 @@ export function BalanceByBucketStackedChart({ rows, buckets, money, bucketOwnerL
   }
 
   const data = rows.map((row) => {
+    const show = (value: number) => deflate(money.convert(value), row.year);
     const point: Record<string, number> = { year: row.year, age: row.age };
-    for (const bucket of plottedBuckets) point[bucket.id] = money.convert(row.accountEnd[bucket.id] ?? 0);
+    for (const bucket of plottedBuckets) point[bucket.id] = show(row.accountEnd[bucket.id] ?? 0);
     if (overflowBuckets.length > 0) {
-      point[OTHER_SERIES_ID] = money.convert(overflowBuckets.reduce((sum, bucket) => sum + (row.accountEnd[bucket.id] ?? 0), 0));
+      point[OTHER_SERIES_ID] = show(overflowBuckets.reduce((sum, bucket) => sum + (row.accountEnd[bucket.id] ?? 0), 0));
     }
     return point;
   });

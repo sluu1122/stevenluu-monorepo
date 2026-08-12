@@ -6,12 +6,15 @@ import { formatCompactCurrency } from '../../lib/format';
 import { categorizeBuckets, sumAccountEnd } from '../../lib/investmentCategories';
 import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { LedgerYearRow } from '../../engine/types';
+import { NOMINAL, type Deflate } from '../../lib/realTerms';
 import type { AccountBucket } from '../../engine/schema';
 
 interface NetWorthOverTimeChartProps {
   rows: LedgerYearRow[];
   buckets: AccountBucket[];
   money: MoneyFormatter;
+  /** Re-expresses each figure in today's dollars. Identity when showing nominal. */
+  deflate?: Deflate;
 }
 
 interface NetWorthPoint {
@@ -30,7 +33,7 @@ const chartConfig: ChartConfig = {
   totalNetWorth: { label: 'Total Net Worth', color: 'var(--chart-1)' },
 };
 
-export function NetWorthOverTimeChart({ rows, buckets, money }: NetWorthOverTimeChartProps) {
+export function NetWorthOverTimeChart({ rows, buckets, money, deflate = NOMINAL }: NetWorthOverTimeChartProps) {
   const isMobile = useIsMobile();
 
   const categories = categorizeBuckets(buckets);
@@ -39,15 +42,19 @@ export function NetWorthOverTimeChart({ rows, buckets, money }: NetWorthOverTime
   // Converted here, at the point the series is built, rather than in the
   // formatters - so Recharts picks its axis ticks from display-currency values
   // and they land on round numbers instead of converted-from-round ones.
+  // Currency conversion and inflation adjustment are both scalar, so the order
+  // between them doesn't matter - applied together here at the render boundary.
+  const show = (row: LedgerYearRow, value: number) => deflate(money.convert(value), row.year);
+
   const data: NetWorthPoint[] = rows.map((row) => ({
     year: row.year,
     age: row.age,
-    totalNetWorth: money.convert(row.totalNetWorth),
-    cashBuffer: money.convert(sumAccountEnd(row, categories.cashBuffer)),
-    taxable: money.convert(sumAccountEnd(row, categories.taxable)),
-    taxDeferred: money.convert(sumAccountEnd(row, categories.taxDeferred)),
-    taxFree: money.convert(sumAccountEnd(row, categories.taxFree)),
-    totalInvestments: money.convert(sumAccountEnd(row, investmentBuckets)),
+    totalNetWorth: show(row, row.totalNetWorth),
+    cashBuffer: show(row, sumAccountEnd(row, categories.cashBuffer)),
+    taxable: show(row, sumAccountEnd(row, categories.taxable)),
+    taxDeferred: show(row, sumAccountEnd(row, categories.taxDeferred)),
+    taxFree: show(row, sumAccountEnd(row, categories.taxFree)),
+    totalInvestments: show(row, sumAccountEnd(row, investmentBuckets)),
   }));
 
   // The breakdown rows (cash buffer, taxable, etc.) aren't separately plotted
