@@ -2,7 +2,6 @@ import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
 import { cn } from "@repo/ui/lib/utils"
-import { CompatLegend, CompatTooltip } from "@repo/ui/lib/rechartsCompat"
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
@@ -99,12 +98,18 @@ ${colorConfig
   )
 }
 
-const ChartTooltip = CompatTooltip
+const ChartTooltip = RechartsPrimitive.Tooltip
 
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
-  RechartsPrimitive.TooltipProps<any, any> &
-    React.ComponentProps<"div"> & {
+  RechartsPrimitive.TooltipContentProps &
+    // `content` is dropped from the div side of this intersection. React's
+    // HTMLAttributes types it as the legacy `content` HTML attribute (string),
+    // recharts types it as a renderer, and intersecting the two produces
+    // `ContentType & string`, which nothing can satisfy - so any caller
+    // forwarding recharts' own props here would fail to type-check. No tooltip
+    // wants the HTML attribute, so recharts' meaning is the one kept.
+    Omit<React.ComponentProps<"div">, "content"> & {
       hideLabel?: boolean
       hideIndicator?: boolean
       indicator?: "line" | "dot" | "dashed"
@@ -185,8 +190,8 @@ const ChartTooltipContent = React.forwardRef<
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
           {payload
-            .filter((item: any) => item.type !== "none")
-            .map((item: any, index: number) => {
+            .filter((item) => item.type !== "none")
+            .map((item, index) => {
               const key = `${nameKey || item.name || item.dataKey || "value"}`
               const itemConfig = getPayloadConfigFromPayload(config, item, key)
               const indicatorColor = color || item.payload.fill || item.color
@@ -257,7 +262,7 @@ const ChartTooltipContent = React.forwardRef<
 )
 ChartTooltipContent.displayName = "ChartTooltip"
 
-const ChartLegend = CompatLegend
+const ChartLegend = RechartsPrimitive.Legend
 
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,

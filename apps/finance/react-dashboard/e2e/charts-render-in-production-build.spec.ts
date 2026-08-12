@@ -54,9 +54,15 @@ async function expectChartDrew(chart: Locator, name: string) {
 
   // Axis ticks prove the layout pass ran end to end rather than the marks
   // happening to paint against an unlaid-out axis.
+  //
+  // Targets the tick VALUE (the <text>) rather than `.recharts-cartesian-axis-tick`.
+  // In v2 that class sat on the group holding the label; in v3 it names the
+  // tick-LINE group instead, which every chart here renders empty because they
+  // all pass tickLine={false}. The value class means the same thing in both,
+  // and asserting on the drawn label is closer to what this check is for.
   await expect(
-    chart.locator('.recharts-cartesian-axis-tick').first(),
-    `${name}: no axis ticks rendered`,
+    chart.locator('.recharts-cartesian-axis-tick-value').first(),
+    `${name}: no axis tick labels rendered`,
   ).toBeVisible();
 }
 

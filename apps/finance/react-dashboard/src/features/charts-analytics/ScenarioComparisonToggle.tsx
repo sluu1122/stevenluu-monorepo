@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { LineChart, CartesianGrid } from 'recharts';
+import { LineChart, CartesianGrid, Line, XAxis, YAxis, type TooltipContentProps } from 'recharts';
 import { Checkbox } from '@repo/ui/components/checkbox';
 import { DashCard } from '../../components/DashCard';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@repo/ui/components/chart';
-import { CompatLine, CompatXAxis, CompatYAxis } from '@repo/ui/lib/rechartsCompat';
 import { buildScenarioLedger } from '../../engine/ledger';
 import { combineLedgers } from '../../engine/combineLedgers';
 import { getPrimaryPerson } from '../../engine/household';
@@ -84,11 +83,11 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios, realT
   // The color swatch is only rendered by the shared ChartTooltipContent when
   // no custom `formatter` is passed, so it has to be drawn manually here to
   // keep one - same pattern as BalanceByBucketStackedChart.
-  function renderTooltip(props: React.ComponentProps<typeof ChartTooltipContent>) {
+  function renderTooltip(props: TooltipContentProps) {
     return (
       <ChartTooltipContent
         {...props}
-        labelFormatter={(_value: unknown, payload?: { payload?: unknown }[]) => {
+        labelFormatter={(_value, payload) => {
           const point = payload?.[0]?.payload as { year: number; age?: number } | undefined;
           return point ? (point.age !== undefined ? `${point.year} (age ${point.age})` : `${point.year}`) : '';
         }}
@@ -133,12 +132,12 @@ export function ScenarioComparisonToggle({ activeScenario, otherScenarios, realT
         <ChartContainer config={config} className="aspect-auto h-[300px] w-full">
           <LineChart data={data} margin={{ left: 4, right: 4, top: 8, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
-            <CompatXAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
-            <CompatYAxis tickLine={false} axisLine={false} tickMargin={8} width={isMobile ? 40 : 64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
+            <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
+            <YAxis tickLine={false} axisLine={false} tickMargin={8} width={isMobile ? 40 : 64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
             <ChartTooltip content={renderTooltip} />
             <ChartLegend content={<ChartLegendContent />} />
             {series.map((s) => (
-              <CompatLine key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={2} dot={false} connectNulls />
+              <Line key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={2} dot={false} connectNulls />
             ))}
           </LineChart>
         </ChartContainer>

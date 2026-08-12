@@ -1,6 +1,5 @@
-import { AreaChart, CartesianGrid } from 'recharts';
+import { AreaChart, CartesianGrid, Area, XAxis, YAxis, type TooltipContentProps } from 'recharts';
 import { ChartContainer, ChartTooltip, type ChartConfig } from '@repo/ui/components/chart';
-import { CompatArea, CompatXAxis, CompatYAxis } from '@repo/ui/lib/rechartsCompat';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 import { formatCompactCurrency } from '../../lib/format';
 import { categorizeBuckets, sumAccountEnd } from '../../lib/investmentCategories';
@@ -61,9 +60,12 @@ export function NetWorthOverTimeChart({ rows, buckets, money, deflate = NOMINAL 
   // series - the chart only draws one Area (Total Net Worth) - so this is a
   // fully custom tooltip rather than the shared ChartTooltipContent, which
   // can only render rows for series Recharts actually plotted.
-  function renderTooltip({ active, payload }: { active?: boolean; payload?: { payload: NetWorthPoint }[] }) {
+  // Takes recharts' own content-props type rather than a narrower hand-written
+  // one: `content` is typed as `(props: TooltipContentProps) => ReactNode`, so a
+  // renderer declaring narrower params is not assignable to it.
+  function renderTooltip({ active, payload }: TooltipContentProps) {
     if (!active || !payload?.length) return null;
-    const point = payload[0]?.payload;
+    const point = payload[0]?.payload as NetWorthPoint | undefined;
     if (!point) return null;
 
     const breakdownRows: { label: string; value: number }[] = [
@@ -108,10 +110,10 @@ export function NetWorthOverTimeChart({ rows, buckets, money, deflate = NOMINAL 
           </linearGradient>
         </defs>
         <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
-        <CompatXAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
-        <CompatYAxis tickLine={false} axisLine={false} tickMargin={8} width={isMobile ? 40 : 64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
+        <XAxis dataKey="year" tickLine={false} axisLine={false} tickMargin={8} minTickGap={32} />
+        <YAxis tickLine={false} axisLine={false} tickMargin={8} width={isMobile ? 40 : 64} tickFormatter={(v: number) => formatCompactCurrency(v, money.currency)} />
         <ChartTooltip content={renderTooltip} />
-        <CompatArea type="monotone" dataKey="totalNetWorth" stroke="var(--chart-1)" strokeWidth={2} fill="url(#netWorthFill)" />
+        <Area type="monotone" dataKey="totalNetWorth" stroke="var(--chart-1)" strokeWidth={2} fill="url(#netWorthFill)" />
       </AreaChart>
     </ChartContainer>
   );
