@@ -330,6 +330,9 @@ function drawHouseholdWide(
     remaining > 0.005
       ? {
           year,
+          kind: 'spendingShortfall' as const,
+          code: 'spending.accountsExhausted' as const,
+          amount: remaining,
           message: `Shortfall of ${remaining.toFixed(2)}: every account in the household's withdrawal order was exhausted before the spending/tax need was met.${
             ageBlockedBalance > 0.01 ? ` ${ageBlockedBalance.toFixed(2)} is held in accounts not yet available at age.` : ''
           }`,
@@ -1631,9 +1634,15 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         draft.contributions[bucket.id] = (draft.contributions[bucket.id] ?? 0) + funded;
       }
       if (unfunded > 0.01) {
+        // Deliberately does NOT say the household is out of money - it usually
+        // isn't. The target account can hold plenty and still be unable to fund
+        // its own contribution, which is the single most common way this fires.
         warningsByPerson.get(person.id)!.push({
           year,
-          message: `Contributions short by ${unfunded.toFixed(2)}: the household had no cash or taxable investments left to fund them.`,
+          kind: 'contributionUnfunded',
+          code: 'contribution.noEligibleSource',
+          amount: unfunded,
+          message: `Contributions short by ${unfunded.toFixed(2)}: no cash or other taxable account had funds available to move into them. An account can't fund its own contribution, and the current year's growth isn't available to spend.`,
         });
       }
     }
@@ -1668,6 +1677,9 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       if (contribution - funded > 0.01) {
         warningsByPerson.get(scenario.persons[0].id)!.push({
           year,
+          kind: 'contributionUnfunded',
+          code: 'contribution.sharedCashShort',
+          amount: contribution - funded,
           message: `${bucket.label} contribution short by ${(contribution - funded).toFixed(2)}: shared cash couldn't cover it.`,
         });
       }

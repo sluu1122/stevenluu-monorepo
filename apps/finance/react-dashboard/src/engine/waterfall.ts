@@ -67,7 +67,7 @@ export function applyWithdrawal(
     ageBlockedBalance > 0.01 ? ` ${ageBlockedBalance.toFixed(2)} is held in accounts not yet available at age ${age}.` : '';
   const warning: EngineWarning | undefined =
     shortfall > 0.01
-      ? { year, message: `Shortfall of ${shortfall.toFixed(2)}: all available account buckets exhausted before the spending/tax need was met.${ageNote}` }
+      ? { year, kind: 'spendingShortfall', code: 'spending.accountsExhausted', amount: shortfall, message: `Shortfall of ${shortfall.toFixed(2)}: all available account buckets exhausted before the spending/tax need was met.${ageNote}` }
       : undefined;
 
   return { withdrawals, shortfall, steps, ageBlockedBalance, warning };
