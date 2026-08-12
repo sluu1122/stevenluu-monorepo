@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, FileText } from 'lucide-react';
+import { AlertTriangle, FileText, Info } from 'lucide-react';
 import { DashCard } from '../../components/DashCard';
 import { Button } from '@repo/ui/components/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
@@ -18,6 +18,7 @@ import { LedgerYearCards } from './LedgerYearCards';
 import { FormulaBreakdownPanel } from './FormulaBreakdownPanel';
 import { OverrideEditDialog } from './OverrideEditDialog';
 import { exportGridCsv } from './exportGridCsv';
+import { partitionWarnings, groupWarnings, describeYears, WARNING_CODE_EXPLANATION } from '../../lib/warnings';
 
 export function PlanningGridTab() {
   const { data: scenarios = [] } = useScenarios();
@@ -32,6 +33,9 @@ export function PlanningGridTab() {
   const { rows, warnings, error, person, buckets, bucketOwnerLabels, sharedBucketIds, combined, label } = usePersonView(activeScenario, overrides);
   const money = useMoney(activeScenario);
   const isMobile = useIsMobile();
+
+  const { shortfalls, contributions } = partitionWarnings(warnings);
+  const contributionGroups = groupWarnings(contributions);
 
   // Held as a year rather than the row object, so the panel re-reads the live
   // row whenever the ledger recomputes instead of showing a stale snapshot.
@@ -76,16 +80,41 @@ export function PlanningGridTab() {
         </DashCard>
       )}
 
-      {!error && warnings.length > 0 && (
+      {/*
+        Shortfalls and contribution notices are deliberately two separate
+        banners rather than one count. They are not the same severity: a
+        shortfall means the plan ran out of money, while a contribution notice
+        usually means two settings point at the same account, on a plan whose
+        net worth is still compounding.
+      */}
+      {!error && shortfalls.length > 0 && (
         <DashCard className="border-loss/30 bg-loss-bg flex items-center gap-2.5 py-2 sm:py-2">
           <AlertTriangle className="size-4 text-loss shrink-0" />
           <p className="text-[12.5px] text-loss-dark truncate flex-1">
             <span className="font-semibold">
-              {warnings.length} shortfall{warnings.length > 1 ? 's' : ''} in this plan
+              {shortfalls.length} shortfall{shortfalls.length > 1 ? 's' : ''} in this plan
             </span>
-            <span className="ml-1.5">— {warnings[0].message}</span>
+            <span className="ml-1.5">— {shortfalls[0].message}</span>
           </p>
           <Button variant="ghost" size="sm" className="cursor-pointer text-loss-dark hover:text-loss-dark shrink-0" onClick={() => setWarningsOpen(true)}>
+            View details
+          </Button>
+        </DashCard>
+      )}
+
+      {!error && contributions.length > 0 && (
+        <DashCard className="border-indigo/25 bg-indigo-bg flex items-center gap-2.5 py-2 sm:py-2">
+          <Info className="size-4 text-indigo shrink-0" />
+          <p className="text-[12.5px] text-ink truncate flex-1">
+            {/* Counts the warnings themselves, not how many reasons they fall
+                under - "4 scheduled contributions" for a 29-year problem was
+                just the group count leaking into the copy. */}
+            <span className="font-semibold">Scheduled contributions couldn't be funded</span>
+            <span className="ml-1.5 text-slate">
+              — {describeYears(contributions.map((w) => w.year))}. This doesn't reduce the plan's projected balances.
+            </span>
+          </p>
+          <Button variant="ghost" size="sm" className="cursor-pointer text-indigo hover:text-indigo shrink-0" onClick={() => setWarningsOpen(true)}>
             View details
           </Button>
         </DashCard>
@@ -94,18 +123,46 @@ export function PlanningGridTab() {
       <Dialog open={warningsOpen} onOpenChange={setWarningsOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>
-              {warnings.length} shortfall{warnings.length > 1 ? 's' : ''} in this plan
-            </DialogTitle>
-            <DialogDescription>Years where planned withdrawals exceed available account balances.</DialogDescription>
+            <DialogTitle>What this plan flagged</DialogTitle>
+            <DialogDescription>Shortfalls mean the money ran out. Contribution notices don't - they're listed separately below.</DialogDescription>
           </DialogHeader>
-          <ul className="max-h-[50vh] overflow-y-auto list-disc pl-4 space-y-1 text-[13px] text-ink">
-            {warnings.map((w, i) => (
-              <li key={i}>
-                {w.year}: {w.message}
-              </li>
-            ))}
-          </ul>
+          <div className="max-h-[50vh] overflow-y-auto flex flex-col gap-4">
+            {shortfalls.length > 0 && (
+              <section>
+                <h4 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-loss mb-1.5">
+                  {shortfalls.length} shortfall{shortfalls.length > 1 ? 's' : ''} — planned withdrawals exceeded available balances
+                </h4>
+                <ul className="list-disc pl-4 space-y-1 text-[13px] text-ink">
+                  {shortfalls.map((w, i) => (
+                    <li key={i}>
+                      {w.year}: {w.message}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            {/* Grouped by reason rather than listed year by year: the same
+                problem repeats every year once a scenario is configured this
+                way, and sixty near-identical bullets buried the one shortfall
+                that actually mattered. */}
+            {contributionGroups.length > 0 && (
+              <section>
+                <h4 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-indigo mb-1.5">Contributions that couldn't be funded</h4>
+                <ul className="flex flex-col gap-2.5">
+                  {contributionGroups.map((group) => (
+                    <li key={group.code} className="rounded-[10px] border border-edge bg-surface-muted px-3 py-2">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-[13px] font-medium text-ink">{describeYears(group.years)}</span>
+                        <span className="text-[13px] font-mono text-slate shrink-0">{money.format(group.totalAmount)} total</span>
+                      </div>
+                      <p className="mt-1 text-[12px] text-slate">{WARNING_CODE_EXPLANATION[group.code]}</p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 

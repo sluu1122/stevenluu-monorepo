@@ -10,6 +10,7 @@ import { PersonViewSelector } from '../../components/PersonViewSelector';
 import { DisplayCurrencyToggle } from '../../components/DisplayCurrencyToggle';
 import { SummaryKeyMetrics } from './SummaryKeyMetrics';
 import { SummaryPrintableTable } from './SummaryPrintableTable';
+import { partitionWarnings } from '../../lib/warnings';
 import { exportPlainTextSummary } from './exportPlainTextSummary';
 
 export function ClientSummaryTab() {
@@ -19,6 +20,7 @@ export function ClientSummaryTab() {
 
   const { data: overrides = [] } = useGridOverrides(activeScenario?.id);
   const { rows, warnings, person, buckets, combined, label } = usePersonView(activeScenario, overrides);
+  const { shortfalls, contributions } = partitionWarnings(warnings);
   const money = useMoney(activeScenario);
 
   if (!activeScenario) {
@@ -75,12 +77,23 @@ export function ClientSummaryTab() {
         <p className="text-[11px] text-dim mb-4">Demo only — figures may be inaccurate. Not financial advice.</p>
       </div>
 
-      <SummaryKeyMetrics rows={rows} money={money} retirementStartYear={retirementStartYear} hasShortfall={warnings.length > 0} />
+      {/* Only real shortfalls flip the key-metric badge. A contribution that
+          couldn't be routed says nothing about whether the plan holds up, and
+          flagging it here marked healthy plans as failing. */}
+      <SummaryKeyMetrics rows={rows} money={money} retirementStartYear={retirementStartYear} hasShortfall={shortfalls.length > 0} />
 
-      {warnings.length > 0 && (
+      {shortfalls.length > 0 && (
         <DashCard className="border-loss/30 bg-loss-bg py-3">
           <p className="text-[12.5px] text-loss-dark">
-            This plan has {warnings.length} projected shortfall{warnings.length > 1 ? 's' : ''} - see the Planning Grid for details.
+            This plan has {shortfalls.length} projected shortfall{shortfalls.length > 1 ? 's' : ''} - see the Planning Grid for details.
+          </p>
+        </DashCard>
+      )}
+
+      {contributions.length > 0 && (
+        <DashCard className="border-indigo/25 bg-indigo-bg py-3">
+          <p className="text-[12.5px] text-ink">
+            Some scheduled contributions couldn't be funded - see the Planning Grid for details. This doesn't reduce the projected balances above.
           </p>
         </DashCard>
       )}
