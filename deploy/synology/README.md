@@ -45,9 +45,12 @@ If `docker buildx build` complains about a missing builder instance, run once:
 ## 2. Prepare the NAS
 
 1. Package Center → install **Container Manager** (DSM 7.2+).
-2. Container Manager → Registry → Settings → add registry `ghcr.io`, log in with a
-   GitHub personal access token (`read:packages` scope) — required since these are
-   private images.
+2. No registry login is needed. All 7 packages are **public** on `ghcr.io` and
+   pull anonymously (verified 2026-08-12) — an earlier version of this document
+   said they were private and required a personal access token. If you ever make
+   them private, add the registry under Container Manager → Registry → Settings
+   with a PAT (`read:packages`), and note that Watchtower needs its own auth
+   separately — it does not inherit Container Manager's login (see §5).
 3. Container Manager → Project → Create → paste the repo's pull-only
    `deploy/synology/docker-compose.nas.yml` (it references the `ghcr.io` images and
    the `cloudflared` tunnel service; it has no `build:` sections, so the NAS never
@@ -93,7 +96,8 @@ proxied DNS records automatically.
 ## 4. Verify
 
 - Container Manager shows all 11 containers running (or exited-0 for `ollama-init`),
-  and the tunnel shows **Healthy** in Cloudflare (Zero Trust → Networks → Tunnels).
+  and the tunnel shows **Connected** in Cloudflare (Zero Trust → Networks →
+  Tunnels & Mesh → your tunnel → Overview → Connectors).
 - `https://stevenluu.com`, `https://healthcare.stevenluu.com`, and
   `https://finance.stevenluu.com` all load over HTTPS with a valid Cloudflare cert.
 - On the live Angular site, open devtools → Network tab → confirm a request to
@@ -112,31 +116,50 @@ proxied DNS records automatically.
 
 Pushing to `main` triggers [`.github/workflows/deploy.yml`](../../.github/workflows/deploy.yml):
 
-1. A `verify` job runs `check-types`, `lint`, and `build` — a broken commit
-   never reaches the registry, so nothing bad can ever get auto-deployed.
-2. A matrix job builds all 7 images natively for `linux/amd64` (GitHub's
-   runners are already amd64, no emulation needed) and pushes each as both
-   `:latest` and `:<commit-sha>` to `ghcr.io/sluu1122/<app>`.
+1. A `verify` job runs `check-types`, `lint`, `test`, and `build`.
+2. An `e2e` job runs the Playwright production-build suite in parallel.
+3. Only if **both** pass does the matrix job build all 7 images natively for
+   `linux/amd64` (GitHub's runners are already amd64, no emulation needed) and
+   push each as both `:latest` and `:<commit-sha>` to `ghcr.io/sluu1122/<app>`.
+
+A broken commit therefore never reaches the registry, so nothing bad can get
+auto-deployed. CI also runs on **every branch push**, but publishing is gated to
+`main` (`if: github.ref == 'refs/heads/main'`), so you can push a branch and see
+it go green without ever overwriting `:latest`.
 
 On the NAS, a `watchtower` container (in `docker-compose.nas.yml`) polls
 `ghcr.io` every 30 minutes and auto-pulls + restarts any of the 7 app services
-whose image changed — no Container Manager clicking required. It reuses the
-registry credentials Container Manager already has (via the mounted Docker
-socket), so no separate login is needed. `ollama` and `cloudflared` are
-deliberately **not** watched — `ollama`'s image never changes, and
-`cloudflared` is infra you'd want to update on purpose, not on autopilot.
+whose image changed — no Container Manager clicking required. `ollama` and
+`cloudflared` are deliberately **not** watched — `ollama`'s image never changes,
+and `cloudflared` is infra you'd want to update on purpose, not on autopilot.
 
-> ⚠️ **Watchtower is currently not deploying anything** (as of 2026-08-11). It
-> runs and reports Healthy, but its log is empty and a confirmed-new image sat
-> unpulled for 10+ minutes across a forced restart. **Do not assume a push has
-> reached production** — verify against the live site, and deploy by hand using
-> [§6](#6-deploying-manually-when-watchtower-isnt-doing-it) until this is fixed.
-> See the root `TODO.md` for what to investigate.
+**No registry credentials are configured, and none are needed:** all 7 packages
+are public on `ghcr.io` and pull anonymously. Watchtower does **not** inherit
+Container Manager's registry login through the mounted Docker socket — an
+earlier version of this document claimed it did. If these packages are ever made
+private, Watchtower will silently stop finding updates until it is given its own
+auth (a mounted `/config.json`, or `REPO_USER`/`REPO_PASS`).
+
+> ✅ **Verified end to end on 2026-08-12.** A real `react-dashboard` change was
+> merged, CI published at ~04:40 UTC, and nothing on the NAS was touched.
+> Watchtower's scheduled scan ran at 05:04:26 UTC and the NAS was serving the new
+> bundle by **05:05:14 UTC**, live through Cloudflare. Continuous deployment
+> works; [§6](#6-deploying-manually-fallback-and-troubleshooting) is a fallback,
+> not the normal path.
 
 **Checking it worked:** Container Manager → `watchtower` container → Logs —
-each poll logs what it checked and whether it found/applied an update. An
-**empty** log is not "nothing to do" — it means Watchtower isn't running its
-check at all, since it always prints a banner and schedule line on startup.
+each poll logs what it checked and whether it found/applied an update, ending in
+a `Session done: N scanned, N updated` line.
+
+> ⚠️ **An empty Log tab does not mean the container is silent.** Container
+> Manager reads that tab from DSM's own log store. Setting an explicit
+> `logging:` driver in the compose file sends output somewhere the GUI never
+> reads, and every Log tab then shows "No logs available" even for containers
+> that are working perfectly. That is exactly what happened on 2026-08-11 and it
+> caused Watchtower to be misdiagnosed as broken for a full session. Do not add a
+> `logging:` block to `docker-compose.nas.yml`. If a log looks empty, confirm the
+> channel works — check a container you know is busy — before concluding the
+> container is doing nothing.
 
 **Manually triggering an update** (instead of waiting out the 30-minute poll —
 handy right after a push, or while testing the pipeline itself): either
@@ -163,13 +186,19 @@ way the bug did.
 permissions"**. Without this, `GITHUB_TOKEN` can't push to `ghcr.io` and the
 `build-and-push` job fails on the login/push step.
 
-## 6. Deploying manually (when Watchtower isn't doing it)
+## 6. Deploying manually (fallback and troubleshooting)
 
 > **The one rule that matters: always finish with Build, never Start.**
 > They sit next to each other and both sound like "turn it back on," but
 > **Start only starts containers that already exist**. It never creates one,
 > never re-reads `.env`, and never pulls an image. Every deployment failure in
 > this section traces back to reaching for Start.
+
+Watchtower handles ordinary deploys (§5), so you shouldn't normally need this
+section. It matters when you're changing something Watchtower doesn't manage —
+`.env` values, the compose file itself, or `cloudflared` and `ollama`, which are
+deliberately unwatched — or when you need a change live without waiting out the
+30-minute poll.
 
 Container Manager will silently reuse a stale container or a stale cached
 image, with no error anywhere. All three failure modes below look identical

@@ -51,7 +51,7 @@ nameservers back to Squarespace to undo everything.
 
 1. In the dashboard left nav: **Zero Trust** (may prompt to pick a free plan / team
    name the first time — no credit card needed for the free tier).
-2. **Networks → Tunnels → Create a tunnel** → connector type **Cloudflared**.
+2. **Networks → Tunnels & Mesh → Create a tunnel** → connector type **Cloudflared**.
 3. Name it (e.g. `synology-nas`) → **Save**.
 4. On the "Install connector" screen, choose **Docker**. Cloudflare shows a
    `docker run ... --token eyJh...` command. **Copy only the token** (the long
