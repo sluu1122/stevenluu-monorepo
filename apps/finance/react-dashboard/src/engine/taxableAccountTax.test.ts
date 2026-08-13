@@ -3,6 +3,7 @@ import { buildScenarioLedger } from './ledger';
 import { calculateStateOrProvincialTax, calculateTotalTax, indexTaxConfig } from './calculateTax';
 import { CANADIAN_TAX_TABLES, flatRateTable } from './regionalTaxTables';
 import { createDefaultScenario } from './defaults';
+import { createDemoScenarios } from './demoScenarios';
 import type { AccountBucket, Scenario } from './schema';
 
 const startYear = new Date().getFullYear();
@@ -309,5 +310,52 @@ describe('OAS clawback base', () => {
     // Year two is where it bites.
     expect(oasOf(scenario, 1)).toBeGreaterThan(0);
     expect(oasOf(withMeltdown, 1)).toBe(0);
+  });
+});
+
+describe('cash buffer interest', () => {
+  // Phase 0b taxes a cash buffer's interest as ordinary income and credits the
+  // same amount to cost basis, computed on the balance the account OPENED the
+  // year with. Phase 3 used to apply growth to the POST-FLOW balance instead,
+  // so in a year where the buffer was topped up, the difference landed in the
+  // account having been taxed as nothing - and then surfaced as a capital gain
+  // the next time cash was sold. That is the "gain on a cash-only-sale year"
+  // residual from the original household audit.
+  //
+  // Asserted against the demo scenarios because that is where it was seen: a
+  // buffer refilled toward six months of spending every year makes the two
+  // balances differ by a lot, which is what made the residual visible.
+  it.each(createDemoScenarios().map((s) => [s.name, s] as const))('is earned on the opening balance, so it equals what was taxed: %s', (_name, scenario) => {
+    const cashRate = scenario.returnRates.cashPct / 100;
+
+    for (const { plan, result } of buildScenarioLedger(scenario, [])) {
+      const cashBuckets = [...plan.accountBuckets, ...scenario.sharedAccountBuckets].filter((b) => b.isCashBuffer);
+      expect(cashBuckets.length, `${plan.id} has no cash buffer to check`).toBeGreaterThan(0);
+
+      for (const row of result.rows) {
+        for (const bucket of cashBuckets) {
+          const opening = Math.max(0, row.accountStart[bucket.id] ?? 0);
+          expect(row.growth[bucket.id] ?? 0, `${bucket.label} in ${row.year}`).toBeCloseTo(opening * cashRate, 6);
+        }
+      }
+    }
+  });
+
+  it('leaves a buffer that opened the year empty earning nothing, however much it later receives', () => {
+    // The sharpest version of the same bug: the cross-border scenario's
+    // non-earning spouse opens with no cash at all, so under the old rule
+    // every dollar of that first year's interest was untaxed and unbasised.
+    const scenario = createDemoScenarios().find((s) => s.persons.length > 1 && s.persons.some((p) => p.accountBuckets.some((b) => b.isCashBuffer && b.startingBalance === 0)))!;
+    const ledgers = buildScenarioLedger(scenario, []);
+
+    const emptyStart = ledgers.flatMap(({ plan, result }) =>
+      plan.accountBuckets.filter((b) => b.isCashBuffer && b.startingBalance === 0).map((bucket) => ({ bucket, first: result.rows[0] })),
+    );
+    expect(emptyStart.length, 'no empty-opening cash buffer in the demos').toBeGreaterThan(0);
+
+    for (const { bucket, first } of emptyStart) {
+      expect(first.accountStart[bucket.id] ?? 0).toBe(0);
+      expect(first.growth[bucket.id] ?? 0, `${bucket.label} grew despite opening empty`).toBe(0);
+    }
   });
 });

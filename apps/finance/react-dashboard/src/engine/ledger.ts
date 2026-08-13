@@ -1577,11 +1577,29 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
     // Kept in one flat map as well, because Phase 4 has to know how much of a
     // cash balance is this year's growth before it spends any of it.
     const sharedIsRetired = earliestRetirementYear !== null && year >= earliestRetirementYear;
+
+    // A cash buffer earns its interest on the balance it OPENED the year with,
+    // not on what it holds after the year's flows. Phase 0b already taxed that
+    // exact figure as ordinary income and credited it to cost basis, computed
+    // on the same opening balance - so growing the post-flow balance here left
+    // the difference in the account having been taxed as nothing, which then
+    // surfaced as a capital gain whenever the cash was sold.
+    //
+    // Applies to every cash buffer, not just the taxable ones, so a cash
+    // balance does not grow at a different rate depending on whether taxable
+    // account taxation happens to be switched on.
+    //
+    // The cost is that money arriving mid-year earns no interest until the
+    // following one. That is the conservative direction, and at a cash rate it
+    // is worth a fraction of a percent of the buffer.
+    const growthBaseFor = (bucket: AccountBucket): number | undefined =>
+      bucket.isCashBuffer ? Math.max(0, balancesAtYearStart[bucket.id] ?? 0) : undefined;
+
     const growthThisYear: Record<string, number> = {};
     for (const { person, draft } of drafts) {
       for (const bucket of person.accountBuckets) {
         const ratePct = returnRatePctFor(bucket, scenario.returnRates, draft.isRetired);
-        const { newBalance, growthAmount, steps } = applyGrowth(balances[bucket.id], ratePct, bucket.label);
+        const { newBalance, growthAmount, steps } = applyGrowth(balances[bucket.id], ratePct, bucket.label, growthBaseFor(bucket));
         draft.audit.steps.push(...steps);
         balances[bucket.id] = newBalance;
         draft.growth[bucket.id] = growthAmount;
@@ -1592,7 +1610,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
     const sharedContributions: Record<string, number> = {};
     for (const bucket of sharedBuckets) {
       const ratePct = returnRatePctFor(bucket, scenario.returnRates, sharedIsRetired);
-      const { newBalance, growthAmount } = applyGrowth(balances[bucket.id], ratePct, bucket.label);
+      const { newBalance, growthAmount } = applyGrowth(balances[bucket.id], ratePct, bucket.label, growthBaseFor(bucket));
       balances[bucket.id] = newBalance;
       sharedGrowth[bucket.id] = growthAmount;
       growthThisYear[bucket.id] = growthAmount;
