@@ -151,3 +151,41 @@ describe('reset to demo scenarios', () => {
     expect(await repo.listScenarios()).toHaveLength(3);
   });
 });
+
+describe('reorderScenarios', () => {
+  it('persists a new order, so it survives a reload', async () => {
+    const repository = new LocalStorageScenarioRepository();
+    const before = await repository.listScenarios();
+    const reversed = [...before].reverse().map((s) => s.id);
+
+    await repository.reorderScenarios(reversed);
+
+    // Read through a fresh repository, which re-reads the stored blob rather
+    // than any in-memory state - the point of the method is that it persists.
+    const after = await new LocalStorageScenarioRepository().listScenarios();
+    expect(after.map((s) => s.id)).toEqual(reversed);
+    expect(after).toHaveLength(before.length);
+  });
+
+  it('keeps a scenario the caller did not know about instead of dropping it', async () => {
+    const repository = new LocalStorageScenarioRepository();
+    const before = await repository.listScenarios();
+
+    // A list rendered before the third scenario existed - which is what a race
+    // with an import, a duplicate, or another tab actually looks like.
+    await repository.reorderScenarios([before[1].id, before[0].id]);
+
+    const after = await repository.listScenarios();
+    expect(after.map((s) => s.id)).toEqual([before[1].id, before[0].id, before[2].id]);
+  });
+
+  it('does not disturb the stored overrides', async () => {
+    const repository = new LocalStorageScenarioRepository();
+    const scenarios = await repository.listScenarios();
+    const overridesBefore = await repository.listOverrides(scenarios[0].id);
+
+    await repository.reorderScenarios([...scenarios].reverse().map((s) => s.id));
+
+    expect(await repository.listOverrides(scenarios[0].id)).toEqual(overridesBefore);
+  });
+});

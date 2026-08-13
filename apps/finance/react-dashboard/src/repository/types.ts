@@ -10,6 +10,20 @@ export interface ScenarioRepository {
   getScenario(id: string): Promise<Scenario | null>;
   saveScenario(scenario: Scenario): Promise<Scenario>;
   deleteScenario(id: string): Promise<void>;
+  /**
+   * Rewrite the stored order to match `orderedIds`.
+   *
+   * Order is the position of a scenario in the stored array rather than a
+   * field on the scenario, which is what lets it survive a backup: an export
+   * bundle carries `scenarios` as an array, a replace-import writes it back
+   * wholesale, and a merge-import updates matching ids in place and only
+   * appends genuinely new ones.
+   *
+   * Ids that no longer exist are ignored, and any stored scenario the caller
+   * omits keeps its relative position at the end - so a list that raced with a
+   * delete or an import reorders what it can instead of dropping anything.
+   */
+  reorderScenarios(orderedIds: string[]): Promise<void>;
   listOverrides(scenarioId: string): Promise<GridOverride[]>;
   saveOverride(override: GridOverride): Promise<GridOverride>;
   deleteOverride(id: string): Promise<void>;

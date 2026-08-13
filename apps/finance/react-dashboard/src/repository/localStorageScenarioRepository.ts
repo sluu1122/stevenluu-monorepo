@@ -5,6 +5,7 @@ import { ACCOUNT_KIND_META, DEFAULT_HOUSEHOLD_WITHDRAWAL_ORDER } from '../engine
 import { createDemoScenarios } from '../engine/demoScenarios';
 import type { ScenarioRepository } from './types';
 import { generateId } from '../engine/id';
+import { reorderById } from '../lib/reorderById';
 
 const STORAGE_KEY = 'retirement-planner:v1';
 
@@ -591,6 +592,11 @@ export class LocalStorageScenarioRepository implements ScenarioRepository {
     }
     writeBlob({ ...blob, exportedAt: new Date().toISOString() });
     return updated;
+  }
+
+  async reorderScenarios(orderedIds: string[]): Promise<void> {
+    const blob = readBlob();
+    writeBlob({ ...blob, scenarios: reorderById(blob.scenarios, orderedIds), exportedAt: new Date().toISOString() });
   }
 
   async deleteScenario(id: string): Promise<void> {

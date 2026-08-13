@@ -17,11 +17,19 @@ import { readFileSync, writeFileSync } from 'node:fs';
  * between would pass just as happily against an import that did nothing at all.
  */
 
-/** Scenario rows are identified by their per-row delete button. */
+/**
+ * Read off the rows themselves rather than their per-row controls, which live
+ * behind the sidebar's edit mode - the list has to be readable here without
+ * entering it.
+ */
 function scenarioNames(page: Page) {
-  return page.locator('[aria-label^="Delete "]').evaluateAll((els) =>
-    els.map((el) => (el.getAttribute('aria-label') ?? '').replace(/^Delete /, '')),
-  );
+  return page.locator('[data-scenario-id]').evaluateAll((els) => els.map((el) => (el.textContent ?? '').trim()));
+}
+
+/** Duplicate and delete are only rendered in edit mode. */
+async function enterEditMode(page: Page) {
+  const toggle = page.getByRole('button', { name: 'Edit scenarios' });
+  if (await toggle.isVisible()) await toggle.click();
 }
 
 async function openImportExport(page: Page) {
@@ -70,6 +78,7 @@ test.describe('scenario export/import', () => {
 
     // --- Delete one, so the import has something to prove ------------------
     const victim = before[0];
+    await enterEditMode(page);
     await page.locator(`[aria-label="Delete ${victim}"]`).click();
     await page.getByRole('button', { name: 'Delete', exact: true }).click();
 
