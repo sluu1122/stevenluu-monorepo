@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Check, Pencil, Plus } from 'lucide-react';
 import {
   DndContext,
@@ -91,7 +92,15 @@ export function ScenarioSwitcher() {
     if (oldIndex === -1 || newIndex === -1) return;
 
 
-    reorderScenarios.mutate(arrayMove(scenarios, oldIndex, newIndex).map((s) => s.id));
+    // Flushed synchronously. The rows have already slid out of each other's way
+    // during the drag, and on release their drag transforms clear immediately -
+    // so unless the reorder lands in that SAME frame, every shifted row springs
+    // back to where it started and only then jumps to its new slot. Letting
+    // React schedule this normally put a two-frame round trip in the middle of
+    // the drop.
+    flushSync(() => {
+      reorderScenarios.mutate(arrayMove(scenarios, oldIndex, newIndex).map((s) => s.id));
+    });
   }
 
   async function createScenario() {
