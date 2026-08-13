@@ -64,6 +64,14 @@ export function ScenarioSwitcher() {
     duration: 150,
     easing: 'ease-out',
     keyframes: () => [{ opacity: 1 }, { opacity: 0 }],
+    // No side effects. dnd-kit's default hides the dragged row for the length
+    // of the drop animation and restores it at the end, which is meant for the
+    // usual case where the overlay is still travelling to meet it. Here the row
+    // is already in its final slot, so hiding it just left a hole under the
+    // fading copy and then snapped it back to full opacity a frame before that
+    // copy disappeared - two solid rows for one frame, read as a blink. Leaving
+    // the row alone turns the same 150ms into a plain cross-fade.
+    sideEffects: () => undefined,
   };
 
   const sensors = useSensors(
