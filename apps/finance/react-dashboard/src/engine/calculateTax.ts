@@ -65,13 +65,28 @@ export interface FederalTaxResult {
   steps: AuditStep[];
 }
 
-/** Progressive bracket walk against taxable income (gross income less the standard deduction/BPA). */
+/**
+ * Progressive bracket walk, with the personal amount applied the way each
+ * country actually applies it.
+ *
+ * The US standard deduction is a DEDUCTION: it comes off income before the
+ * brackets, so it is worth the taxpayer's marginal rate.
+ *
+ * Canada's Basic Personal Amount is a non-refundable CREDIT at the lowest
+ * bracket rate, so it is worth the same to every taxpayer. Subtracting it from
+ * income instead - which this used to do for both countries - handed a
+ * top-bracket Canadian relief at 33% on an amount the CRA only ever relieves at
+ * the bottom rate, understating federal tax by thousands a year. The provincial
+ * side has always modelled it correctly as a credit; this brings federal into
+ * line with it.
+ */
 export function calculateFederalTax(grossIncome: number, table: FederalTaxTable): FederalTaxResult {
-  const taxableIncome = Math.max(0, grossIncome - table.standardDeductionOrBPA);
+  const isCredit = table.country === 'CA';
+  const taxableIncome = isCredit ? Math.max(0, grossIncome) : Math.max(0, grossIncome - table.standardDeductionOrBPA);
   const steps: AuditStep[] = [
     {
       label: 'Taxable income',
-      formula: 'max(0, grossIncome - standardDeductionOrBPA)',
+      formula: isCredit ? 'grossIncome (the BPA is a credit, applied below)' : 'max(0, grossIncome - standardDeduction)',
       inputs: { grossIncome, standardDeductionOrBPA: table.standardDeductionOrBPA },
       result: taxableIncome,
       relatedFields: ['taxesPaid.federal'],
@@ -103,6 +118,26 @@ export function calculateFederalTax(grossIncome: number, table: FederalTaxTable)
       result: taxInBracket,
       relatedFields: ['taxesPaid.federal'],
     });
+  }
+
+  if (isCredit) {
+    // Valued at the lowest bracket rate, which is what the CRA does, and capped
+    // at the tax owing - a non-refundable credit can take the bill to zero but
+    // never below it. The high-income phase-out of the federal BPA is not
+    // modelled, so this is slightly generous at the top bracket.
+    const creditRate = table.brackets[0]?.rate ?? 0;
+    const credit = Math.min(tax, table.standardDeductionOrBPA * creditRate);
+    tax -= credit;
+
+    if (credit > 0) {
+      steps.push({
+        label: 'Federal basic personal amount (credit)',
+        formula: 'min(taxOwing, basicPersonalAmount × lowestBracketRate)',
+        inputs: { basicPersonalAmount: table.standardDeductionOrBPA, creditRate },
+        result: -credit,
+        relatedFields: ['taxesPaid.federal'],
+      });
+    }
   }
 
   return { tax, marginalRatePct, steps };

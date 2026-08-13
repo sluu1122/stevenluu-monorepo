@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calculateFederalTax, calculateStateOrProvincialTax, calculateTotalTax, taxableSocialSecurity } from './calculateTax';
-import { US_FEDERAL_2026_SINGLE, CA_FEDERAL_2026 } from './taxBrackets';
+import { US_FEDERAL_2026_SINGLE, US_FEDERAL_2026_MFJ, CA_FEDERAL_2026 } from './taxBrackets';
 import type { TaxConfig } from './schema';
 import { flatRateTable, US_STATE_TAX_TABLES } from './regionalTaxTables';
 
@@ -19,11 +19,11 @@ describe('calculateFederalTax', () => {
 
   it('walks multiple brackets progressively, not flatly at the marginal rate', () => {
     // taxable income = 100,000 - 16,100 = 83,900
-    // 10%: 11,925 * 0.10 = 1,192.5
-    // 12%: (48,475-11,925) * 0.12 = 4,386
-    // 22%: (83,900-48,475) * 0.22 = 7,793.5
+    // 10%: 12,400 * 0.10 = 1,240
+    // 12%: (50,400-12,400) * 0.12 = 4,560
+    // 22%: (83,900-50,400) * 0.22 = 7,370
     const result = calculateFederalTax(100_000, US_FEDERAL_2026_SINGLE);
-    expect(result.tax).toBeCloseTo(1_192.5 + 4_386 + 7_793.5, 5);
+    expect(result.tax).toBeCloseTo(1_240 + 4_560 + 7_370, 5);
     expect(result.marginalRatePct).toBe(22);
   });
 
@@ -34,9 +34,55 @@ describe('calculateFederalTax', () => {
   });
 
   it('applies Canada federal brackets independently of the US table', () => {
-    // taxable income = 50,000 - 16,452 = 33,548, all in the 14% bracket
+    // taxable income = 50,000 - 16,452 = 33,548, all in the 14% bracket.
+    // Deducting the BPA and crediting it at the lowest rate give the same
+    // answer here, because the taxpayer's marginal rate IS the lowest rate -
+    // which is why this case alone cannot tell the two treatments apart.
     const result = calculateFederalTax(50_000, CA_FEDERAL_2026);
     expect(result.tax).toBeCloseTo(33_548 * 0.14, 5);
+  });
+
+  it("values Canada's BPA at the lowest rate, so it is worth the same at every income", () => {
+    // The CRA gives the Basic Personal Amount as a non-refundable credit, not a
+    // deduction. Deducting it instead - which this used to do - relieved a
+    // top-bracket Canadian at 33% on an amount only ever relieved at 14%,
+    // understating federal tax by about 3,100 a year. Mirrors the provincial
+    // test, which has always asserted this correctly.
+    const reliefAt = (income: number) =>
+      calculateFederalTax(income, { ...CA_FEDERAL_2026, standardDeductionOrBPA: 0 }).tax - calculateFederalTax(income, CA_FEDERAL_2026).tax;
+
+    const expected = 16_452 * 0.14;
+    expect(reliefAt(50_000), 'lowest bracket').toBeCloseTo(expected, 6);
+    expect(reliefAt(150_000), 'middle bracket').toBeCloseTo(expected, 6);
+    expect(reliefAt(300_000), 'top bracket').toBeCloseTo(expected, 6);
+  });
+
+  it("keeps the US standard deduction a deduction, worth the taxpayer's marginal rate", () => {
+    // The counterpart to the case above: these two are genuinely different
+    // instruments, and the US one must NOT be turned into a credit to match.
+    // At 100,000 the deduction sits entirely inside the 22% bracket.
+    const relief =
+      calculateFederalTax(100_000, { ...US_FEDERAL_2026_SINGLE, standardDeductionOrBPA: 0 }).tax - calculateFederalTax(100_000, US_FEDERAL_2026_SINGLE).tax;
+
+    expect(relief).toBeCloseTo(16_100 * 0.22, 6);
+  });
+
+  it('does not simply double the single brackets for married filing jointly', () => {
+    // True for the first six brackets and false for the last: the MFJ 37%
+    // bracket starts at 768,700, not twice the single filer's 640,600. Deriving
+    // the table by doubling taxed that whole band at 35%.
+    const single = US_FEDERAL_2026_SINGLE.brackets;
+    const mfj = US_FEDERAL_2026_MFJ.brackets;
+
+    for (let i = 0; i < single.length - 1; i++) {
+      expect(mfj[i].min, `bracket ${i} min`).toBeCloseTo(single[i].min * 2, 6);
+    }
+
+    const topSingle = single[single.length - 1];
+    const topMfj = mfj[mfj.length - 1];
+    expect(topMfj.rate).toBe(0.37);
+    expect(topMfj.min).toBe(768_700);
+    expect(topMfj.min, 'the top bracket is NOT doubled').toBeLessThan(topSingle.min * 2);
   });
 });
 

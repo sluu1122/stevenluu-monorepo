@@ -129,7 +129,18 @@ export function calculateRequiredDistributions(
     const basis = balancesAtYearStart[bucket.id] ?? 0;
     if (basis <= 0) continue;
 
-    const factor = requiredDistributionFactor(bucket.country, age);
+    // The two regimes key their tables on different ages, and `age` here is the
+    // age ATTAINED during the year.
+    //
+    // The IRS Uniform Lifetime Table wants exactly that - the age you reach in
+    // the distribution year. Canada's prescribed RRIF factor is based on your
+    // age at the START of the year, so the year you turn 72 uses the age-71 row
+    // (5.28%), not the age-72 one (5.40%). Passing the attained age for both
+    // shifted every Canadian year one row up the table, forcing slightly more
+    // out of the RRIF - and so slightly more taxable income - than the
+    // regulations require.
+    const factorAge = bucket.country === 'CA' ? age - 1 : age;
+    const factor = requiredDistributionFactor(bucket.country, factorAge);
     if (factor <= 0) continue;
 
     const required = Math.min(basis * factor, balances[bucket.id] ?? 0);
@@ -146,7 +157,9 @@ export function calculateRequiredDistributions(
         : 'priorYearEndBalance ÷ IRS Uniform Lifetime Table divisor for this age',
       inputs: {
         priorYearEndBalance: basis,
-        age: Math.floor(age),
+        // Labelled by the basis each regime actually uses, so the audit trail
+        // does not look like an off-by-one to anyone checking it.
+        [isCanadian ? 'ageAtStartOfYear' : 'ageAttainedThisYear']: Math.floor(factorAge),
         [isCanadian ? 'factorPct' : 'divisor']: isCanadian ? factor * 100 : 1 / factor,
         startAge,
       },

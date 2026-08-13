@@ -79,10 +79,12 @@ describe('calculateRequiredDistributions', () => {
   });
 
   it('bases the amount on the PRIOR year-end balance, not the current one', () => {
-    // Prior year-end 500k at age 72 (5.40%) = 27,000 - unaffected by the
-    // account having since grown, which is how the rules actually work.
+    // Prior year-end 500k, in the year the holder turns 72. Canada's factor is
+    // keyed on age at the START of the year, so that is the age-71 row (5.28%),
+    // giving 26,400 - unaffected by the account having since grown, which is
+    // how the rules actually work.
     const result = calculateRequiredDistributions([bucket()], { rrsp: 500_000 }, { rrsp: 900_000 }, 1990, 72, null);
-    expect(result.totalWithdrawn).toBeCloseTo(27_000, 6);
+    expect(result.totalWithdrawn).toBeCloseTo(500_000 * 0.0528, 6);
   });
 
   it('caps at what the account still holds', () => {
@@ -109,15 +111,20 @@ describe('calculateRequiredDistributions', () => {
     const ira = bucket({ id: 'ira', label: '401(k)', country: 'US', kind: 'US_TRADITIONAL_401K_IRA' });
     const starting = { rrsp: 200_000, ira: 300_000 };
     const result = calculateRequiredDistributions([rrsp, ira], starting, starting, 1950, 80, null);
-    // Canadian factor for 80 is 6.82%; the US divisor for 80 is 20.2.
-    expect(result.withdrawals.rrsp).toBeCloseTo(200_000 * 0.0682, 6);
+    // The two regimes read their tables on different ages, which is the point
+    // of this case: at 80, Canada uses the age-79 row (6.58%) because it keys
+    // on age at the start of the year, while the US uses the age-80 divisor
+    // (20.2) because it keys on the age attained during it.
+    expect(result.withdrawals.rrsp).toBeCloseTo(200_000 * 0.0658, 6);
     expect(result.withdrawals.ira).toBeCloseTo(300_000 / 20.2, 6);
-    expect(result.totalWithdrawn).toBeCloseTo(200_000 * 0.0682 + 300_000 / 20.2, 6);
+    expect(result.totalWithdrawn).toBeCloseTo(200_000 * 0.0658 + 300_000 / 20.2, 6);
   });
 
   it('honours a start-age override in both directions', () => {
+    // Forced at 65, so the factor is the age-64 row - below the published
+    // table, where the statutory formula gives 1/(90 - 64) = 1/26.
     const early = calculateRequiredDistributions([bucket()], { rrsp: 500_000 }, balances, 1990, 65, 65);
-    expect(early.totalWithdrawn).toBeCloseTo(500_000 * 0.04, 6);
+    expect(early.totalWithdrawn).toBeCloseTo(500_000 / 26, 6);
 
     const deferred = calculateRequiredDistributions([bucket()], { rrsp: 500_000 }, balances, 1990, 72, 80);
     expect(deferred.totalWithdrawn).toBe(0);

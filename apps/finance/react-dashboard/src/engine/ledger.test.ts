@@ -1448,8 +1448,10 @@ describe('required minimum distributions', () => {
     const row = buildScenarioLedger(scenario, [])[0].result.rows[0];
 
     // Age 80 in Canada = 6.82% of the 600k opening balance.
-    expect(row.requiredDistributionTotal).toBeCloseTo(600_000 * 0.0682, 2);
-    expect(row.withdrawals[rrsp.id] ?? 0).toBeGreaterThanOrEqual(600_000 * 0.0682 - 0.01);
+    // At 80, Canada's factor is the age-79 row (6.58%) - it keys on age at the
+    // start of the year, not the age attained during it.
+    expect(row.requiredDistributionTotal).toBeCloseTo(600_000 * 0.0658, 2);
+    expect(row.withdrawals[rrsp.id] ?? 0).toBeGreaterThanOrEqual(600_000 * 0.0658 - 0.01);
     expect(age).toBe(80);
   });
 
