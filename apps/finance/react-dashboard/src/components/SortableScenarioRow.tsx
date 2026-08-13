@@ -1,5 +1,5 @@
 import { Copy, GripVertical, Trash2 } from 'lucide-react';
-import { useSortable } from '@dnd-kit/sortable';
+import { useSortable, type AnimateLayoutChanges } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@repo/ui/components/button';
 import { cn } from '../lib/utils';
@@ -10,9 +10,10 @@ import type { Scenario } from '../engine/schema';
  * DragOverlay rather than in the list.
  *
  * A row dragged in place has no drop animation - dnd-kit clears its transform
- * on release and it teleports the last few pixels into its slot. An overlay is
- * what dnd-kit gives a drop animation to, so the lifted copy eases into
- * position while the real row is already sitting there underneath it.
+ * on release and it teleports the last few pixels into its slot. Lifting it
+ * into an overlay instead means the real row can sit in its final position the
+ * whole time, so on release this copy simply fades out over it and nothing
+ * moves at all. See `dropAnimation` in ScenarioSwitcher.
  *
  * Deliberately not interactive: it exists for the length of a drag, and its
  * buttons would be unreachable anyway.
@@ -45,8 +46,23 @@ interface SortableScenarioRowProps {
   onDelete: () => void;
 }
 
+/**
+ * Turns off the layout animation dnd-kit runs when a row's index changes.
+ *
+ * The rows have ALREADY slid out of each other's way during the drag, using
+ * their drag transforms. When the list is then reordered on drop, each row's
+ * transform clears at the same moment its laid-out position changes, and the
+ * two cancel - so nothing needs to move and nothing should be animated.
+ *
+ * Left on, dnd-kit measured a row mid-slide and animated it from that stale
+ * rect: the row that swapped with the dragged one leapt about 33px past its
+ * destination and then eased back down over ten frames, a visible second
+ * animation after the drop had already finished.
+ */
+const animateLayoutChanges: AnimateLayoutChanges = () => false;
+
 export function SortableScenarioRow({ scenario, isActive, editing, onSelect, onDuplicate, onDelete }: SortableScenarioRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: scenario.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: scenario.id, animateLayoutChanges });
 
   return (
     <div
