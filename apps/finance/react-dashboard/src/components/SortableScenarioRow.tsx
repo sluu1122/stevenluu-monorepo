@@ -5,6 +5,36 @@ import { Button } from '@repo/ui/components/button';
 import { cn } from '../lib/utils';
 import type { Scenario } from '../engine/schema';
 
+/**
+ * The row as it appears under the cursor mid-drag, rendered into dnd-kit's
+ * DragOverlay rather than in the list.
+ *
+ * A row dragged in place has no drop animation - dnd-kit clears its transform
+ * on release and it teleports the last few pixels into its slot. An overlay is
+ * what dnd-kit gives a drop animation to, so the lifted copy eases into
+ * position while the real row is already sitting there underneath it.
+ *
+ * Deliberately not interactive: it exists for the length of a drag, and its
+ * buttons would be unreachable anyway.
+ */
+export function ScenarioRowGhost({ scenario, isActive }: { scenario: Scenario; isActive: boolean }) {
+  return (
+    <div
+      data-scenario-ghost
+      className={cn(
+        'flex items-center gap-1 rounded-[9px] px-2 py-1.5 text-[13px] cursor-grabbing',
+        'bg-surface shadow-lg ring-1 ring-edge',
+        isActive ? 'font-semibold text-ink' : 'text-ink-mid',
+      )}
+    >
+      <span className="shrink-0 -ml-1 p-1 text-dim">
+        <GripVertical className="size-3.5" />
+      </span>
+      <span className="truncate flex-1">{scenario.name}</span>
+    </div>
+  );
+}
+
 interface SortableScenarioRowProps {
   scenario: Scenario;
   isActive: boolean;
@@ -34,7 +64,9 @@ export function SortableScenarioRow({ scenario, isActive, editing, onSelect, onD
       className={cn(
         'group flex items-center gap-1 rounded-[9px] px-2 py-1.5 cursor-pointer text-[13px] transition-colors',
         isActive ? 'bg-surface-pressed font-semibold text-ink' : 'text-ink-mid hover:bg-surface-pressed',
-        isDragging && 'opacity-50 relative z-10',
+        // Faded to read as the gap the row came out of - the lifted copy in the
+        // DragOverlay is what follows the cursor, and it sits above this.
+        isDragging && 'opacity-30',
       )}
     >
       {editing && (

@@ -1,13 +1,24 @@
 import { useState } from 'react';
 import { Check, Pencil, Plus } from 'lucide-react';
-import { DndContext, KeyboardSensor, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+  type DropAnimation,
+} from '@dnd-kit/core';
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Button } from '@repo/ui/components/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { useActiveScenario } from '../hooks/useActiveScenario';
 import { useDeleteScenario, useReorderScenarios, useSaveScenario, useScenarios } from '../hooks/useScenarios';
 import { createDefaultScenario } from '../engine/defaults';
-import { SortableScenarioRow } from './SortableScenarioRow';
+import { ScenarioRowGhost, SortableScenarioRow } from './SortableScenarioRow';
 import type { Scenario } from '../engine/schema';
 
 // Delete/Duplicate act on whichever row's icon button was clicked, not
@@ -29,6 +40,31 @@ export function ScenarioSwitcher() {
   // has to stay readable, so the default state spends the full width on it and
   // the controls appear only when they are being used.
   const [isEditing, setIsEditing] = useState(false);
+  // Which row is under the cursor right now, so DragOverlay can render a lifted
+  // copy of it. That copy is the only thing dnd-kit will give a drop animation
+  // to - a row dragged in place just teleports into its slot on release.
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const draggingRow = scenarios.find((s) => s.id === draggingId) ?? null;
+
+  /**
+   * Fades the lifted copy out where it was released, without moving it.
+   *
+   * The row underneath is already in its final slot by the time the pointer is
+   * released - the list reorders during `onDragEnd` - so there is nothing left
+   * for a drop animation to travel to. dnd-kit's default one travels anyway,
+   * back to the rect it captured when the drag STARTED, which after a reorder
+   * is the slot the row just LEFT: the copy glided away from where the row
+   * actually landed. That was a larger and more confusing movement than the
+   * small snap it was supposed to smooth over.
+   *
+   * Fading in place removes the movement entirely rather than trying to aim it.
+   */
+  const dropAnimation: DropAnimation = {
+    duration: 150,
+    easing: 'ease-out',
+    keyframes: () => [{ opacity: 1 }, { opacity: 0 }],
+  };
 
   const sensors = useSensors(
     // A short distance so a click still selects the scenario rather than
@@ -39,11 +75,13 @@ export function ScenarioSwitcher() {
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    setDraggingId(null);
     if (!over || active.id === over.id) return;
 
     const oldIndex = scenarios.findIndex((s) => s.id === active.id);
     const newIndex = scenarios.findIndex((s) => s.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
+
 
     reorderScenarios.mutate(arrayMove(scenarios, oldIndex, newIndex).map((s) => s.id));
   }
@@ -96,7 +134,13 @@ export function ScenarioSwitcher() {
 
       <div className="flex flex-col gap-0.5 max-h-[280px] overflow-y-auto">
         {scenarios.length === 0 && <p className="px-2 py-1.5 text-[13px] text-dim">No scenarios yet</p>}
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={(event: DragStartEvent) => setDraggingId(String(event.active.id))}
+          onDragCancel={() => setDraggingId(null)}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext items={scenarios.map((s) => s.id)} strategy={verticalListSortingStrategy}>
             {scenarios.map((scenario) => (
               <SortableScenarioRow
@@ -110,6 +154,9 @@ export function ScenarioSwitcher() {
               />
             ))}
           </SortableContext>
+          <DragOverlay dropAnimation={dropAnimation}>
+            {draggingRow && <ScenarioRowGhost scenario={draggingRow} isActive={draggingRow.id === activeScenarioId} />}
+          </DragOverlay>
         </DndContext>
       </div>
 
