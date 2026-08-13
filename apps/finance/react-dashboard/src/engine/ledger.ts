@@ -998,6 +998,20 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       needsByPersonId.set(person.id, computePersonNeeds(person, year, year - person.birthYear, startYear, states.get(person.id)!, overrides, oasClawbackThreshold));
     }
 
+    // Settled here, before anything is priced, because two separate passes have
+    // to agree about what this year's taxable income actually is: the
+    // replenishment gross-up in Phase 1 and the tax pass in Phase 2b. It
+    // depends only on the person's plan, the year's indexation and whether they
+    // have retired, none of which any withdrawal outcome can change.
+    const deductibleContributionByPersonId = new Map<string, number>();
+    for (const person of scenario.persons) {
+      const needs = needsByPersonId.get(person.id)!;
+      deductibleContributionByPersonId.set(
+        person.id,
+        deductibleContributionsFor(person, scenario, needs.isRetired, indexationFactor, needs.totalIncomes),
+      );
+    }
+
     // This person's US Social Security benefit this year, if any - a fixed
     // constant for the rest of the year's tax calculations (see
     // calculateTotalTax). Zero for a Canadian person, and zero for a US
@@ -1089,7 +1103,16 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
     for (const person of scenario.persons) {
       replenishmentByPersonId.set(person.id, emptyReplenishmentOutcome());
       const needs = needsByPersonId.get(person.id)!;
-      replenishmentBaseByPersonId.set(person.id, needs.totalIncomes + needs.totalBenefits + (distributionIncomeByPersonId.get(person.id) ?? 0));
+      // Less this year's deductible contributions, for the same reason the tax
+      // pass in 2b subtracts them: a gross-up priced against income the person
+      // will not be taxed on overstates the bracket they are actually in.
+      replenishmentBaseByPersonId.set(
+        person.id,
+        Math.max(
+          0,
+          needs.totalIncomes + needs.totalBenefits + (distributionIncomeByPersonId.get(person.id) ?? 0) - deductibleContributionByPersonId.get(person.id)!,
+        ),
+      );
     }
     if (isJointFiling) {
       const combinedBase = scenario.persons.reduce((sum, p) => sum + replenishmentBaseByPersonId.get(p.id)!, 0);
@@ -1424,8 +1447,17 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       }
 
       const distributionIncome = distributionIncomeByPersonId.get(person.id) ?? 0;
-      const grossTaxableIncome =
-        taxableWithdrawals + needs.totalIncomes + needs.totalBenefits + replenishment.taxableDistribution + distributionIncome + realizedGains;
+      // A contribution to a tax-DEFERRED account is deducted from income - that
+      // is what makes it tax-deferred rather than tax-free. Without this the
+      // money was taxed on the way in AND again on the way out, so a
+      // Traditional 401(k) or an RRSP looked strictly worse than a Roth or a
+      // TFSA, which is the opposite of the tradeoff those accounts represent.
+      // See deductibleContributionsFor for which contributions qualify.
+      const deductibleContributions = deductibleContributionByPersonId.get(person.id)!;
+      const grossTaxableIncome = Math.max(
+        0,
+        taxableWithdrawals + needs.totalIncomes + needs.totalBenefits + replenishment.taxableDistribution + distributionIncome + realizedGains - deductibleContributions,
+      );
       grossTaxableByPersonId.set(person.id, grossTaxableIncome);
     }
 
@@ -1803,6 +1835,48 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
  * sale still consumes cost basis in Phase 4b, so the gain surfaces on whatever
  * is sold next.
  */
+/**
+ * The part of this year's scheduled contributions that comes off taxable
+ * income before the brackets are walked.
+ *
+ * Tax-DEFERRED accounts only. A Traditional 401(k)/IRA deferral and an RRSP
+ * contribution are deducted from income; a Roth or TFSA contribution is made
+ * out of money already taxed, and a non-registered deposit is not a
+ * contribution in the tax sense at all. Shared buckets cannot be tax-deferred -
+ * the scenario schema refuses it, registered accounts being individual-only -
+ * so only the person's own accounts can produce a deduction.
+ *
+ * Capped at employment income for the year. Both regimes tie the room to earned
+ * income: a 401(k) deferral comes out of wages, and an RRSP deduction limit is
+ * a percentage of earned income. Neither lets someone living on pension and
+ * benefit income deduct a fresh contribution against it.
+ *
+ * Uses the SCHEDULED amount rather than whatever Phase 4 manages to fund, which
+ * is not known until after tax has been computed. A real payroll deferral never
+ * reaches the paycheck, so it is funded out of income by construction; routing
+ * contributions through cash is this engine's device for not minting money
+ * (see drawFromCash), not a claim about where the money came from. The totals
+ * conserve either way - income banks a surplus in 2c, and the contribution then
+ * moves that surplus between accounts.
+ */
+function deductibleContributionsFor(
+  person: PersonPlan,
+  scenario: Scenario,
+  isRetired: boolean,
+  indexationFactor: number,
+  employmentIncome: number,
+): number {
+  const scheduled = person.accountBuckets.reduce((sum, bucket) => {
+    if (bucket.taxTreatment !== 'taxDeferred') return sum;
+    // Same gate Phase 4 applies, so the deduction can never describe a
+    // contribution that phase will not even attempt.
+    if (isRetired && !bucket.contributeInRetirement) return sum;
+    return sum + convertBucketAmountToScenarioCurrency(indexedContributionAmount(bucket, indexationFactor), bucket, scenario);
+  }, 0);
+
+  return Math.min(scheduled, Math.max(0, employmentIncome));
+}
+
 function contributionFundingSources(person: PersonPlan, scenario: Scenario, sharedBuckets: AccountBucket[]): AccountBucket[] {
   const reachable = [...person.accountBuckets, ...sharedBuckets];
   const cash = reachable.filter((b) => b.isCashBuffer);

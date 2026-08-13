@@ -64,6 +64,20 @@ function withoutTaxableAccountTax(scenario: Scenario): void {
   scenario.taxableAccountTaxation = { ...scenario.taxableAccountTaxation, enabled: false };
 }
 
+/**
+ * Clears every scheduled contribution across the household.
+ *
+ * A contribution to a tax-deferred account is deducted from taxable income, so
+ * a default person plan - which seeds a 401(k) contribution - shifts the tax
+ * bill. Tests that are about something else entirely (how brackets combine,
+ * say) turn it off rather than carry the deduction through their arithmetic.
+ */
+function withoutContributions(scenario: Scenario): void {
+  for (const person of scenario.persons) {
+    for (const bucket of person.accountBuckets) bucket.annualContributionWhileWorking = 0;
+  }
+}
+
 describe('buildScenarioLedger', () => {
   it('produces one row per year from now through planningEndAge', () => {
     const scenario = createDefaultScenario('US');
@@ -439,6 +453,7 @@ describe('married-filing-jointly tax combination', () => {
     person2.incomeGrowthRatePct = 0;
     person2.benefits = [];
     scenario.persons.push(person2);
+    withoutContributions(scenario);
 
     const p1Row = buildFor(scenario, person1).rows[0];
     const p2Row = buildFor(scenario, person2).rows[0];
@@ -468,6 +483,7 @@ describe('married-filing-jointly tax combination', () => {
     person2.incomeGrowthRatePct = 0;
     person2.benefits = [];
     scenario.persons.push(person2);
+    withoutContributions(scenario);
 
     const p1Row = buildFor(scenario, person1).rows[0];
     const p2Row = buildFor(scenario, person2).rows[0];
@@ -1956,5 +1972,67 @@ describe('age-gated accounts', () => {
     const rows = buildScenarioLedger(scenario, [])[0].result.rows;
     expect(startYear - person.birthYear).toBeLessThan(59.5);
     expect(rows.every((r) => r.meltdownWithdrawalTotal === 0)).toBe(true);
+  });
+});
+
+describe('tax-deferred contributions reduce taxable income', () => {
+  /**
+   * A contribution to a tax-DEFERRED account is deducted from income - that is
+   * the whole distinction between tax-deferred and tax-free. Before this, the
+   * money was taxed on the way in and taxed again on the way out, so a
+   * Traditional 401(k) or an RRSP came out strictly worse than a Roth or a
+   * TFSA, which inverts the tradeoff those account types exist to offer.
+   */
+  function earner(contribution: number, treatment: 'taxDeferred' | 'taxFree', income = 100_000) {
+    const scenario = createDefaultScenario('US');
+    scenario.taxConfig.stateOrProvincialTable = flatRateTable(0); // isolate federal
+    withoutTaxableAccountTax(scenario);
+    withoutContributions(scenario);
+    setSpendingEach(scenario, { before: 0, atRetirement: 0 });
+
+    const person = scenario.persons[0];
+    person.annualIncomeNominal = income;
+    person.incomeGrowthRatePct = 0;
+    person.benefits = [];
+
+    const bucket = person.accountBuckets.find((b) => b.taxTreatment === treatment)!;
+    bucket.annualContributionWhileWorking = contribution;
+    bucket.indexContributionToInflation = false;
+
+    return { scenario, person };
+  }
+
+  it('a 401(k) contribution comes off income before the brackets are walked', () => {
+    const { scenario, person } = earner(10_000, 'taxDeferred');
+    const row = buildFor(scenario, person).rows[0];
+
+    expect(row.taxesPaid.federal).toBeCloseTo(calculateFederalTax(90_000, scenario.taxConfig.federalTable).tax, 2);
+  });
+
+  it('a Roth contribution does not, being made out of money already taxed', () => {
+    const { scenario, person } = earner(10_000, 'taxFree');
+    const row = buildFor(scenario, person).rows[0];
+
+    expect(row.taxesPaid.federal).toBeCloseTo(calculateFederalTax(100_000, scenario.taxConfig.federalTable).tax, 2);
+  });
+
+  it('leaves the two account types genuinely different, which is the point', () => {
+    const deferred = earner(10_000, 'taxDeferred');
+    const free = earner(10_000, 'taxFree');
+
+    const deferredTax = buildFor(deferred.scenario, deferred.person).rows[0].taxesPaid.federal;
+    const freeTax = buildFor(free.scenario, free.person).rows[0].taxesPaid.federal;
+
+    expect(deferredTax).toBeLessThan(freeTax);
+  });
+
+  it('cannot deduct more than the person actually earned', () => {
+    // Both regimes tie the room to earned income, so a 40,000 contribution
+    // against 25,000 of wages relieves 25,000 and no more - never a negative
+    // taxable income that would go on to shelter other income.
+    const { scenario, person } = earner(40_000, 'taxDeferred', 25_000);
+    const row = buildFor(scenario, person).rows[0];
+
+    expect(row.taxesPaid.federal).toBe(0);
   });
 });
