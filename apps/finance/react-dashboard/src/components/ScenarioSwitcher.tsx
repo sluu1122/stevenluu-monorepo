@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { flushSync } from 'react-dom';
+import { useRef, useState } from 'react';
 import { Check, Pencil, Plus } from 'lucide-react';
 import {
   DndContext,
@@ -9,7 +8,7 @@ import {
   closestCenter,
   useSensor,
   useSensors,
-  type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
   type DropAnimation,
 } from '@dnd-kit/core';
@@ -17,7 +16,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSo
 import { Button } from '@repo/ui/components/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { useActiveScenario } from '../hooks/useActiveScenario';
-import { useDeleteScenario, useReorderScenarios, useSaveScenario, useScenarios } from '../hooks/useScenarios';
+import { useDeleteScenario, usePreviewScenarioOrder, useReorderScenarios, useSaveScenario, useScenarios } from '../hooks/useScenarios';
 import { createDefaultScenario } from '../engine/defaults';
 import { ScenarioRowGhost, SortableScenarioRow } from './SortableScenarioRow';
 import type { Scenario } from '../engine/schema';
@@ -34,6 +33,7 @@ export function ScenarioSwitcher() {
   const saveScenario = useSaveScenario();
   const deleteScenario = useDeleteScenario();
   const reorderScenarios = useReorderScenarios();
+  const previewOrder = usePreviewScenarioOrder();
 
   const [targetScenario, setTargetScenario] = useState<Scenario | null>(null);
   // Reordering, duplicating and deleting all live behind this rather than on
@@ -47,6 +47,8 @@ export function ScenarioSwitcher() {
   const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const draggingRow = scenarios.find((s) => s.id === draggingId) ?? null;
+  /** The order the drag began from, so a cancelled drag can put the preview back. */
+  const orderAtDragStart = useRef<string[] | null>(null);
 
   /**
    * Fades the lifted copy out where it was released, without moving it.
@@ -82,25 +84,39 @@ export function ScenarioSwitcher() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  function handleDragEnd(event: DragEndEvent) {
+  /**
+   * Moves the row as the pointer crosses each neighbour, so the list is already
+   * in its final order before the pointer is released.
+   *
+   * This is what makes the drop silent. Reordering on release instead left a
+   * single frame showing the OLD order: dnd-kit clears its drag transforms in
+   * its own commit and ours arrived in the next, so for one frame the rows sat
+   * at their original positions with nothing transforming them. Nothing can
+   * flip on release if nothing changes on release.
+   *
+   * Cache-only. A drag crosses a row as often as the pointer wanders and none
+   * of that is worth a write; `handleDragEnd` persists the result once.
+   */
+  function handleDragOver(event: DragOverEvent) {
     const { active, over } = event;
-    setDraggingId(null);
     if (!over || active.id === over.id) return;
 
     const oldIndex = scenarios.findIndex((s) => s.id === active.id);
     const newIndex = scenarios.findIndex((s) => s.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
+    previewOrder(arrayMove(scenarios, oldIndex, newIndex).map((s) => s.id));
+  }
 
-    // Flushed synchronously. The rows have already slid out of each other's way
-    // during the drag, and on release their drag transforms clear immediately -
-    // so unless the reorder lands in that SAME frame, every shifted row springs
-    // back to where it started and only then jumps to its new slot. Letting
-    // React schedule this normally put a two-frame round trip in the middle of
-    // the drop.
-    flushSync(() => {
-      reorderScenarios.mutate(arrayMove(scenarios, oldIndex, newIndex).map((s) => s.id));
-    });
+  function handleDragEnd() {
+    setDraggingId(null);
+
+    // The order on screen is already whatever the drag arrived at, so this only
+    // has to write it down - and only if the drag actually changed something.
+    const ids = scenarios.map((s) => s.id);
+    if (orderAtDragStart.current?.join() === ids.join()) return;
+
+    reorderScenarios.mutate(ids);
   }
 
   async function createScenario() {
@@ -154,8 +170,17 @@ export function ScenarioSwitcher() {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
-          onDragStart={(event: DragStartEvent) => setDraggingId(String(event.active.id))}
-          onDragCancel={() => setDraggingId(null)}
+          onDragStart={(event: DragStartEvent) => {
+            orderAtDragStart.current = scenarios.map((s) => s.id);
+            setDraggingId(String(event.active.id));
+          }}
+          onDragOver={handleDragOver}
+          onDragCancel={() => {
+            // The preview has already moved rows around, so an abandoned drag
+            // has to put them back rather than leave the list rearranged.
+            if (orderAtDragStart.current) previewOrder(orderAtDragStart.current);
+            setDraggingId(null);
+          }}
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={scenarios.map((s) => s.id)} strategy={verticalListSortingStrategy}>

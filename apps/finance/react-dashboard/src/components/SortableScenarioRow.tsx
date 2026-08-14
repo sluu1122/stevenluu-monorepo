@@ -47,19 +47,18 @@ interface SortableScenarioRowProps {
 }
 
 /**
- * Turns off the layout animation dnd-kit runs when a row's index changes.
+ * Animate a row's index change while a drag is in progress, never afterwards.
  *
- * The rows have ALREADY slid out of each other's way during the drag, using
- * their drag transforms. When the list is then reordered on drop, each row's
- * transform clears at the same moment its laid-out position changes, and the
- * two cancel - so nothing needs to move and nothing should be animated.
+ * The list is reordered DURING the drag (see `handleDragOver`), so a row's
+ * index changes the moment the pointer crosses it - and that is the movement
+ * worth animating, since it is what opens the gap the dragged row will sit in.
+ * Without it the rows swap instantly and the list twitches under the cursor.
  *
- * Left on, dnd-kit measured a row mid-slide and animated it from that stale
- * rect: the row that swapped with the dragged one leapt about 33px past its
- * destination and then eased back down over ten frames, a visible second
- * animation after the drop had already finished.
+ * Outside a drag it must stay off. When the drag ends nothing about the order
+ * changes, so any animation there is dnd-kit measuring rows that have already
+ * settled and moving them anyway.
  */
-const animateLayoutChanges: AnimateLayoutChanges = () => false;
+const animateLayoutChanges: AnimateLayoutChanges = ({ isSorting }) => isSorting;
 
 export function SortableScenarioRow({ scenario, isActive, editing, onSelect, onDuplicate, onDelete }: SortableScenarioRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: scenario.id, animateLayoutChanges });

@@ -20,6 +20,28 @@ export function useSaveScenario() {
 }
 
 /**
+ * Reorders the cached list WITHOUT persisting, for use while a drag is still
+ * in progress.
+ *
+ * Reordering as the pointer crosses each row - rather than once on release -
+ * is what keeps the drop silent: by the time the pointer is let go the list is
+ * already in its final order, so dnd-kit clearing its drag transforms changes
+ * nothing. Reordering on release instead meant the transforms cleared in one
+ * commit and the new order arrived in the next, showing the OLD order for a
+ * single frame in between.
+ *
+ * Deliberately cache-only. A drag can cross a row many times and none of those
+ * are worth a write; `useReorderScenarios` persists the final order once.
+ */
+export function usePreviewScenarioOrder() {
+  const queryClient = useQueryClient();
+  return (orderedIds: string[]) => {
+    const current = queryClient.getQueryData<Scenario[]>(SCENARIOS_KEY);
+    if (current) queryClient.setQueryData(SCENARIOS_KEY, reorderById(current, orderedIds));
+  };
+}
+
+/**
  * Applied optimistically, because the list has already animated into its new
  * order by the time this runs - waiting for the write and refetch to confirm it
  * makes the dragged row visibly snap back and then forward again.
