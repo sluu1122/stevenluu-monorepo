@@ -48,8 +48,11 @@ test.describe('scenario export/import', () => {
     await page.goto('/');
 
     // First load with empty storage seeds the demo bundle. Wait for that rather
-    // than a fixed timeout, since everything below counts scenarios.
-    await expect.poll(() => scenarioNames(page).then((n) => n.length)).toBe(3);
+    // than a fixed timeout, since everything below counts scenarios. Any
+    // non-zero count means seeding finished - the demos are written as one
+    // blob, so the list goes from empty to complete in a single step, and not
+    // naming a number here keeps this from breaking when one is added.
+    await expect.poll(() => scenarioNames(page).then((n) => n.length)).toBeGreaterThan(0);
     const before = await scenarioNames(page);
 
     // --- Export -----------------------------------------------------------
@@ -110,7 +113,7 @@ test.describe('scenario export/import', () => {
 
   test('a malformed file is rejected with a reason and changes nothing', async ({ page }, testInfo) => {
     await page.goto('/');
-    await expect.poll(() => scenarioNames(page).then((n) => n.length)).toBe(3);
+    await expect.poll(() => scenarioNames(page).then((n) => n.length)).toBeGreaterThan(0);
     const before = await scenarioNames(page);
 
     const badPath = testInfo.outputPath('not-a-bundle.json');

@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LocalStorageScenarioRepository } from './localStorageScenarioRepository';
+import { createDemoScenarios } from '../engine/demoScenarios';
+
+/**
+ * Derived rather than written down, so adding a demo scenario does not send
+ * every count in this file red. What these tests care about is the seeding and
+ * reset behaviour around the demos, never how many of them there happen to be.
+ */
+const DEMO_COUNT = createDemoScenarios().length;
 
 /** Node's test environment has no global `localStorage` - a minimal in-memory stand-in is enough for the repository's get/set/remove calls. */
 class MemoryStorage implements Storage {
@@ -33,9 +41,9 @@ afterEach(() => {
 });
 
 describe('first-run demo seeding', () => {
-  it('seeds three demo scenarios when localStorage has never been written to', async () => {
+  it('seeds the demo scenarios when localStorage has never been written to', async () => {
     const scenarios = await new LocalStorageScenarioRepository().listScenarios();
-    expect(scenarios).toHaveLength(3);
+    expect(scenarios).toHaveLength(DEMO_COUNT);
   });
 
   // Which scenario becomes ACTIVE is ActiveScenarioProvider's job, not the
@@ -65,7 +73,7 @@ describe('first-run demo seeding', () => {
     await repo.deleteScenario(seeded.id);
 
     const remaining = await new LocalStorageScenarioRepository().listScenarios();
-    expect(remaining).toHaveLength(2);
+    expect(remaining).toHaveLength(DEMO_COUNT - 1);
   });
 });
 
@@ -76,14 +84,14 @@ describe('reset to demo scenarios', () => {
     return repo.saveScenario({ ...template, id: `scenario-${name}`, name });
   }
 
-  it('replaces everything with a fresh set of three demos when nothing is kept', async () => {
+  it('replaces everything with a fresh set of demos when nothing is kept', async () => {
     const repo = new LocalStorageScenarioRepository();
     await addOwnScenario(repo, 'Mine');
 
     await repo.resetToDemoScenarios([]);
 
     const after = await repo.listScenarios();
-    expect(after).toHaveLength(3);
+    expect(after).toHaveLength(DEMO_COUNT);
     expect(after.map((s) => s.name)).not.toContain('Mine');
   });
 
@@ -104,7 +112,7 @@ describe('reset to demo scenarios', () => {
     await repo.resetToDemoScenarios(['scenario-Mine']);
 
     const after = await repo.listScenarios();
-    expect(after).toHaveLength(4);
+    expect(after).toHaveLength(DEMO_COUNT + 1);
     // First, so ActiveScenarioProvider's fallback lands on the user's own
     // scenario rather than a demo.
     expect(after[0].name).toBe('Mine');
@@ -140,7 +148,7 @@ describe('reset to demo scenarios', () => {
 
     await repo.resetToDemoScenarios([]);
 
-    expect(await repo.listScenarios()).toHaveLength(3);
+    expect(await repo.listScenarios()).toHaveLength(DEMO_COUNT);
   });
 
   it('ignores ids that no longer exist instead of resurrecting them', async () => {
@@ -148,7 +156,7 @@ describe('reset to demo scenarios', () => {
 
     await repo.resetToDemoScenarios(['scenario-that-was-deleted']);
 
-    expect(await repo.listScenarios()).toHaveLength(3);
+    expect(await repo.listScenarios()).toHaveLength(DEMO_COUNT);
   });
 });
 
@@ -171,12 +179,13 @@ describe('reorderScenarios', () => {
     const repository = new LocalStorageScenarioRepository();
     const before = await repository.listScenarios();
 
-    // A list rendered before the third scenario existed - which is what a race
-    // with an import, a duplicate, or another tab actually looks like.
+    // Mentions only the first two - a list rendered before the rest existed,
+    // which is what a race with an import, a duplicate, or another tab actually
+    // looks like. Everything unmentioned keeps its relative order behind them.
     await repository.reorderScenarios([before[1].id, before[0].id]);
 
     const after = await repository.listScenarios();
-    expect(after.map((s) => s.id)).toEqual([before[1].id, before[0].id, before[2].id]);
+    expect(after.map((s) => s.id)).toEqual([before[1].id, before[0].id, ...before.slice(2).map((s) => s.id)]);
   });
 
   it('does not disturb the stored overrides', async () => {

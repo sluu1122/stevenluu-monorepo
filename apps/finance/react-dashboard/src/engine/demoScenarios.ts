@@ -48,10 +48,11 @@ function setContributions(person: PersonPlan, byKind: Partial<Record<AccountKind
 }
 
 /**
- * Three scenarios exercising the engine's main axes - a single US filer, a
- * married-filing-jointly US couple, and a Canadian couple holding accounts on
- * both sides of the border - so a first-time visitor sees real output instead
- * of an empty "create your first scenario" prompt. Built the same way the
+ * Four scenarios exercising the engine's main axes - a single US filer, a
+ * married-filing-jointly US couple, a Canadian couple holding accounts on both
+ * sides of the border, and a Canadian couple retiring in two steps - so a
+ * first-time visitor sees real output instead of an empty "create your first
+ * scenario" prompt. Built the same way the
  * engine's own audits were: starting from `createDefaultScenario` and layering
  * realistic overrides on top, rather than hand-rolling fixtures that could
  * drift from what the app itself considers a sane default.
@@ -67,12 +68,14 @@ function setContributions(person: PersonPlan, byKind: Partial<Record<AccountKind
  * left alone - it seeds user-created scenarios, whose surplus lands in cash
  * and so funds contributions without this constraint biting.
  *
- * The three deliberately differ in shape rather than just in size: one spends
- * less in retirement and leaves a legacy, one spends the same throughout, and
- * one spends more and draws itself down.
+ * They deliberately differ in shape rather than just in size. Three take
+ * different positions on the replacement ratio - one spends less in retirement
+ * and leaves a legacy, one spends the same throughout, one spends more and
+ * draws itself down - and the fourth varies something else entirely: WHEN the
+ * household retires, one earner at a time rather than both at once.
  */
 export function createDemoScenarios(): Scenario[] {
-  return [createUsSingleDemoScenario(), createUsCoupleDemoScenario(), createCrossBorderCoupleDemoScenario()];
+  return [createUsSingleDemoScenario(), createUsCoupleDemoScenario(), createCrossBorderCoupleDemoScenario(), createCanadianCoupleDemoScenario()];
 }
 
 /**
@@ -230,5 +233,73 @@ function createCrossBorderCoupleDemoScenario(): Scenario {
   // terms, so it ends at roughly three quarters of its real peak.
   scenario.householdSpendingRealBeforeRetirement = 84_000;
   scenario.householdSpendingRealAtRetirement = 96_000;
+  return scenario;
+}
+
+/**
+ * Two Canadian earners who STOP WORKING AT DIFFERENT TIMES - the axis none of
+ * the other three exercise, all of which retire their household in one step.
+ *
+ * Person 1 finishes at 63, Person 2 carries on to 67, which produces four
+ * "bridge" years the other demos have no equivalent of: the household is
+ * already spending at its retirement level (see `earliestRetirementYear` in
+ * ledger.ts - household spending deliberately steps down when the FIRST person
+ * retires), on one income, with neither CPP nor OAS started for the partner who
+ * has stopped. Those years run a small deficit funded from savings, which is
+ * exactly what a staggered retirement actually feels like.
+ *
+ * British Columbia rather than Ontario, so the Canadian side of the demos
+ * covers a province with NO surtax alongside one that has them. Filing stays
+ * individual: Canada has no joint return, so unlike the MFJ demo each spouse
+ * walks their own brackets, and each gets their own RRSP deduction and their
+ * own Basic Personal Amount credit.
+ */
+function createCanadianCoupleDemoScenario(): Scenario {
+  const scenario = createDefaultScenario('CA', 'Canadian Couple (BC, Staggered Retirement)');
+  scenario.taxConfig.stateOrProvincialTable = { ...CANADIAN_TAX_TABLES.BC };
+
+  const person1 = createDefaultPersonPlan('CA', 'Person 1');
+  person1.annualIncomeNominal = 92_000;
+  person1.incomeGrowthRatePct = 2.5;
+  person1.retirementStartYear = person1.birthYear + 63;
+  setBalances(person1, {
+    CA_CASH_POOL: 30_000,
+    CA_NON_REGISTERED: 24_000,
+    CA_RRSP_RRIF: 72_000,
+    CA_TFSA: 28_000,
+  });
+  // Both well inside the statutory room - 18% of earned income for the RRSP and
+  // the annual TFSA limit - so neither is a contribution the household could
+  // not legally make. The RRSP figure comes off taxable income, which is what
+  // leaves room for the TFSA on top.
+  setContributions(person1, {
+    CA_RRSP_RRIF: 6_500,
+    CA_TFSA: 2_500,
+  });
+
+  const person2 = createDefaultPersonPlan('CA', 'Person 2');
+  person2.birthYear = CURRENT_YEAR - 33;
+  person2.annualIncomeNominal = 78_000;
+  person2.incomeGrowthRatePct = 2.5;
+  person2.retirementStartYear = person2.birthYear + 67;
+  setBalances(person2, {
+    CA_CASH_POOL: 30_000,
+    CA_NON_REGISTERED: 18_000,
+    CA_RRSP_RRIF: 52_000,
+    CA_TFSA: 24_000,
+  });
+  setContributions(person2, {
+    CA_RRSP_RRIF: 5_000,
+    CA_TFSA: 2_000,
+  });
+
+  for (const person of [person1, person2]) bankSurplusIntoTaxableInvestments(person, 'CA');
+
+  scenario.persons = [person1, person2];
+  // The household's cash sits at six months of pre-retirement spending, split
+  // evenly, so the buffer opens at its own target rather than pulling a visible
+  // top-up out of investments in year one.
+  scenario.householdSpendingRealBeforeRetirement = 120_000;
+  scenario.householdSpendingRealAtRetirement = 112_000;
   return scenario;
 }

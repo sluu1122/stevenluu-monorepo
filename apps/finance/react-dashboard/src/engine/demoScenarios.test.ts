@@ -41,9 +41,9 @@ function expectNoViolations(scenario: Scenario) {
 describe('createDemoScenarios', () => {
   const scenarios = createDemoScenarios();
 
-  it('returns exactly three scenarios with distinct ids', () => {
-    expect(scenarios).toHaveLength(3);
-    expect(new Set(scenarios.map((s) => s.id)).size).toBe(3);
+  it('returns exactly four scenarios with distinct ids', () => {
+    expect(scenarios).toHaveLength(4);
+    expect(new Set(scenarios.map((s) => s.id)).size).toBe(4);
   });
 
   it.each(createDemoScenarios())('"$name" validates against ScenarioSchema', (scenario) => {
@@ -92,11 +92,37 @@ describe('createDemoScenarios', () => {
     expect(dependent.annualIncomeNominal).toBe(0);
   });
 
-  // A first-time visitor sees these three scenarios before anything else, so a
-  // wall of red warnings on load is a product defect even when the arithmetic
+  it('the Canadian couple retires its two earners in different years, on Canadian accounts only', () => {
+    const scenario = scenarios.find((s) => s.name.startsWith('Canadian Couple'))!;
+    expect(scenario.country).toBe('CA');
+    expect(scenario.taxConfig.country).toBe('CA');
+    // Canada has no joint return - each spouse walks their own brackets.
+    expect(scenario.taxConfig.filingStatus).toBe('single');
+    expect(scenario.taxConfig.stateOrProvincialTable.label).toBe('British Columbia');
+
+    const [first, second] = scenario.persons;
+    // Two earners, unlike the single-income cross-border couple.
+    expect(first.annualIncomeNominal).toBeGreaterThan(0);
+    expect(second.annualIncomeNominal).toBeGreaterThan(0);
+
+    // The point of this demo: the household does NOT retire in one step.
+    expect(first.retirementStartYear).not.toBe(second.retirementStartYear);
+
+    // Canadian accounts only - no cross-border holdings here.
+    const countries = new Set(scenario.persons.flatMap((p) => p.accountBuckets).map((b) => b.country));
+    expect([...countries]).toEqual(['CA']);
+  });
+
+  // A first-time visitor sees these scenarios before anything else, so a wall
+  // of red warnings on load is a product defect even when the arithmetic
   // underneath is right.
   describe('load clean', () => {
-    it.each(['US Single Filer', 'US Married Couple (MFJ)', 'Cross-Border Couple (Canada + US Accounts)'])('%s projects without any warnings', (name) => {
+    it.each([
+      'US Single Filer',
+      'US Married Couple (MFJ)',
+      'Cross-Border Couple (Canada + US Accounts)',
+      'Canadian Couple (BC, Staggered Retirement)',
+    ])('%s projects without any warnings', (name) => {
       const scenario = scenarios.find((s) => s.name === name)!;
       for (const { plan, result } of buildScenarioLedger(scenario, [])) {
         expect(result.warnings, `${name} / ${plan.label}: ${result.warnings.map((w) => `${w.year} ${w.message}`).join(' | ')}`).toEqual([]);
@@ -152,11 +178,12 @@ describe('createDemoScenarios', () => {
     });
 
     // Each demo takes a different position on the replacement ratio, so between
-    // them they show the three shapes a real plan can have.
+    // them they show the shapes a real plan can have.
     it.each([
       ['US Single Filer', 'lower'],
       ['US Married Couple (MFJ)', 'same'],
       ['Cross-Border Couple (Canada + US Accounts)', 'higher'],
+      ['Canadian Couple (BC, Staggered Retirement)', 'lower'],
     ] as const)('%s spends %s in retirement than before it', (name, direction) => {
       const scenario = scenarios.find((s) => s.name === name)!;
       const before = scenario.householdSpendingRealBeforeRetirement;
@@ -192,7 +219,7 @@ describe('createDemoScenarios', () => {
     // a nominal balance climbs in almost every survivable plan and "ends below
     // its peak" is unreachable without absurd spending. What actually differs is
     // how much purchasing power the retirement years add or consume.
-    it('gives the three demos three different endgames', () => {
+    it('gives the demos visibly different endgames', () => {
       const ratios = new Map<string, number>();
       for (const scenario of scenarios) {
         const ledgers = buildScenarioLedger(scenario, []);
@@ -214,8 +241,18 @@ describe('createDemoScenarios', () => {
       expect(couple, `couple ${couple.toFixed(2)}x`).toBeGreaterThan(1.1);
       expect(couple, `couple ${couple.toFixed(2)}x should trail single ${single.toFixed(2)}x`).toBeLessThan(single);
       // Spends more in retirement, so consumes real purchasing power - the only
-      // one of the three that draws itself down.
+      // one that draws itself down.
       expect(crossBorder, `cross-border ${crossBorder.toFixed(2)}x`).toBeLessThan(1);
+
+      // Nearly the same spending either side of retiring (~93% replacement), on
+      // two full CPP and OAS entitlements which between them cover a large share
+      // of it - so the portfolio is drawn on lightly and drifts up in real terms
+      // rather than growing steeply or falling. Banded rather than pinned: what
+      // matters is that it neither compounds like the single filer nor declines
+      // like the cross-border couple.
+      const canadian = ratios.get('Canadian Couple (BC, Staggered Retirement)')!;
+      expect(canadian, `canadian ${canadian.toFixed(2)}x`).toBeGreaterThan(1);
+      expect(canadian, `canadian ${canadian.toFixed(2)}x should trail single ${single.toFixed(2)}x`).toBeLessThan(single);
     });
   });
 });
