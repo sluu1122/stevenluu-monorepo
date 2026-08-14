@@ -79,7 +79,10 @@ describe('agreement with the engine', () => {
     // Pins the behaviour the comment above depends on. If the engine is ever
     // changed so retirement spending is denominated in today's dollars, this
     // fails and the comment above needs revisiting rather than quietly rotting.
-    const scenario = createDemoScenarios()[0];
+    // Named rather than taken by position: any demo would do, but a test that
+    // silently changes subject when the demo list is reordered is worse than
+    // one that says which it means.
+    const scenario = createDemoScenarios().find((s) => s.name === 'US Single Filer')!;
     const { plan, result } = buildScenarioLedger(scenario, [])[0];
     const firstRetired = result.rows.find((r) => r.year === plan.retirementStartYear)!;
     expect(firstRetired.spendingNominal / firstRetired.spendingReal).toBeCloseTo(1, 6);

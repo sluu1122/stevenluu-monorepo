@@ -74,8 +74,14 @@ function setContributions(person: PersonPlan, byKind: Partial<Record<AccountKind
  * draws itself down - and the fourth varies something else entirely: WHEN the
  * household retires, one earner at a time rather than both at once.
  */
+/**
+ * Order matters twice over: it is the order they appear in the sidebar, and
+ * the first one is what a first-time visitor actually lands on, since
+ * ActiveScenarioProvider falls back to `scenarios[0]` when nothing is stored.
+ * The Canadian-resident pair lead; the two US ones follow.
+ */
 export function createDemoScenarios(): Scenario[] {
-  return [createUsSingleDemoScenario(), createUsCoupleDemoScenario(), createCrossBorderCoupleDemoScenario(), createCanadianCoupleDemoScenario()];
+  return [createCrossBorderCoupleDemoScenario(), createCanadianCoupleDemoScenario(), createUsSingleDemoScenario(), createUsCoupleDemoScenario()];
 }
 
 /**
