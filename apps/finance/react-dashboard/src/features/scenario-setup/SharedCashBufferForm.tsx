@@ -28,7 +28,7 @@ export function SharedCashBufferForm() {
       </p>
 
       {cashCandidates.length === 0 ? (
-        <p className="text-[13px] text-dim">Add a shared Cash Pool or Cash / HYSA account above to hold a household buffer.</p>
+        <p className="text-[13px] text-dim">Add a shared US Cash or CA Cash account above to hold a household buffer.</p>
       ) : (
         <>
           <div className="flex items-center gap-3 mb-4">
