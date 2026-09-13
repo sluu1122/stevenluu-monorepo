@@ -48,6 +48,20 @@ function setContributions(person: PersonPlan, byKind: Partial<Record<AccountKind
 }
 
 /**
+ * Same, for the account's own name. Left at the kind's generic default
+ * ("Cash (CA)", "Traditional 401(k)/IRA") every account in a demo reads as a
+ * category rather than something a real household actually holds - naming
+ * them after real institutions is what makes the difference between a table
+ * of figures and a household that looks lived-in.
+ */
+function setLabels(person: PersonPlan, byKind: Partial<Record<AccountKind, string>>): void {
+  for (const bucket of person.accountBuckets) {
+    const label = byKind[bucket.kind];
+    if (label !== undefined) bucket.label = label;
+  }
+}
+
+/**
  * Four scenarios exercising the engine's main axes - a single US filer, a
  * married-filing-jointly US couple, a Canadian couple holding accounts on both
  * sides of the border, and a Canadian couple retiring in two steps - so a
@@ -108,6 +122,12 @@ function createUsSingleDemoScenario(): Scenario {
     US_TRADITIONAL_401K_IRA: 12_000,
     US_ROTH_401K_IRA: 5_000,
   });
+  setLabels(person, {
+    US_CASH_HYSA: 'Marcus HYSA',
+    US_TAXABLE_BROKERAGE: 'Vanguard Brokerage',
+    US_TRADITIONAL_401K_IRA: 'Fidelity 401(k)',
+    US_ROTH_401K_IRA: 'Vanguard Roth IRA',
+  });
 
   // Saves ~27% of gross - a frugal, disciplined single earner. Combined with
   // the drop at retirement this draws only ~2% a year, so the portfolio keeps
@@ -153,6 +173,22 @@ function createUsCoupleDemoScenario(): Scenario {
     });
     bankSurplusIntoTaxableInvestments(person, 'US');
   }
+
+  // Named separately rather than in the loop above: a couple often shares an
+  // everyday bank but rarely the same 401(k) provider, since that is chosen
+  // by each spouse's own employer.
+  setLabels(person1, {
+    US_CASH_HYSA: 'Ally Savings',
+    US_TAXABLE_BROKERAGE: 'Schwab Brokerage',
+    US_TRADITIONAL_401K_IRA: 'Fidelity 401(k)',
+    US_ROTH_401K_IRA: 'Schwab Roth IRA',
+  });
+  setLabels(person2, {
+    US_CASH_HYSA: 'Ally Savings',
+    US_TAXABLE_BROKERAGE: 'Fidelity Brokerage',
+    US_TRADITIONAL_401K_IRA: 'Empower 401(k)',
+    US_ROTH_401K_IRA: 'Fidelity Roth IRA',
+  });
 
   scenario.persons = [person1, person2];
   // Spends the same either side of retiring, on a ~16% savings rate. Lands
@@ -201,6 +237,17 @@ function createCrossBorderCoupleDemoScenario(): Scenario {
     US_TAXABLE_BROKERAGE: 0,
     US_TRADITIONAL_401K_IRA: 0,
   });
+  setLabels(person1, {
+    CA_CASH_POOL: 'TD Savings',
+    CA_NON_REGISTERED: 'Questrade Non-Registered',
+    CA_RRSP_RRIF: 'Questrade RRSP',
+    CA_TFSA: 'Questrade TFSA',
+    US_TAXABLE_BROKERAGE: 'Fidelity Brokerage',
+    // "Rollover IRA" rather than "401(k)": nobody still contributes to it (see
+    // above), which is exactly what happens to a US 401(k) once its owner
+    // leaves the employer that sponsored it.
+    US_TRADITIONAL_401K_IRA: 'Fidelity Rollover IRA',
+  });
   person1.cashBufferRule.replenishmentOrder = deriveReplenishmentOrder(person1.accountBuckets);
   person1.benefits[0].monthlyBenefitAtClaimAge = Math.round(person1.benefits[0].monthlyBenefitAtClaimAge * 0.6);
 
@@ -220,6 +267,12 @@ function createCrossBorderCoupleDemoScenario(): Scenario {
     CA_NON_REGISTERED: 0,
     CA_RRSP_RRIF: 0,
     CA_TFSA: 0,
+  });
+  setLabels(person2, {
+    CA_CASH_POOL: 'Tangerine Savings',
+    CA_NON_REGISTERED: 'Wealthsimple Non-Registered',
+    CA_RRSP_RRIF: 'Wealthsimple RRSP',
+    CA_TFSA: 'Wealthsimple TFSA',
   });
   person2.cashBufferRule.replenishmentOrder = deriveReplenishmentOrder(person2.accountBuckets);
   // CPP is earnings-based - a spouse who never worked draws only a token
@@ -282,6 +335,12 @@ function createCanadianCoupleDemoScenario(): Scenario {
     CA_RRSP_RRIF: 6_500,
     CA_TFSA: 2_500,
   });
+  setLabels(person1, {
+    CA_CASH_POOL: 'TD Savings',
+    CA_NON_REGISTERED: 'RBC Direct Investing Non-Registered',
+    CA_RRSP_RRIF: 'RBC RRSP',
+    CA_TFSA: 'Questrade TFSA',
+  });
 
   const person2 = createDefaultPersonPlan('CA', 'Person 2');
   person2.birthYear = CURRENT_YEAR - 33;
@@ -297,6 +356,14 @@ function createCanadianCoupleDemoScenario(): Scenario {
   setContributions(person2, {
     CA_RRSP_RRIF: 5_000,
     CA_TFSA: 2_000,
+  });
+  // TD Savings shared with Person 1 - the couple's everyday joint bank -
+  // while the investment platforms differ, which is at least as common.
+  setLabels(person2, {
+    CA_CASH_POOL: 'TD Savings',
+    CA_NON_REGISTERED: 'Wealthsimple Non-Registered',
+    CA_RRSP_RRIF: 'Wealthsimple RRSP',
+    CA_TFSA: 'Wealthsimple TFSA',
   });
 
   for (const person of [person1, person2]) bankSurplusIntoTaxableInvestments(person, 'CA');
