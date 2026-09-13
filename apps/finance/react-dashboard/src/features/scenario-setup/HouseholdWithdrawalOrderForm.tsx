@@ -90,9 +90,20 @@ export function HouseholdWithdrawalOrderForm() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // With one person, an account's own label already identifies it. With more
+  // than one, two people can each leave an account at its unrenamed default
+  // (both "CA Cash"), so the label alone stops being unique - this listed
+  // "CA Cash, CA Cash" with no way to tell which was which. Prefixing with the
+  // owning person's name matches how the combined Planning Grid and Charts
+  // views already disambiguate the same situation (see bucketHeading).
+  const showOwner = persons.length > 1;
   const accountsOf = (kind: AccountKind): { label: string; shared: boolean }[] => [
     ...sharedBuckets.filter((b: AccountBucket) => b.kind === kind).map((b: AccountBucket) => ({ label: b.label, shared: true })),
-    ...persons.flatMap((p) => p.accountBuckets.filter((b) => b.kind === kind).map((b) => ({ label: b.label, shared: false }))),
+    ...persons.flatMap((p) =>
+      p.accountBuckets
+        .filter((b) => b.kind === kind)
+        .map((b) => ({ label: showOwner ? `${p.label} · ${b.label}` : b.label, shared: false })),
+    ),
   ];
 
   const included = order.filter((kind) => ALL_KINDS.includes(kind));
