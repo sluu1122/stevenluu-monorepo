@@ -12,15 +12,33 @@ import type { AccountBucket, AccountKind, Scenario } from '../../engine/schema';
 
 const ALL_KINDS: AccountKind[] = [...CA_ACCOUNT_KINDS, ...US_ACCOUNT_KINDS];
 
+/** One owner's accounts of this kind, already merged - "Person 1" with two accounts is one group, not two. */
+interface OwnerGroup {
+  ownerLabel: string | null;
+  labels: string[];
+}
+
 interface SortableKindProps {
   kind: AccountKind;
   index: number;
   included: boolean;
-  accounts: { label: string; shared: boolean }[];
+  groups: OwnerGroup[];
   onToggle: (include: boolean) => void;
 }
 
-function SortableKind({ kind, index, included, accounts, onToggle }: SortableKindProps) {
+/**
+ * Renders each group as `owner · label, label`, matching the app's existing
+ * "owner · label" convention (see bucketHeading), and joins groups with a
+ * semicolon rather than a comma. A comma throughout reads as one flat list -
+ * "Person 1 · Cash Pool, TD, Person 2 · Cash Pool" could be misread as three
+ * accounts under Person 1. The semicolon is the standard way to separate list
+ * items that themselves contain commas.
+ */
+function describeGroups(groups: OwnerGroup[]): string {
+  return groups.map((g) => (g.ownerLabel ? `${g.ownerLabel} · ${g.labels.join(', ')}` : g.labels.join(', '))).join('; ');
+}
+
+function SortableKind({ kind, index, included, groups, onToggle }: SortableKindProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: kind });
   const meta = ACCOUNT_KIND_META[kind];
 
@@ -53,11 +71,7 @@ function SortableKind({ kind, index, included, accounts, onToggle }: SortableKin
             {meta.country}
           </Badge>
         </span>
-        <p className="text-[11.5px] text-dim mt-0.5">
-          {accounts.length === 0
-            ? 'No accounts of this kind in the household'
-            : accounts.map((a) => `${a.label}${a.shared ? ' (shared)' : ''}`).join(', ')}
-        </p>
+        <p className="text-[11.5px] text-dim mt-0.5">{groups.length === 0 ? 'No accounts of this kind in the household' : describeGroups(groups)}</p>
       </div>
     </li>
   );
@@ -97,14 +111,39 @@ export function HouseholdWithdrawalOrderForm() {
   // owning person's name matches how the combined Planning Grid and Charts
   // views already disambiguate the same situation (see bucketHeading).
   const showOwner = persons.length > 1;
-  const accountsOf = (kind: AccountKind): { label: string; shared: boolean }[] => [
-    ...sharedBuckets.filter((b: AccountBucket) => b.kind === kind).map((b: AccountBucket) => ({ label: b.label, shared: true })),
-    ...persons.flatMap((p) =>
-      p.accountBuckets
-        .filter((b) => b.kind === kind)
-        .map((b) => ({ label: showOwner ? `${p.label} · ${b.label}` : b.label, shared: false })),
-    ),
-  ];
+
+  interface OwnedEntry {
+    /** Groups by identity (a person's id, or the constant 'shared'), never by label - two different people could share a display name. */
+    ownerKey: string;
+    ownerLabel: string | null;
+    label: string;
+  }
+
+  function groupsOf(kind: AccountKind): OwnerGroup[] {
+    const entries: OwnedEntry[] = [
+      // Shared accounts are always labelled "Shared" - that's about what the
+      // account IS, not about how many people there are - matching
+      // bucketHeading elsewhere rather than this file's old "(shared)" suffix.
+      ...sharedBuckets.filter((b: AccountBucket) => b.kind === kind).map((b: AccountBucket) => ({ ownerKey: 'shared', ownerLabel: 'Shared', label: b.label })),
+      ...persons.flatMap((p) =>
+        p.accountBuckets
+          .filter((b) => b.kind === kind)
+          .map((b) => ({ ownerKey: p.id, ownerLabel: showOwner ? p.label : null, label: b.label })),
+      ),
+    ];
+
+    // Collapsing only ADJACENT runs is enough, and simpler than a full
+    // group-by: shared buckets are listed together first, then each person's
+    // own buckets are listed together in turn, so one owner's entries for a
+    // given kind are already contiguous in this array.
+    const groups: (OwnerGroup & { ownerKey: string })[] = [];
+    for (const entry of entries) {
+      const last = groups[groups.length - 1];
+      if (last && last.ownerKey === entry.ownerKey) last.labels.push(entry.label);
+      else groups.push({ ownerKey: entry.ownerKey, ownerLabel: entry.ownerLabel, labels: [entry.label] });
+    }
+    return groups;
+  }
 
   const included = order.filter((kind) => ALL_KINDS.includes(kind));
   const excluded = ALL_KINDS.filter((kind) => !included.includes(kind));
@@ -136,7 +175,7 @@ export function HouseholdWithdrawalOrderForm() {
         <SortableContext items={included} strategy={verticalListSortingStrategy}>
           <ul className="flex flex-col gap-1.5">
             {included.map((kind, index) => (
-              <SortableKind key={kind} kind={kind} index={index} included accounts={accountsOf(kind)} onToggle={(v) => toggle(kind, v)} />
+              <SortableKind key={kind} kind={kind} index={index} included groups={groupsOf(kind)} onToggle={(v) => toggle(kind, v)} />
             ))}
           </ul>
         </SortableContext>
@@ -147,7 +186,7 @@ export function HouseholdWithdrawalOrderForm() {
           <h4 className="text-[12px] font-semibold uppercase tracking-[0.04em] text-slate mt-4 mb-2">Never drawn for spending</h4>
           <ul className="flex flex-col gap-1.5">
             {excluded.map((kind) => (
-              <SortableKind key={kind} kind={kind} index={0} included={false} accounts={accountsOf(kind)} onToggle={(v) => toggle(kind, v)} />
+              <SortableKind key={kind} kind={kind} index={0} included={false} groups={groupsOf(kind)} onToggle={(v) => toggle(kind, v)} />
             ))}
           </ul>
         </>
