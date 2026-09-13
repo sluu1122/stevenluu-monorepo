@@ -31,11 +31,11 @@ export interface AccountKindMeta {
 }
 
 export const ACCOUNT_KIND_META: Record<AccountKind, AccountKindMeta> = {
-  US_CASH_HYSA: { label: 'US Cash', country: 'US', taxTreatment: 'taxable', isCashBuffer: true, defaultAvailableFromAge: null, contributionIndexRoundingStep: null },
+  US_CASH_HYSA: { label: 'Cash (US)', country: 'US', taxTreatment: 'taxable', isCashBuffer: true, defaultAvailableFromAge: null, contributionIndexRoundingStep: null },
   US_TAXABLE_BROKERAGE: { label: 'Taxable Brokerage', country: 'US', taxTreatment: 'taxable', defaultAvailableFromAge: null, contributionIndexRoundingStep: null },
   US_TRADITIONAL_401K_IRA: { label: 'Traditional 401(k)/IRA', country: 'US', taxTreatment: 'taxDeferred', defaultAvailableFromAge: 59.5, contributionIndexRoundingStep: 500 },
   US_ROTH_401K_IRA: { label: 'Roth 401(k)/IRA', country: 'US', taxTreatment: 'taxFree', defaultAvailableFromAge: 59.5, contributionIndexRoundingStep: 500 },
-  CA_CASH_POOL: { label: 'CA Cash', country: 'CA', taxTreatment: 'taxable', isCashBuffer: true, defaultAvailableFromAge: null, contributionIndexRoundingStep: null },
+  CA_CASH_POOL: { label: 'Cash (CA)', country: 'CA', taxTreatment: 'taxable', isCashBuffer: true, defaultAvailableFromAge: null, contributionIndexRoundingStep: null },
   CA_NON_REGISTERED: { label: 'Non-Registered', country: 'CA', taxTreatment: 'taxable', defaultAvailableFromAge: null, contributionIndexRoundingStep: null },
   // The RRSP dollar limit is indexed to average WAGE growth rather than CPI and
   // isn't rounded to a step, so it gets smooth indexing here - close enough,
