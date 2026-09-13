@@ -49,10 +49,10 @@ function setContributions(person: PersonPlan, byKind: Partial<Record<AccountKind
 
 /**
  * Same, for the account's own name. Left at the kind's generic default
- * ("Cash (CA)", "Traditional 401(k)/IRA") every account in a demo reads as a
- * category rather than something a real household actually holds - naming
- * them after real institutions is what makes the difference between a table
- * of figures and a household that looks lived-in.
+ * ("Cash and Cash Equivalents (CA)", "Traditional 401(k)/IRA"), every account
+ * in a demo reads as a category rather than something a real household
+ * actually holds - naming them after real institutions is what makes the
+ * difference between a table of figures and a household that looks lived-in.
  */
 function setLabels(person: PersonPlan, byKind: Partial<Record<AccountKind, string>>): void {
   for (const bucket of person.accountBuckets) {

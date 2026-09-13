@@ -106,10 +106,11 @@ export function HouseholdWithdrawalOrderForm() {
 
   // With one person, an account's own label already identifies it. With more
   // than one, two people can each leave an account at its unrenamed default
-  // (both "Cash (CA)"), so the label alone stops being unique - this listed
-  // "Cash (CA), Cash (CA)" with no way to tell which was which. Prefixing with
-  // the owning person's name matches how the combined Planning Grid and
-  // Charts views already disambiguate the same situation (see bucketHeading).
+  // (both "Cash and Cash Equivalents (CA)"), so the label alone stops being
+  // unique - this listed the same name twice with no way to tell which was
+  // which. Prefixing with the owning person's name matches how the combined
+  // Planning Grid and Charts views already disambiguate the same situation
+  // (see bucketHeading).
   const showOwner = persons.length > 1;
 
   interface OwnedEntry {
