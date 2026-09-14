@@ -18,8 +18,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { useActiveScenario } from '../hooks/useActiveScenario';
 import { useDeleteScenario, usePreviewScenarioOrder, useReorderScenarios, useSaveScenario, useScenarios } from '../hooks/useScenarios';
 import { createDefaultScenario } from '../engine/defaults';
+import { NewScenarioDialog } from './NewScenarioDialog';
 import { ScenarioRowGhost, SortableScenarioRow } from './SortableScenarioRow';
-import type { Scenario } from '../engine/schema';
+import type { Country, Scenario } from '../engine/schema';
 
 // Delete/Duplicate act on whichever row's icon button was clicked, not
 // necessarily the active scenario - triggered from plain per-row buttons
@@ -36,6 +37,7 @@ export function ScenarioSwitcher() {
   const previewOrder = usePreviewScenarioOrder();
 
   const [targetScenario, setTargetScenario] = useState<Scenario | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   // Reordering, duplicating and deleting all live behind this rather than on
   // every row. The sidebar is narrow and a scenario name is the one thing that
   // has to stay readable, so the default state spends the full width on it and
@@ -119,8 +121,9 @@ export function ScenarioSwitcher() {
     reorderScenarios.mutate(ids);
   }
 
-  async function createScenario() {
-    const scenario = createDefaultScenario('CA');
+  async function createScenario(country: Country) {
+    setIsCreating(false);
+    const scenario = createDefaultScenario(country);
     await saveScenario.mutateAsync(scenario);
     setActiveScenarioId(scenario.id);
   }
@@ -159,7 +162,7 @@ export function ScenarioSwitcher() {
               {isEditing ? <Check className="size-3.5" /> : <Pencil className="size-3" />}
             </Button>
           )}
-          <Button type="button" variant="ghost" size="icon" className="size-6 cursor-pointer" onClick={() => createScenario()} aria-label="Add new scenario">
+          <Button type="button" variant="ghost" size="icon" className="size-6 cursor-pointer" onClick={() => setIsCreating(true)} aria-label="Add new scenario">
             <Plus className="size-3.5" />
           </Button>
         </div>
@@ -201,6 +204,8 @@ export function ScenarioSwitcher() {
           </DragOverlay>
         </DndContext>
       </div>
+
+      <NewScenarioDialog open={isCreating} onOpenChange={setIsCreating} onChoose={(country) => createScenario(country)} />
 
       <Dialog open={targetScenario !== null} onOpenChange={(open: boolean) => !open && setTargetScenario(null)}>
         <DialogContent className="sm:max-w-sm">

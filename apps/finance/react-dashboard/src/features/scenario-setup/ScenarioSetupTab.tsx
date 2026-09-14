@@ -6,9 +6,10 @@ import { Form } from '@repo/ui/components/form';
 import { Button } from '@repo/ui/components/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/tabs';
 import { DashCard } from '../../components/DashCard';
+import { NewScenarioDialog } from '../../components/NewScenarioDialog';
 import { useActiveScenario } from '../../hooks/useActiveScenario';
 import { useScenarios, useSaveScenario } from '../../hooks/useScenarios';
-import { ScenarioSchema, type Scenario } from '../../engine/schema';
+import { ScenarioSchema, type Country, type Scenario } from '../../engine/schema';
 import { createDefaultPersonPlan, createDefaultScenario } from '../../engine/defaults';
 import { GlobalParametersForm } from './GlobalParametersForm';
 import { HouseholdSpendingForm } from './HouseholdSpendingForm';
@@ -33,6 +34,7 @@ export function ScenarioSetupTab() {
   const { activeScenarioId, setActiveScenarioId } = useActiveScenario();
   const saveScenario = useSaveScenario();
   const [activeSubTab, setActiveSubTab] = useState<string>(SCENARIO_TAB);
+  const [isCreating, setIsCreating] = useState(false);
 
   const activeScenario = scenarios.find((s) => s.id === activeScenarioId) ?? null;
 
@@ -64,8 +66,9 @@ export function ScenarioSetupTab() {
   // persisted scenario directly sidesteps that rather than fighting it.
   const hasUnsavedChanges = JSON.stringify(watchedValues) !== JSON.stringify(activeScenario);
 
-  async function createAndActivate() {
-    const scenario = createDefaultScenario('CA');
+  async function createAndActivate(country: Country) {
+    setIsCreating(false);
+    const scenario = createDefaultScenario(country);
     await saveScenario.mutateAsync(scenario);
     setActiveScenarioId(scenario.id);
   }
@@ -77,10 +80,11 @@ export function ScenarioSetupTab() {
       <DashCard className="text-center py-12">
         <p className="mb-4 text-ink">Create your first scenario to get started.</p>
         <div className="flex justify-center gap-2">
-          <Button className="cursor-pointer" onClick={() => createAndActivate()}>
+          <Button className="cursor-pointer" onClick={() => setIsCreating(true)}>
             Create Scenario
           </Button>
         </div>
+        <NewScenarioDialog open={isCreating} onOpenChange={setIsCreating} onChoose={(country) => createAndActivate(country)} />
       </DashCard>
     );
   }
