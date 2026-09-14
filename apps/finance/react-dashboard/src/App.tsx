@@ -5,7 +5,6 @@ import { Sidebar } from './components/Sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/tabs';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { ActiveScenarioProvider } from './providers/ActiveScenarioProvider';
-import { WelcomeBanner } from './components/WelcomeBanner';
 import { UnsavedChangesProvider } from './providers/UnsavedChangesProvider';
 import { SelectedPersonProvider } from './providers/SelectedPersonProvider';
 import { DisplayCurrencyProvider } from './providers/DisplayCurrencyProvider';
@@ -171,12 +170,6 @@ function AppShell() {
             alive but also drops Radix's own `hidden`, so the panel hides
             itself off the data-state Radix still sets.
           */}
-          {/* Above the tab panels rather than inside one, so it is seen
-              wherever the app happens to open. */}
-          <div className="max-w-[1240px] w-full mx-auto">
-            <WelcomeBanner />
-          </div>
-
           <TabsContent value="setup" forceMount className="max-w-[1240px] w-full mx-auto data-[state=inactive]:hidden">
             <ScenarioSetupTab />
           </TabsContent>
