@@ -75,7 +75,7 @@ export function PersonDetailsForm({ personIndex }: { personIndex: number }) {
           <Input type="number" step="0.1" {...register(`persons.${personIndex}.incomeGrowthRatePct`, { valueAsNumber: true })} />
         </div>
         <div className="col-span-2 space-y-1.5">
-          <Label>Bank income surplus into</Label>
+          <Label>Put leftover income into</Label>
           <Select
             value={surplusDestinationId ?? ''}
             onValueChange={(v: string) =>

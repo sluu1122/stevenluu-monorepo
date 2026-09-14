@@ -1,6 +1,7 @@
 import { Controller, useFormContext } from 'react-hook-form';
 import { DashCard } from '../../components/DashCard';
 import { Input } from '@repo/ui/components/input';
+import { Badge } from '@repo/ui/components/badge';
 import { Label } from '@repo/ui/components/label';
 import { Switch } from '@repo/ui/components/switch';
 import type { Scenario } from '../../engine/schema';
@@ -11,10 +12,13 @@ export function TaxableAccountTaxationForm() {
 
   return (
     <DashCard>
-      <h3 className="text-[15px] font-semibold text-ink mb-1">Non-Registered Account Tax</h3>
+      {/* "Non-Registered" is the Canadian name for this account, but the rules
+          here govern a US Taxable Brokerage too - a US household reasonably
+          read the old title as being about someone else's accounts. */}
+      <h3 className="text-[15px] font-semibold text-ink mb-1">Taxable Account Tax</h3>
       <p className="text-[12.5px] text-dim mb-4">
-        What a taxable account owes as it earns and as it is sold. Turned off, these accounts compound entirely tax-free, which flatters any plan
-        that runs for decades.
+        What a taxable account owes as it earns and as it is sold - a US Taxable Brokerage and a Canadian Non-Registered account alike. Turned off,
+        these accounts compound entirely tax-free, which flatters any plan that runs for decades.
       </p>
 
       <div className="flex items-center gap-3 mb-4">
@@ -34,15 +38,30 @@ export function TaxableAccountTaxationForm() {
               <Input type="number" step="0.1" {...register('taxableAccountTaxation.annualDistributionYieldPct', { valueAsNumber: true })} />
             </div>
             <div className="space-y-1.5">
-              <Label>Capital gains inclusion %</Label>
+              {/* Genuinely Canada-only now that US gains have their own
+                  schedule. It deliberately carried no badge while this one
+                  number still drove US tax too, where telling a US reader to
+                  ignore it would have been wrong. */}
+              <Label className="flex items-center gap-1.5">
+                Capital gains inclusion %
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                  CA
+                </Badge>
+              </Label>
               <Input type="number" step="1" {...register('taxableAccountTaxation.capitalGainsInclusionRatePct', { valueAsNumber: true })} />
             </div>
           </div>
           <p className="text-[12px] text-dim mt-3 leading-relaxed">
             The yield is the part of the return paid out each year as interest and dividends, taxed as ordinary income. Everything else is
             appreciation, taxed only when sold and only on the included portion of the gain. A cash account is treated as distributing its whole
-            return, since all of it is interest. The dividend gross-up and dividend tax credit are not modelled, so eligible Canadian dividends come
-            out slightly over-taxed.
+            return, since all of it is interest.
+          </p>
+          <p className="text-[12px] text-dim mt-2 leading-relaxed">
+            <span className="font-medium text-ink">Canada only.</span> Including part of the gain is a Canadian rule, so this applies to
+            Non-Registered accounts. A US Taxable Brokerage ignores it: US gains are taxed in full on the federal long-term schedule (0%, 15% or 20%
+            depending on the year's total income), which the engine models separately. State tax still treats the whole gain as ordinary income, as
+            most states do. The dividend gross-up and dividend tax credit are not modelled, so eligible Canadian dividends come out slightly
+            over-taxed.
           </p>
         </>
       )}

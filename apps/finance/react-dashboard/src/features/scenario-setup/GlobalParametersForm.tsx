@@ -9,7 +9,7 @@ import { CANADIAN_TAX_TABLES, US_STATE_TAX_TABLES } from '../../engine/regionalT
 import type { Country, Scenario } from '../../engine/schema';
 
 export function GlobalParametersForm() {
-  const { register, control, getValues, setValue } = useFormContext<Scenario>();
+  const { register, control, getValues, setValue, watch } = useFormContext<Scenario>();
 
   // Tax residency drives which federal bracket table applies, AND which
   // province/state table is even valid - switching it regenerates the federal
@@ -82,6 +82,10 @@ export function GlobalParametersForm() {
         <div className="space-y-1.5">
           <Label>Exchange rate (USD → CAD)</Label>
           <Input type="number" step="0.01" {...register('exchangeRateUsdToCad', { valueAsNumber: true })} />
+          <p className="text-[11.5px] text-dim">
+            Only used to convert accounts held in the other currency. If every account is in {watch('currency') === 'USD' ? 'USD' : 'CAD'}, this
+            changes nothing.
+          </p>
         </div>
       </div>
 

@@ -5,16 +5,28 @@ import { DashCard } from '../../components/DashCard';
 import { Button } from '@repo/ui/components/button';
 import { Input } from '@repo/ui/components/input';
 import { Label } from '@repo/ui/components/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/components/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@repo/ui/components/select';
 import { MoneyInput } from '../../components/MoneyInput';
 import type { BenefitType, Scenario } from '../../engine/schema';
 import { generateId } from '../../engine/id';
 
 const BENEFIT_TYPE_LABELS: Record<BenefitType, string> = {
-  US_SOCIAL_SECURITY: 'US Social Security',
-  CA_CPP: 'Canada Pension Plan',
-  CA_OAS: 'Old Age Security',
+  US_SOCIAL_SECURITY: 'Social Security',
+  CA_CPP: 'Canada Pension Plan (CPP)',
+  CA_OAS: 'Old Age Security (OAS)',
 };
+
+/**
+ * Grouped by country in the picker, the way the account-kind picker already is
+ * (see AccountBucketsEditor). Flat, the list ran "US Social Security, Canada
+ * Pension Plan, Old Age Security" - three items whose country you had to know
+ * the acronyms to infer, with "Old Age Security" reading like a generic
+ * category rather than a specific Canadian programme.
+ */
+const BENEFIT_TYPES_BY_COUNTRY: { country: string; types: BenefitType[] }[] = [
+  { country: 'United States', types: ['US_SOCIAL_SECURITY'] },
+  { country: 'Canada', types: ['CA_CPP', 'CA_OAS'] },
+];
 
 export function IncomeAndBenefitsForm({ personIndex }: { personIndex: number }) {
   const { register, control } = useFormContext<Scenario>();
@@ -144,10 +156,15 @@ export function IncomeAndBenefitsForm({ personIndex }: { personIndex: number }) 
                 <SelectValue placeholder="Choose a benefit..." />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(BENEFIT_TYPE_LABELS) as BenefitType[]).map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {BENEFIT_TYPE_LABELS[type]}
-                  </SelectItem>
+                {BENEFIT_TYPES_BY_COUNTRY.map((group) => (
+                  <SelectGroup key={group.country}>
+                    <SelectLabel>{group.country}</SelectLabel>
+                    {group.types.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {BENEFIT_TYPE_LABELS[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>

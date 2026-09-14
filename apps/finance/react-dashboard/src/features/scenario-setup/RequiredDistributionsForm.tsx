@@ -23,8 +23,15 @@ export function RequiredDistributionsForm({ personIndex }: { personIndex: number
   }
 
   // The law sets a different age per account country, so show each distinct
-  // one rather than implying a single number covers a mixed portfolio.
-  const statutoryAges = [...new Set(taxDeferredBuckets.map((b) => statutoryDistributionStartAge(b.country, birthYear)))].sort((a, b) => a - b);
+  // one rather than implying a single number covers a mixed portfolio. Each is
+  // tagged with the country it comes from: a bare "73 / 71" left the reader to
+  // work out which number governed which of their accounts, and the two rules
+  // are unrelated (SECURE 2.0's RMD age vs the RRIF conversion deadline).
+  const statutoryCountries = [...new Set(taxDeferredBuckets.map((b) => b.country))];
+  const statutoryAges = statutoryCountries
+    .map((country) => ({ country, age: statutoryDistributionStartAge(country, birthYear) }))
+    .sort((a, b) => a.age - b.age);
+  const statutoryAgeSummary = statutoryAges.map(({ country, age }) => `${age} (${country})`).join(' / ');
 
   return (
     <DashCard>
@@ -51,12 +58,13 @@ export function RequiredDistributionsForm({ personIndex }: { personIndex: number
                 <Label>Start age</Label>
                 <Input
                   type="number"
-                  placeholder={statutoryAges.length > 0 ? `${statutoryAges.join(' / ')} (statutory)` : 'Statutory'}
+                  placeholder={statutoryAgeSummary ? `${statutoryAgeSummary}, statutory` : 'Statutory'}
                   value={rule.startAgeOverride ?? ''}
                   onChange={(e) => update({ startAgeOverride: e.target.value === '' ? null : Math.round(Number(e.target.value)) })}
                 />
                 <p className="text-[11.5px] text-dim">
-                  Leave blank to use the age the law sets{statutoryAges.length > 0 ? ` for this person (${statutoryAges.join(' / ')})` : ''}.
+                  Leave blank to use the age the law sets{statutoryAgeSummary ? ` for this person: ${statutoryAgeSummary}` : ''}.
+                  {statutoryAges.length > 1 && ' Each account follows its own country’s age.'}
                 </p>
               </div>
               <div className="space-y-1.5">

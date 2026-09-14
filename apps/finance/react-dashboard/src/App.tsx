@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/tabs';
 import { ThemeProvider } from './providers/ThemeProvider';
 import { ActiveScenarioProvider } from './providers/ActiveScenarioProvider';
+import { UnsavedChangesProvider } from './providers/UnsavedChangesProvider';
 import { SelectedPersonProvider } from './providers/SelectedPersonProvider';
 import { DisplayCurrencyProvider } from './providers/DisplayCurrencyProvider';
 import { ScenarioSetupTab } from './features/scenario-setup/ScenarioSetupTab';
@@ -36,13 +37,15 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <ActiveScenarioProvider>
-        <SelectedPersonProvider>
-          <DisplayCurrencyProvider>
-            <AppShell />
-          </DisplayCurrencyProvider>
-        </SelectedPersonProvider>
-      </ActiveScenarioProvider>
+      <UnsavedChangesProvider>
+        <ActiveScenarioProvider>
+          <SelectedPersonProvider>
+            <DisplayCurrencyProvider>
+              <AppShell />
+            </DisplayCurrencyProvider>
+          </SelectedPersonProvider>
+        </ActiveScenarioProvider>
+      </UnsavedChangesProvider>
     </ThemeProvider>
   );
 }

@@ -4,6 +4,7 @@ import { getInflationRateForYear } from './inflation';
 import { applyOasClawback, calculateBenefitForYear } from './benefits';
 import { OAS_CLAWBACK_THRESHOLD_2025 } from './benefitDefaults';
 import { indexedContributionAmount, isBucketAvailableAtAge } from './accountKindMeta';
+import { usContributionExcess } from './contributionLimits';
 import { calculateTotalTax, indexTaxConfig } from './calculateTax';
 import { checkAndReplenish, grossUpForNet, type ReplenishResult } from './cashBuffer';
 import { applyGrowth } from './growth';
@@ -659,6 +660,15 @@ function computePersonRow(
 
   let meltdownTax = { federal: 0, stateOrProvincial: 0, total: 0 };
   if (meltdownTotalWithdrawn > 0) {
+    // KNOWN APPROXIMATION: US long-term gains are not in this base, so the
+    // price of a meltdown omits the "capital gains bump" - pushing ordinary
+    // income up also pushes any stacked gain toward a higher 0/15/20% band,
+    // and that extra cost is not charged to the meltdown here. It cannot be
+    // fixed by passing the figure in: gains are realized in phase 2b, after
+    // this runs, so the number does not exist yet. The full-year bill in 2b
+    // does charge it correctly; only the ATTRIBUTION of it to the meltdown is
+    // understated. Same limitation applies to the cash-buffer gross-up, which
+    // is priced even earlier, in phase 1.
     const taxWithMeltdown = calculateTotalTax(grossTaxableIncome + meltdownTotalWithdrawn, taxConfig, socialSecurityBenefit);
     const taxWithoutMeltdown = calculateTotalTax(grossTaxableIncome, taxConfig, socialSecurityBenefit);
     meltdownTax = {
@@ -1400,6 +1410,8 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
     // --- 2b: each person's taxable income, on their OWN accounts ---
     const taxByPersonId = new Map<string, { federal: number; stateOrProvincial: number; total: number }>();
     const grossTaxableByPersonId = new Map<string, number>();
+    /** US long-term gains travel separately from ordinary income - they are taxed on their own schedule. */
+    const preferentialGainsByPersonId = new Map<string, number>();
     for (const person of scenario.persons) {
       const replenishment = replenishmentByPersonId.get(person.id)!;
       const share = sharesByPersonId.get(person.id)!;
@@ -1420,13 +1432,29 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       // passes ran in. Draws made later than this point - the tax-funding pass
       // and meltdowns - still consume basis at year end, but their own gain
       // goes uncharged, the same approximation the tax draw already carries.
+      //
+      // Split by the ACCOUNT's country, because the two regimes tax a gain in
+      // structurally different ways. Canada includes half of it in ordinary
+      // income. The US taxes the whole gain on a separate 0/15/20% schedule
+      // stacked above ordinary income, so it cannot be expressed as a share of
+      // ordinary income at all - which is why it travels separately from here
+      // all the way into calculateTotalTax. A cross-border household holds
+      // both kinds at once, so this is a per-account split, not a per-scenario
+      // one.
       let realizedGains = 0;
+      let usPreferentialGains = 0;
       for (const bucket of [...person.accountBuckets, ...(person.id === primaryPersonId ? sharedBuckets : [])]) {
         if (bucket.taxTreatment !== 'taxable') continue;
         const sold = (share.withdrawals[bucket.id] ?? 0) + (replenishment.withdrawals[bucket.id] ?? 0);
-        const { taxableGain } = realizeGain(sold, saleReferenceValue(bucket.id), costBasis[bucket.id] ?? 0, inclusionRatePct);
-        realizedGains += taxableGain;
+        const isUs = bucket.country === 'US';
+        // The inclusion rate is Canada's rule; a US gain is taxed in full, just
+        // at preferential rates. Switching the feature off zeroes both.
+        const rate = !scenario.taxableAccountTaxation.enabled ? 0 : isUs ? 100 : inclusionRatePct;
+        const { taxableGain } = realizeGain(sold, saleReferenceValue(bucket.id), costBasis[bucket.id] ?? 0, rate);
+        if (isUs) usPreferentialGains += taxableGain;
+        else realizedGains += taxableGain;
       }
+      preferentialGainsByPersonId.set(person.id, usPreferentialGains);
       if ((distributionIncomeByPersonId.get(person.id) ?? 0) > 0.005) {
         share.audit.push({
           label: 'Interest and dividends from non-registered accounts',
@@ -1438,10 +1466,19 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
       }
       if (realizedGains > 0.005) {
         share.audit.push({
-          label: 'Taxable capital gain realized on non-registered withdrawals',
+          label: 'Taxable capital gain realized on non-registered withdrawals (Canada)',
           formula: 'Σ per account of soldAmount × (1 - costBasis ÷ marketValue) × inclusionRate',
           inputs: { inclusionRatePct },
           result: realizedGains,
+          relatedFields: ['taxesPaid.total'],
+        });
+      }
+      if (usPreferentialGains > 0.005) {
+        share.audit.push({
+          label: 'Long-term capital gain realized on US taxable accounts',
+          formula: 'Σ per account of soldAmount × (1 - costBasis ÷ marketValue), taxed in full on the 0/15/20% schedule rather than as ordinary income',
+          inputs: { inclusionRatePct: 100 },
+          result: usPreferentialGains,
           relatedFields: ['taxesPaid.total'],
         });
       }
@@ -1480,7 +1517,10 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         { federal: 0, stateOrProvincial: 0, total: 0 },
       );
 
-      const fullYearTax = calculateTotalTax(combinedGrossTaxableIncome, taxConfigForYear, combinedSsBenefit);
+      // Joint filers walk ONE set of gains brackets too, so the household's
+      // gains combine exactly as its ordinary income does.
+      const combinedPreferentialGains = scenario.persons.reduce((sum, p) => sum + (preferentialGainsByPersonId.get(p.id) ?? 0), 0);
+      const fullYearTax = calculateTotalTax(combinedGrossTaxableIncome, taxConfigForYear, combinedSsBenefit, combinedPreferentialGains);
       const remaining = {
         federal: fullYearTax.federal - combinedAlreadyTaxed.federal,
         stateOrProvincial: fullYearTax.stateOrProvincial - combinedAlreadyTaxed.stateOrProvincial,
@@ -1489,8 +1529,11 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
 
       for (const person of scenario.persons) {
         const share = sharesByPersonId.get(person.id)!;
-        const own = grossTaxableByPersonId.get(person.id)!;
-        const portion = combinedGrossTaxableIncome > 0 ? own / combinedGrossTaxableIncome : 1 / scenario.persons.length;
+        // Split on ordinary income PLUS gains: the gains are taxed in this
+        // bill, so a spouse who realised them has to carry their share of it.
+        const own = grossTaxableByPersonId.get(person.id)! + (preferentialGainsByPersonId.get(person.id) ?? 0);
+        const combinedForSplit = combinedGrossTaxableIncome + combinedPreferentialGains;
+        const portion = combinedForSplit > 0 ? own / combinedForSplit : 1 / scenario.persons.length;
         const taxResult = {
           federal: remaining.federal * portion,
           stateOrProvincial: remaining.stateOrProvincial * portion,
@@ -1514,6 +1557,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         const replenishment = replenishmentByPersonId.get(person.id)!;
         const share = sharesByPersonId.get(person.id)!;
         const grossTaxableIncome = grossTaxableByPersonId.get(person.id)!;
+        const preferentialGains = preferentialGainsByPersonId.get(person.id) ?? 0;
 
         // Replenishment already self-funded and charged tax on its own slice,
         // priced as incremental on top of income+benefits alone. What's left is
@@ -1522,7 +1566,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         const ssBenefit = ssBenefitByPersonId.get(person.id) ?? 0;
         let taxResult: { federal: number; stateOrProvincial: number; total: number };
         if (replenishment.taxableDistribution > 0) {
-          const fullYearTax = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit);
+          const fullYearTax = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit, preferentialGains);
           taxResult = {
             federal: fullYearTax.federal - replenishment.taxesPaid.federal,
             stateOrProvincial: fullYearTax.stateOrProvincial - replenishment.taxesPaid.stateOrProvincial,
@@ -1536,7 +1580,7 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
             relatedFields: ['taxesPaid.federal', 'taxesPaid.stateOrProvincial', 'taxesPaid.total'],
           });
         } else {
-          const computed = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit);
+          const computed = calculateTotalTax(grossTaxableIncome, taxConfigForYear, ssBenefit, preferentialGains);
           taxResult = { federal: computed.federal, stateOrProvincial: computed.stateOrProvincial, total: computed.total };
           share.audit.push(...computed.steps);
         }
@@ -1691,6 +1735,21 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         creditedThisYear[bucket.id] = (creditedThisYear[bucket.id] ?? 0) + funded;
         draft.contributions[bucket.id] = (draft.contributions[bucket.id] ?? 0) + funded;
       }
+      // Contributing more than the law allows. Checked against the SCHEDULED
+      // amount rather than what Phase 4 funded, for the same reason the
+      // deduction is: the limit governs what you are allowed to put in, not
+      // what this plan managed to find the cash for.
+      const { excess, contributed, ceiling } = usContributionExcess(person, draft.age, draft.isRetired, indexationFactor);
+      if (excess > 0.01) {
+        warningsByPerson.get(person.id)!.push({
+          year,
+          kind: 'contributionUnfunded',
+          code: 'contribution.overStatutoryLimit',
+          amount: excess,
+          message: `US registered contributions of ${Math.round(contributed).toLocaleString('en-US')} exceed the ${Math.round(ceiling).toLocaleString('en-US')} a ${draft.age}-year-old may contribute across a 401(k) and an IRA combined. The projection still makes them, so the balances shown are higher than the law would allow.`,
+        });
+      }
+
       if (unfunded > 0.01) {
         // Deliberately does NOT say the household is out of money - it usually
         // isn't. The target account can hold plenty and still be unable to fund

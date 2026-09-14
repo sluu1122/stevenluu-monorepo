@@ -1,5 +1,7 @@
 import { FileText, Printer } from 'lucide-react';
 import { DashCard } from '../../components/DashCard';
+import { ScenarioErrorBanner } from '../../components/ScenarioErrorBanner';
+import { EmptyScenarioState } from '../../components/EmptyScenarioState';
 import { Button } from '@repo/ui/components/button';
 import { useActiveScenario } from '../../hooks/useActiveScenario';
 import { useScenarios } from '../../hooks/useScenarios';
@@ -11,6 +13,7 @@ import { DisplayCurrencyToggle } from '../../components/DisplayCurrencyToggle';
 import { SummaryKeyMetrics } from './SummaryKeyMetrics';
 import { SummaryPrintableTable } from './SummaryPrintableTable';
 import { partitionWarnings } from '../../lib/warnings';
+import { describeAssumptions } from '../../lib/assumptionsSummary';
 import { exportPlainTextSummary } from './exportPlainTextSummary';
 
 export function ClientSummaryTab() {
@@ -19,12 +22,20 @@ export function ClientSummaryTab() {
   const activeScenario = scenarios.find((s) => s.id === activeScenarioId) ?? null;
 
   const { data: overrides = [] } = useGridOverrides(activeScenario?.id);
-  const { rows, warnings, person, buckets, combined, label } = usePersonView(activeScenario, overrides);
+  const { rows, warnings, error, person, buckets, combined, label } = usePersonView(activeScenario, overrides);
   const { shortfalls, contributions } = partitionWarnings(warnings);
   const money = useMoney(activeScenario);
 
   if (!activeScenario) {
-    return <DashCard>Create a scenario in Scenario Setup to see the client summary.</DashCard>;
+    return <EmptyScenarioState what="the client summary" />;
+  }
+
+  // This tab is the one that must never render on a failed calculation. Every
+  // key metric is derived from `rows`, so an empty ledger reports a plan worth
+  // $0 - a confident, precise, catastrophic answer to a question the engine
+  // never actually managed to answer. It is also the tab people export from.
+  if (error) {
+    return <ScenarioErrorBanner error={error} />;
   }
 
   const showsMultiplePersons = activeScenario.persons.length > 1;
@@ -47,6 +58,7 @@ export function ClientSummaryTab() {
             Tax residency: {activeScenario.country === 'US' ? 'United States' : 'Canada'} · {money.currency}
             {money.isConverted && ` (converted from ${activeScenario.currency} at ${activeScenario.exchangeRateUsdToCad})`}
           </p>
+          <p className="text-[12px] text-dim mt-0.5">{describeAssumptions(activeScenario)}</p>
           <p className="text-[11px] text-dim mt-0.5">Demo only — figures may be inaccurate. Not financial advice.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -74,6 +86,7 @@ export function ClientSummaryTab() {
           {money.isConverted && ` (converted from ${activeScenario.currency} at ${activeScenario.exchangeRateUsdToCad})`} · Generated{' '}
           {new Date().toLocaleDateString()}
         </p>
+        <p className="text-[12px] text-dim mb-1">{describeAssumptions(activeScenario)}</p>
         <p className="text-[11px] text-dim mb-4">Demo only — figures may be inaccurate. Not financial advice.</p>
       </div>
 

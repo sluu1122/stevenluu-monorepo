@@ -89,10 +89,10 @@ test.describe('charts in a production build', () => {
     // Scoped to each card by its heading, so a failure names which chart broke
     // instead of reporting "some chart on the page".
     const netWorth = page.locator('div', { has: page.getByRole('heading', { name: /Net Worth Over Time/i }) }).last();
-    const byBucket = page.locator('div', { has: page.getByRole('heading', { name: /Balance by Account Bucket/i }) }).last();
+    const byBucket = page.locator('div', { has: page.getByRole('heading', { name: /Balance by Account/i }) }).last();
 
     await expectChartDrew(netWorth, 'Net Worth Over Time');
-    await expectChartDrew(byBucket, 'Balance by Account Bucket');
+    await expectChartDrew(byBucket, 'Balance by Account');
 
     // The original regression was silent, so this is a secondary signal rather
     // than the primary assertion - but a chart library failing loudly in a

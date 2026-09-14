@@ -216,7 +216,7 @@ export function ImportExportDialog({ open, onOpenChange }: ImportExportDialogPro
             <div className="flex items-start gap-2.5 border border-loss/30 bg-loss-bg rounded-[9px] p-2.5">
               <AlertTriangle className="size-4 text-loss shrink-0 mt-px" />
               <p className="text-[12.5px] text-loss-dark">
-                This deletes every scenario you have, along with its grid overrides, and restores the three demo scenarios. It cannot be undone. Tick
+                This deletes every scenario you have, along with its grid overrides, and restores the demo scenarios. It cannot be undone. Tick
                 anything below you want to survive, or export it first from the Export tab.
               </p>
             </div>

@@ -19,6 +19,24 @@ import type { AccountKind, Scenario } from '../../engine/schema';
 export function AccountAvailabilityForm() {
   const { watch, setValue } = useFormContext<Scenario>();
   const overrides = watch('accountAvailabilityAges') ?? {};
+  const persons = watch('persons') ?? [];
+  const sharedBuckets = watch('sharedAccountBuckets') ?? [];
+
+  // Only the kinds this household holds. An age input for a kind nobody owns
+  // governs nothing, and for a household working entirely in one country that
+  // was half of these.
+  //
+  // A kind carrying an override stays visible even with no accounts, though.
+  // The override is still stored and still applies the moment an account of
+  // that kind is added, so hiding the row would leave a rule in force with no
+  // way to see or clear it.
+  const heldKinds = new Set<AccountKind>([
+    ...sharedBuckets.map((b) => b.kind),
+    ...persons.flatMap((p) => p.accountBuckets.map((b) => b.kind)),
+  ]);
+  const visibleKinds = [...CA_ACCOUNT_KINDS, ...US_ACCOUNT_KINDS].filter(
+    (kind) => heldKinds.has(kind) || Object.prototype.hasOwnProperty.call(overrides, kind),
+  );
 
   function setAge(kind: AccountKind, raw: string) {
     const next = { ...overrides };
@@ -44,12 +62,12 @@ export function AccountAvailabilityForm() {
         )}
       </div>
       <p className="text-[12.5px] text-dim mb-4">
-        The age each kind of account can first be drawn from. This gates every withdrawal — the spending waterfall, meltdown rules, and cash-buffer
+        The age each kind of account can first be drawn from. This gates every withdrawal - spending, meltdown rules, and cash-buffer
         replenishment alike. Leave blank to use the statutory age shown.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-        {[...CA_ACCOUNT_KINDS, ...US_ACCOUNT_KINDS].map((kind) => {
+        {visibleKinds.map((kind) => {
           const meta = ACCOUNT_KIND_META[kind];
           const statutory = meta.defaultAvailableFromAge;
           const overridden = Object.prototype.hasOwnProperty.call(overrides, kind);

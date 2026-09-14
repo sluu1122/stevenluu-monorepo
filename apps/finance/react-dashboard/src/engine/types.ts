@@ -61,7 +61,8 @@ export type EngineWarningKind = 'spendingShortfall' | 'contributionUnfunded';
 export type EngineWarningCode =
   | 'spending.accountsExhausted'
   | 'contribution.noEligibleSource'
-  | 'contribution.sharedCashShort';
+  | 'contribution.sharedCashShort'
+  | 'contribution.overStatutoryLimit';
 
 export interface EngineWarning {
   year: number;

@@ -6,9 +6,12 @@ import { Form } from '@repo/ui/components/form';
 import { Button } from '@repo/ui/components/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/tabs';
 import { DashCard } from '../../components/DashCard';
+import { NewScenarioDialog } from '../../components/NewScenarioDialog';
 import { useActiveScenario } from '../../hooks/useActiveScenario';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useScenarios, useSaveScenario } from '../../hooks/useScenarios';
-import { ScenarioSchema, type Scenario } from '../../engine/schema';
+import { ScenarioSchema, type Country, type Scenario } from '../../engine/schema';
+import { countFieldErrors, householdHasErrors, personIndexesWithErrors } from '../../lib/formErrors';
 import { createDefaultPersonPlan, createDefaultScenario } from '../../engine/defaults';
 import { GlobalParametersForm } from './GlobalParametersForm';
 import { HouseholdSpendingForm } from './HouseholdSpendingForm';
@@ -28,11 +31,35 @@ import { TaxableAccountTaxationForm } from './TaxableAccountTaxationForm';
 
 const SCENARIO_TAB = 'scenario';
 
+/** Marks a tab holding an invalid field. Carries its own label, so it isn't colour alone. */
+function InvalidTabDot({ label }: { label: string }) {
+  return <span className="ml-1.5 size-1.5 rounded-full bg-loss shrink-0" role="img" aria-label={label} />;
+}
+
 export function ScenarioSetupTab() {
   const { data: scenarios = [], isLoading } = useScenarios();
   const { activeScenarioId, setActiveScenarioId } = useActiveScenario();
   const saveScenario = useSaveScenario();
-  const [activeSubTab, setActiveSubTab] = useState<string>(SCENARIO_TAB);
+  /**
+   * Which person tab is open, held as a POSITION rather than an id.
+   *
+   * An id belongs to one scenario. Holding one here meant that switching
+   * scenarios left this pointing at a person who doesn't exist in the new one,
+   * so Radix found no matching trigger OR content and rendered a blank page
+   * with no tab selected - the form was still there, just entirely invisible.
+   *
+   * A position can't go stale the same way: it is resolved against the current
+   * scenario's persons on every render (below), exactly as usePersonView
+   * already resolves the output tabs' selected person. Out of range falls back
+   * to Household, which also covers deleting a person and importing over a
+   * scenario whose people changed.
+   *
+   * Keeping the position rather than resetting to Household means flipping
+   * between two scenarios to compare the same person doesn't need the tab
+   * re-clicked every time, which is most of what having scenarios is for.
+   */
+  const [openPersonIndex, setOpenPersonIndex] = useState<number | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const activeScenario = scenarios.find((s) => s.id === activeScenarioId) ?? null;
 
@@ -64,8 +91,21 @@ export function ScenarioSetupTab() {
   // persisted scenario directly sidesteps that rather than fighting it.
   const hasUnsavedChanges = JSON.stringify(watchedValues) !== JSON.stringify(activeScenario);
 
-  async function createAndActivate() {
-    const scenario = createDefaultScenario('CA');
+  // Published so the sidebar can ask before switching scenarios, which resets
+  // this form, and so the provider can hang a beforeunload guard off it.
+  const { setHasUnsavedChanges } = useUnsavedChanges();
+  useEffect(() => {
+    setHasUnsavedChanges(hasUnsavedChanges);
+  }, [hasUnsavedChanges, setHasUnsavedChanges]);
+
+  // Leaving this tab entirely (or unmounting on a scenario delete) must clear
+  // the flag - otherwise the warning outlives the form that owned it and the
+  // sidebar keeps prompting about edits nothing is holding any more.
+  useEffect(() => () => setHasUnsavedChanges(false), [setHasUnsavedChanges]);
+
+  async function createAndActivate(country: Country) {
+    setIsCreating(false);
+    const scenario = createDefaultScenario(country);
     await saveScenario.mutateAsync(scenario);
     setActiveScenarioId(scenario.id);
   }
@@ -77,10 +117,11 @@ export function ScenarioSetupTab() {
       <DashCard className="text-center py-12">
         <p className="mb-4 text-ink">Create your first scenario to get started.</p>
         <div className="flex justify-center gap-2">
-          <Button className="cursor-pointer" onClick={() => createAndActivate()}>
+          <Button className="cursor-pointer" onClick={() => setIsCreating(true)}>
             Create Scenario
           </Button>
         </div>
+        <NewScenarioDialog open={isCreating} onOpenChange={setIsCreating} onChoose={(country) => createAndActivate(country)} />
       </DashCard>
     );
   }
@@ -91,19 +132,34 @@ export function ScenarioSetupTab() {
     await saveScenario.mutateAsync({ ...values, updatedAt: new Date().toISOString() });
   });
 
-  const invalidFieldCount = Object.keys(form.formState.errors).length;
+  // Every leaf, not just the top-level keys - see countFieldErrors. The old
+  // count reported "1 field needs attention" for a dozen problems spread
+  // across two people, which is the one direction a count must not be wrong in.
+  const formErrors = form.formState.errors;
+  const invalidFieldCount = countFieldErrors(formErrors);
+  const personsWithErrors = personIndexesWithErrors(formErrors);
+  const householdInvalid = householdHasErrors(formErrors);
   const persons = watchedValues.persons ?? [];
+
+  // Resolved fresh every render, so it can never name a tab that isn't there.
+  const openPerson = openPersonIndex === null ? undefined : persons[openPersonIndex];
+  const activeSubTab = openPerson?.id ?? SCENARIO_TAB;
+
+  function selectSubTab(value: string) {
+    const index = persons.findIndex((p) => p.id === value);
+    setOpenPersonIndex(index === -1 ? null : index);
+  }
 
   function addPerson() {
     const person = createDefaultPersonPlan(activeScenario!.country, `Person ${persons.length + 1}`);
     form.setValue('persons', [...persons, person], { shouldDirty: true });
-    setActiveSubTab(person.id);
+    setOpenPersonIndex(persons.length);
   }
 
   function removePerson(personId: string) {
     const next = persons.filter((p) => p.id !== personId);
     form.setValue('persons', next, { shouldDirty: true });
-    setActiveSubTab(next[0]?.id ?? SCENARIO_TAB);
+    setOpenPersonIndex(next.length > 0 ? 0 : null);
   }
 
   return (
@@ -134,18 +190,26 @@ export function ScenarioSetupTab() {
           </Button>
         </div>
 
-        <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="flex flex-col gap-5">
+        <Tabs value={activeSubTab} onValueChange={selectSubTab} className="flex flex-col gap-5">
           <div className="flex items-center gap-2 flex-wrap">
             {/* Wrap rather than scroll: TabsList is a fixed h-10, so an
                 overflowing scrollbar was rendering inside that 40px and
                 clipping the trigger text. h-auto lets a second row exist. */}
             <TabsList className="justify-start flex-wrap h-auto">
+              {/*
+                A dot on the tabs that hold a problem. The form spans several
+                tabs, so most of it is off screen at any moment - the count
+                alone said something was wrong without saying where, and
+                nothing marked the field itself either.
+              */}
               <TabsTrigger value={SCENARIO_TAB} className="cursor-pointer">
                 Household
+                {householdInvalid && <InvalidTabDot label="Household has fields that need attention" />}
               </TabsTrigger>
-              {persons.map((person) => (
+              {persons.map((person, index) => (
                 <TabsTrigger key={person.id} value={person.id} className="cursor-pointer">
                   {person.label || 'Unnamed'}
+                  {personsWithErrors.has(index) && <InvalidTabDot label={`${person.label || 'This person'} has fields that need attention`} />}
                 </TabsTrigger>
               ))}
             </TabsList>

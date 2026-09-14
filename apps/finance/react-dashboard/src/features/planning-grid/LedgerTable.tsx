@@ -1,4 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { Calculator } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/components/table';
 import { LedgerColumnGroupHeader } from './LedgerColumnGroupHeader';
 import { recallGridScroll, rememberGridScroll } from './gridScrollMemory';
@@ -9,7 +10,7 @@ import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { AccountBucket, GridOverride } from '../../engine/schema';
 import type { LedgerYearRow } from '../../engine/types';
 
-/** Starting widths for Age / Year / Yrs to-in Ret.; refined to real whole-pixel widths on mount (see useFrozenColumns). */
+/** Starting widths for Age / Year / Retirement Year (±); refined to real whole-pixel widths on mount (see useFrozenColumns). */
 const FROZEN_COL_WIDTHS = [52, 64, 84] as const;
 const FROZEN_COL_CLASS = 'sticky z-[5] bg-surface';
 const FROZEN_HEADER_CLASS = 'sticky z-20 bg-surface-raised';
@@ -275,7 +276,11 @@ export function LedgerTable({
               className={cn('whitespace-normal leading-tight', FROZEN_HEADER_CLASS)}
               style={{ ...frozenStyle(2), boxShadow: shadows(FROZEN_EDGE_SHADOW, ROW_RULE_SHADOW) }}
             >
-              Yrs to/in Ret.
+              {/* The (±) is the compact cue that this is signed - the value is
+                  year minus the retirement year, so it counts DOWN to
+                  retirement as a negative and up through it as a positive.
+                  The tooltip spells that out for anyone who hovers. */}
+              <span title="Years relative to retirement: negative before retiring, 0 the year retirement starts, positive after.">Retirement Year (±)</span>
             </TableHead>
             {groups.map((group, i) => (
               <LedgerColumnGroupHeader
@@ -316,18 +321,43 @@ export function LedgerTable({
             // gets none, matching the borderless last row this replaces.
             const rowRule = rowIndex === rows.length - 1 ? null : ROW_RULE_SHADOW;
             return (
-              <TableRow key={row.year} className={cn(selected && 'bg-indigo-bg hover:bg-indigo-bg')} data-selected={selected || undefined}>
+              <TableRow key={row.year} className={cn('group/audit', selected && 'bg-indigo-bg hover:bg-indigo-bg')} data-selected={selected || undefined}>
                 {/*
                   Only the frozen columns open the breakdown. The scrollable
                   area to their right is a drag surface instead, so panning the
                   grid never lands on a row and swaps the panel out from under you.
                 */}
+                {/*
+                  The calculator mark is the only thing that says these cells
+                  DO anything. The panel is the whole point of the grid - every
+                  number in the row is derived, and this is where the derivation
+                  is shown - and it used to open on a bare `cursor-pointer`,
+                  discoverable only by accident. Mobile always had an explicit
+                  "Show calculation" button; desktop had nothing.
+
+                  Revealed on row hover rather than always drawn: at this size
+                  a persistent outlined glyph beside the age read as an empty
+                  CHECKBOX, which is worse than no affordance - it implies rows
+                  are selectable. Opacity rather than display keeps the space
+                  reserved so nothing shifts. The hint above the grid is what
+                  carries discoverability for anyone not hovering yet.
+                */}
                 <TableCell
                   className={cn(FROZEN_COL_CLASS, 'cursor-pointer', selected && 'bg-indigo-bg')}
                   style={{ ...frozenStyle(0), boxShadow: shadows(rowRule) }}
                   onClick={() => onOpenAudit(row)}
+                  title={`Show how ${row.year} was calculated`}
                 >
-                  {row.age}
+                  <span className="flex items-center gap-1.5">
+                    <Calculator
+                      className={cn(
+                        'size-3 shrink-0 transition-opacity',
+                        selected ? 'opacity-100 text-indigo' : 'opacity-0 group-hover/audit:opacity-100 text-dim',
+                      )}
+                      aria-hidden
+                    />
+                    {row.age}
+                  </span>
                 </TableCell>
                 <TableCell
                   className={cn('font-mono', FROZEN_COL_CLASS, 'cursor-pointer', selected && 'bg-indigo-bg')}

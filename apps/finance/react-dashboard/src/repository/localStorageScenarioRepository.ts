@@ -16,7 +16,7 @@ function emptyBundle(): ExportBundle {
 /**
  * A brand-new install (no storage key at all - not the corrupted/failed-
  * validation cases below, which explicitly fall back to empty rather than
- * risk masking a user's real data) gets three demo scenarios instead of a
+ * risk masking a user's real data) gets the demo scenarios instead of a
  * blank slate, so the app shows real output immediately. Persisted right
  * away so re-reading doesn't mint fresh ids on every call.
  *

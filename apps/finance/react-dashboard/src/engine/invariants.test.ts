@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildScenarioLedger } from './ledger';
 import { combineLedgers } from './combineLedgers';
-import { createDefaultPersonPlan, createDefaultScenario } from './defaults';
+import { createFundedPersonPlan, createFundedScenario } from './testFixtures';
 import { convertBucketAmountToScenarioCurrency } from './currency';
 import { checkLedgerInvariants, formatViolations } from './invariants';
 import type { AccountBucket, Scenario } from './schema';
@@ -49,21 +49,21 @@ function retireEveryoneNow(scenario: Scenario, spending: number) {
 
 describe('balance-sheet invariants', () => {
   it('holds for a default single-person US scenario', () => {
-    expectNoViolations(createDefaultScenario('US'));
+    expectNoViolations(createFundedScenario('US'));
   });
 
   it('holds for a default single-person CA scenario', () => {
-    expectNoViolations(createDefaultScenario('CA'));
+    expectNoViolations(createFundedScenario('CA'));
   });
 
   it('holds while a retired person is actively drawing down', () => {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     retireEveryoneNow(scenario, 90_000);
     expectNoViolations(scenario);
   });
 
   it('holds for two persons sharing a household cash buffer', () => {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const jointCash: AccountBucket = {
       id: 'joint-cash',
       label: 'Joint Cash',
@@ -75,7 +75,7 @@ describe('balance-sheet invariants', () => {
     };
     scenario.sharedAccountBuckets = [jointCash];
     scenario.sharedCashBufferRule = { enabled: true, targetAccountBucketId: jointCash.id, targetMonthsOfSpending: 12 };
-    scenario.persons.push(createDefaultPersonPlan('CA', 'Person 2'));
+    scenario.persons.push(createFundedPersonPlan('CA', 'Person 2'));
 
     retireEveryoneNow(scenario, 55_000);
     for (const person of scenario.persons) {
@@ -87,7 +87,7 @@ describe('balance-sheet invariants', () => {
   });
 
   it('holds when a meltdown is drawing down a tax-deferred account', () => {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const startYear = retireEveryoneNow(scenario, 60_000);
     const person = scenario.persons[0];
     const rrsp = person.accountBuckets.find((b) => b.taxTreatment === 'taxDeferred')!;
@@ -114,7 +114,7 @@ describe('balance-sheet invariants', () => {
     // The two interact: the top-up is sourced from the melting-down account,
     // and both feed the same tax bracket - so this is where a dollar is most
     // likely to be double-counted or dropped.
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const startYear = retireEveryoneNow(scenario, 60_000);
     const person = scenario.persons[0];
     const rrsp = person.accountBuckets.find((b) => b.taxTreatment === 'taxDeferred')!;
@@ -148,7 +148,7 @@ describe('balance-sheet invariants', () => {
     // The forced withdrawal is split between the cash buffer and a
     // reinvestment account and taxed on the way - three places a dollar
     // could go missing.
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const startYear = new Date().getFullYear();
     const person = scenario.persons[0];
     person.birthYear = startYear - 80;
@@ -166,12 +166,12 @@ describe('balance-sheet invariants', () => {
     // The regression that motivated this: a US-domiciled account's End was
     // reported in CAD while its Start carried the raw USD figure, so the
     // account appeared to gain the exchange rate every single year.
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     expect(scenario.currency).toBe('CAD');
     expect(scenario.exchangeRateUsdToCad).toBeGreaterThan(1);
 
     const person1 = scenario.persons[0];
-    const person2 = createDefaultPersonPlan('CA', 'Person 2');
+    const person2 = createFundedPersonPlan('CA', 'Person 2');
     scenario.persons.push(person2);
 
     const usBrokerage: AccountBucket = {
@@ -216,7 +216,7 @@ describe('balance-sheet invariants', () => {
   it('reports cash-buffer replenishment as an executed transfer, not a policy target', () => {
     // Every dollar the row claims was replenished must be matched by a
     // contribution actually credited to the buffer that year.
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const jointCash: AccountBucket = {
       id: 'joint-cash',
       label: 'Joint Cash',
@@ -228,7 +228,7 @@ describe('balance-sheet invariants', () => {
     };
     scenario.sharedAccountBuckets = [jointCash];
     scenario.sharedCashBufferRule = { enabled: true, targetAccountBucketId: jointCash.id, targetMonthsOfSpending: 6 };
-    scenario.persons.push(createDefaultPersonPlan('CA', 'Person 2'));
+    scenario.persons.push(createFundedPersonPlan('CA', 'Person 2'));
     retireEveryoneNow(scenario, 40_000);
     for (const person of scenario.persons) {
       person.cashBufferRule.replenishmentOrder = person.accountBuckets.map((b) => b.id);
@@ -257,7 +257,7 @@ describe('balance-sheet invariants', () => {
   it('surfaces a shortfall as a warning rather than overdrawing an account', () => {
     // Spending far beyond the plan's means: the engine must report it, and
     // must not emit a withdrawal larger than the account can fund.
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const startYear = retireEveryoneNow(scenario, 400_000);
     const person = scenario.persons[0];
     person.benefits = [];

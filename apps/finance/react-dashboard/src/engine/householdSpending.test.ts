@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildScenarioLedger } from './ledger';
 import { combineLedgers } from './combineLedgers';
 import { checkLedgerInvariants, formatViolations } from './invariants';
-import { createDefaultPersonPlan, createDefaultScenario } from './defaults';
+import { createFundedPersonPlan, createFundedScenario } from './testFixtures';
 import type { AccountKind, Scenario } from './schema';
 
 const startYear = new Date().getFullYear();
@@ -22,11 +22,11 @@ function withoutTaxableAccountTax(scenario: Scenario): void {
 }
 
 function couple(): Scenario {
-  const scenario = createDefaultScenario('CA');
+  const scenario = createFundedScenario('CA');
   scenario.returnRates = { investmentsPreRetirementPct: 0, investmentsPostRetirementPct: 0, cashPct: 0 };
   scenario.inflation = { mode: 'flat', flatRatePct: 0 };
   withoutTaxableAccountTax(scenario);
-  scenario.persons.push(createDefaultPersonPlan('CA', 'Person 2'));
+  scenario.persons.push(createFundedPersonPlan('CA', 'Person 2'));
 
   for (const person of scenario.persons) {
     person.retirementStartYear = startYear;
