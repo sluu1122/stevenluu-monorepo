@@ -10,7 +10,7 @@ import type { MoneyFormatter } from '../../hooks/useDisplayCurrency';
 import type { AccountBucket, GridOverride } from '../../engine/schema';
 import type { LedgerYearRow } from '../../engine/types';
 
-/** Starting widths for Age / Year / Yrs to-in Ret.; refined to real whole-pixel widths on mount (see useFrozenColumns). */
+/** Starting widths for Age / Year / Retirement Year (±); refined to real whole-pixel widths on mount (see useFrozenColumns). */
 const FROZEN_COL_WIDTHS = [52, 64, 84] as const;
 const FROZEN_COL_CLASS = 'sticky z-[5] bg-surface';
 const FROZEN_HEADER_CLASS = 'sticky z-20 bg-surface-raised';
@@ -276,10 +276,11 @@ export function LedgerTable({
               className={cn('whitespace-normal leading-tight', FROZEN_HEADER_CLASS)}
               style={{ ...frozenStyle(2), boxShadow: shadows(FROZEN_EDGE_SHADOW, ROW_RULE_SHADOW) }}
             >
-              {/* "to / in" is doing real work: the value is year minus the
-                  retirement year, so it counts DOWN to retirement as a
-                  negative and up through it as a positive. */}
-              <span title="Years until retirement (negative) or years since retiring (positive).">Years to / in Retirement</span>
+              {/* The (±) is the compact cue that this is signed - the value is
+                  year minus the retirement year, so it counts DOWN to
+                  retirement as a negative and up through it as a positive.
+                  The tooltip spells that out for anyone who hovers. */}
+              <span title="Years relative to retirement: negative before retiring, 0 the year retirement starts, positive after.">Retirement Year (±)</span>
             </TableHead>
             {groups.map((group, i) => (
               <LedgerColumnGroupHeader
