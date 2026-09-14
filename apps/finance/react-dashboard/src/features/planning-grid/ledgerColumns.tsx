@@ -109,8 +109,8 @@ export function buildLedgerColumns({
   function bucketColumns(bucket: AccountBucket): LedgerColumn[] {
     const tintIndex = tintByBucketId.get(bucket.id) ?? 0;
     const heading = bucketHeading(bucket, bucketOwnerLabels);
-    const subHeader = (text: string) => (
-      <span className="flex flex-col">
+    const subHeader = (text: string, title?: string) => (
+      <span className="flex flex-col" title={title}>
         <span>{heading}</span>
         <span className="text-[10px] font-normal normal-case text-dim">{text}</span>
       </span>
@@ -132,7 +132,7 @@ export function buildLedgerColumns({
         // Start + this != End. The hover spells out all three legs so the row
         // still reconciles.
         label: `${heading} Net Flow`,
-        header: subHeader('Net Flow'),
+        header: subHeader('Net Flow', 'Money paid in minus money drawn out. Market growth is not included, so Start plus Net Flow does not equal End - hover a value to see all three.'),
         render: (row) => {
           const withdrawal = row.withdrawals[bucket.id] ?? 0;
           const deposit = row.contributions[bucket.id] ?? 0;
@@ -218,7 +218,9 @@ export function buildLedgerColumns({
             );
           },
         },
-        { id: 'spendingReal', label: 'Real', header: 'Real', render: (row) => money.format(row.spendingReal) },
+        // Same concept as the charts' value-basis toggle, so it gets the same
+        // plain name rather than the term of art (see ValueBasisToggle).
+        { id: 'spendingReal', label: "Today's $", header: "Today's $", render: (row) => money.format(row.spendingReal) },
       ],
     },
     {
@@ -282,7 +284,11 @@ export function buildLedgerColumns({
     },
     {
       key: 'combined',
-      label: 'Combined',
+      // Not "Combined": that word already means the all-persons view on this
+      // same screen (see usePersonView), and these columns combine ACCOUNTS by
+      // tax treatment, not people. The group key stays put so nobody's
+      // collapsed-column state resets.
+      label: 'Totals by Type',
       columns: [
         { id: 'combined-cashBuffer', label: 'Total Cash', header: 'Total Cash', render: (row) => money.format(sumAccountEnd(row, cashBufferBuckets)) },
         { id: 'combined-taxable', label: 'Taxable Investments', header: 'Taxable Investments', render: (row) => money.format(sumAccountEnd(row, taxableInvestmentBuckets)) },

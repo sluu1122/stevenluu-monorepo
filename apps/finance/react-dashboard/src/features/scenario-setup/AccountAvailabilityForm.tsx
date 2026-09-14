@@ -62,7 +62,7 @@ export function AccountAvailabilityForm() {
         )}
       </div>
       <p className="text-[12.5px] text-dim mb-4">
-        The age each kind of account can first be drawn from. This gates every withdrawal — the spending waterfall, meltdown rules, and cash-buffer
+        The age each kind of account can first be drawn from. This gates every withdrawal - spending, meltdown rules, and cash-buffer
         replenishment alike. Leave blank to use the statutory age shown.
       </p>
 

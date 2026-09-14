@@ -47,7 +47,12 @@ describe('applyWithdrawal', () => {
     const result = applyWithdrawal(1_000, buckets, waterfall, balances, 2030, 100);
     expect(result.shortfall).toBeCloseTo(700, 5);
     expect(result.warning?.year).toBe(2030);
-    expect(result.warning?.message).toMatch(/shortfall/i);
+    expect(result.warning?.amount).toBeCloseTo(700, 5);
+    // Formatted for a reader, not a raw float, and naming a lever they can
+    // actually pull - a warning that only states the fact leaves them stuck.
+    expect(result.warning?.message).toContain('Short 700');
+    expect(result.warning?.message).not.toMatch(/\d+\.\d\d/);
+    expect(result.warning?.message).toMatch(/lower spending|retire later|withdrawal order/i);
   });
 
   it('withdraws nothing and warns nothing when the need is zero', () => {

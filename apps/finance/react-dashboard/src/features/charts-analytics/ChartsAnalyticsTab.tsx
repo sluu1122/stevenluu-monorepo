@@ -59,7 +59,7 @@ export function ChartsAnalyticsTab() {
       </DashCard>
       <DashCard>
         <h3 className="text-[15px] font-semibold text-ink mb-4">
-          Balance by Account Bucket{suffix}
+          Balance by Account{suffix}
           {basisNote && <span className="font-normal text-dim">{basisNote}</span>}
         </h3>
         <BalanceByBucketStackedChart rows={rows} buckets={buckets} money={money} bucketOwnerLabels={combined ? bucketOwnerLabels : undefined} deflate={deflate} />

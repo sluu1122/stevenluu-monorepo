@@ -12,6 +12,17 @@ export interface WithdrawalResult {
 }
 
 /**
+ * Whole dollars with separators, and no currency symbol: this message is built
+ * in the engine, which doesn't know the currency the reader has the app set to
+ * display in. "Short 41,283" beats the raw "Shortfall of 41283.44" the reader
+ * used to get, and beats guessing at a symbol that might be the wrong one.
+ */
+const AMOUNT_FORMAT = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
+function formatAmount(value: number): string {
+  return AMOUNT_FORMAT.format(value);
+}
+
+/**
  * Draws `amountNeeded` from buckets in waterfall order; records a shortfall
  * warning rather than throwing if exhausted.
  *
@@ -64,10 +75,18 @@ export function applyWithdrawal(
   // A shortfall while money sits in age-gated accounts looks like the plan is
   // simply broke, so say which it is.
   const ageNote =
-    ageBlockedBalance > 0.01 ? ` ${ageBlockedBalance.toFixed(2)} is held in accounts not yet available at age ${age}.` : '';
+    ageBlockedBalance > 0.01 ? ` ${formatAmount(ageBlockedBalance)} is held in accounts not yet available at age ${age}.` : '';
   const warning: EngineWarning | undefined =
     shortfall > 0.01
-      ? { year, kind: 'spendingShortfall', code: 'spending.accountsExhausted', amount: shortfall, message: `Shortfall of ${shortfall.toFixed(2)}: all available account buckets exhausted before the spending/tax need was met.${ageNote}` }
+      ? {
+          year,
+          kind: 'spendingShortfall',
+          code: 'spending.accountsExhausted',
+          amount: shortfall,
+          message:
+            `Short ${formatAmount(shortfall)}: every account available at this age was drawn to zero before the year's spending and tax were covered.${ageNote}` +
+            ' Lower spending, retire later, or make an earlier-available account drawable in Withdrawal Order.',
+        }
       : undefined;
 
   return { withdrawals, shortfall, steps, ageBlockedBalance, warning };

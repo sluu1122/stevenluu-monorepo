@@ -132,7 +132,7 @@ export function AccountBucketsEditor({ personIndex }: { personIndex: number }) {
 
   return (
     <DashCard>
-      <h3 className="text-[15px] font-semibold text-ink mb-1">Account Buckets</h3>
+      <h3 className="text-[15px] font-semibold text-ink mb-1">Accounts</h3>
       <p className="text-[12.5px] text-dim mb-4">
         Accounts belonging to this person only - jointly-held money lives in Shared Accounts on the Household tab. Mix US and Canadian account kinds
         freely for dual-citizen or cross-border scenarios. The order these are spent down is set once for the household in Withdrawal Order; if more

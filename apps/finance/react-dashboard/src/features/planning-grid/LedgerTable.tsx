@@ -275,7 +275,10 @@ export function LedgerTable({
               className={cn('whitespace-normal leading-tight', FROZEN_HEADER_CLASS)}
               style={{ ...frozenStyle(2), boxShadow: shadows(FROZEN_EDGE_SHADOW, ROW_RULE_SHADOW) }}
             >
-              Yrs to/in Ret.
+              {/* "to / in" is doing real work: the value is year minus the
+                  retirement year, so it counts DOWN to retirement as a
+                  negative and up through it as a positive. */}
+              <span title="Years until retirement (negative) or years since retiring (positive).">Years to / in Retirement</span>
             </TableHead>
             {groups.map((group, i) => (
               <LedgerColumnGroupHeader
