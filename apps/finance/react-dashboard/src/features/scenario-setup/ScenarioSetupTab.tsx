@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/components/ta
 import { DashCard } from '../../components/DashCard';
 import { NewScenarioDialog } from '../../components/NewScenarioDialog';
 import { useActiveScenario } from '../../hooks/useActiveScenario';
+import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useScenarios, useSaveScenario } from '../../hooks/useScenarios';
 import { ScenarioSchema, type Country, type Scenario } from '../../engine/schema';
 import { createDefaultPersonPlan, createDefaultScenario } from '../../engine/defaults';
@@ -65,6 +66,18 @@ export function ScenarioSetupTab() {
   // survive it) - comparing the live watched values against the last-known
   // persisted scenario directly sidesteps that rather than fighting it.
   const hasUnsavedChanges = JSON.stringify(watchedValues) !== JSON.stringify(activeScenario);
+
+  // Published so the sidebar can ask before switching scenarios, which resets
+  // this form, and so the provider can hang a beforeunload guard off it.
+  const { setHasUnsavedChanges } = useUnsavedChanges();
+  useEffect(() => {
+    setHasUnsavedChanges(hasUnsavedChanges);
+  }, [hasUnsavedChanges, setHasUnsavedChanges]);
+
+  // Leaving this tab entirely (or unmounting on a scenario delete) must clear
+  // the flag - otherwise the warning outlives the form that owned it and the
+  // sidebar keeps prompting about edits nothing is holding any more.
+  useEffect(() => () => setHasUnsavedChanges(false), [setHasUnsavedChanges]);
 
   async function createAndActivate(country: Country) {
     setIsCreating(false);

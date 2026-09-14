@@ -16,6 +16,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, verticalListSo
 import { Button } from '@repo/ui/components/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { useActiveScenario } from '../hooks/useActiveScenario';
+import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
 import { useDeleteScenario, usePreviewScenarioOrder, useReorderScenarios, useSaveScenario, useScenarios } from '../hooks/useScenarios';
 import { createDefaultScenario } from '../engine/defaults';
 import { NewScenarioDialog } from './NewScenarioDialog';
@@ -36,8 +37,12 @@ export function ScenarioSwitcher() {
   const reorderScenarios = useReorderScenarios();
   const previewOrder = usePreviewScenarioOrder();
 
+  const { hasUnsavedChanges, setHasUnsavedChanges } = useUnsavedChanges();
+
   const [targetScenario, setTargetScenario] = useState<Scenario | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  /** The scenario a click asked for while the setup form was dirty, held until the user answers. */
+  const [pendingScenarioId, setPendingScenarioId] = useState<string | null>(null);
   // Reordering, duplicating and deleting all live behind this rather than on
   // every row. The sidebar is narrow and a scenario name is the one thing that
   // has to stay readable, so the default state spends the full width on it and
@@ -121,6 +126,26 @@ export function ScenarioSwitcher() {
     reorderScenarios.mutate(ids);
   }
 
+  /**
+   * Switching resets the Scenario Setup form, so unsaved edits are gone with
+   * no undo and nothing on screen to say they existed. Switching to the
+   * scenario already active is a no-op and never worth a prompt.
+   */
+  function selectScenario(id: string) {
+    if (hasUnsavedChanges && id !== activeScenarioId) {
+      setPendingScenarioId(id);
+      return;
+    }
+    setActiveScenarioId(id);
+  }
+
+  function discardAndSwitch() {
+    if (pendingScenarioId === null) return;
+    setHasUnsavedChanges(false);
+    setActiveScenarioId(pendingScenarioId);
+    setPendingScenarioId(null);
+  }
+
   async function createScenario(country: Country) {
     setIsCreating(false);
     const scenario = createDefaultScenario(country);
@@ -193,7 +218,7 @@ export function ScenarioSwitcher() {
                 scenario={scenario}
                 isActive={scenario.id === activeScenarioId}
                 editing={isEditing}
-                onSelect={() => setActiveScenarioId(scenario.id)}
+                onSelect={() => selectScenario(scenario.id)}
                 onDuplicate={() => duplicateScenario(scenario)}
                 onDelete={() => setTargetScenario(scenario)}
               />
@@ -206,6 +231,25 @@ export function ScenarioSwitcher() {
       </div>
 
       <NewScenarioDialog open={isCreating} onOpenChange={setIsCreating} onChoose={(country) => createScenario(country)} />
+
+      <Dialog open={pendingScenarioId !== null} onOpenChange={(open: boolean) => !open && setPendingScenarioId(null)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Discard unsaved changes?</DialogTitle>
+          </DialogHeader>
+          <p className="text-[13px] text-dim">
+            You have edits in Scenario Setup that haven't been saved. Switching scenarios discards them, and this can't be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingScenarioId(null)}>
+              Keep editing
+            </Button>
+            <Button variant="destructive" onClick={discardAndSwitch}>
+              Discard and switch
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={targetScenario !== null} onOpenChange={(open: boolean) => !open && setTargetScenario(null)}>
         <DialogContent className="sm:max-w-sm">
