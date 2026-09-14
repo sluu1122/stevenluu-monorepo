@@ -47,10 +47,11 @@ export function TaxableAccountTaxationForm() {
             return, since all of it is interest.
           </p>
           <p className="text-[12px] text-dim mt-2 leading-relaxed">
-            <span className="font-medium text-ink">A note on the inclusion rate.</span> Including half the gain is a Canadian rule, and it is applied
-            here to every taxable account in the scenario, US ones included - preferential US long-term capital gains rates are not modelled
-            separately, so a US account's gains are instead taxed at ordinary rates on the included share. The dividend gross-up and dividend tax
-            credit are not modelled either, so eligible Canadian dividends come out slightly over-taxed.
+            <span className="font-medium text-ink">Canada only.</span> Including part of the gain is a Canadian rule, so this applies to
+            Non-Registered accounts. A US Taxable Brokerage ignores it: US gains are taxed in full on the federal long-term schedule (0%, 15% or 20%
+            depending on the year's total income), which the engine models separately. State tax still treats the whole gain as ordinary income, as
+            most states do. The dividend gross-up and dividend tax credit are not modelled, so eligible Canadian dividends come out slightly
+            over-taxed.
           </p>
         </>
       )}

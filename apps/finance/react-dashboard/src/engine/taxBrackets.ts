@@ -1,4 +1,4 @@
-import type { FederalTaxTable } from './schema';
+import type { FederalTaxTable, FilingStatus, TaxBracket } from './schema';
 
 /**
  * Seeded 2026 defaults, user-editable in Scenario Setup. Sources: IRS
@@ -70,3 +70,35 @@ export function getDefaultFederalTable(country: 'US' | 'CA', filingStatus: 'sing
   if (country === 'CA') return CA_FEDERAL_2026;
   return filingStatus === 'marriedFilingJointly' ? US_FEDERAL_2026_MFJ : US_FEDERAL_2026_SINGLE;
 }
+
+/**
+ * US long-term capital gains rate schedule, 2026.
+ *
+ * These are a SEPARATE, preferential schedule, not the ordinary brackets: a
+ * long-term gain is taxed at 0%, 15% or 20% of the FULL gain rather than at
+ * ordinary rates on a share of it. The thresholds are levels of taxable
+ * income, and the gain is stacked on top of ordinary taxable income to find
+ * which band it falls in - so the same gain costs a different amount depending
+ * on what else the household earned that year.
+ *
+ * Same vintage and source as the ordinary brackets above (IRS Rev. Proc.
+ * 2025-32). Canada has no equivalent: a Canadian capital gain is ordinary
+ * income with only half of it included, which is the inclusion rate the
+ * scenario already carries.
+ *
+ * Note these are FEDERAL only. Most US states that levy an income tax treat a
+ * capital gain as ordinary income, so the state side keeps taxing the whole
+ * gain at ordinary rates - see calculateTotalTax.
+ */
+export const US_LONG_TERM_CAPITAL_GAINS_2026: Record<FilingStatus, TaxBracket[]> = {
+  single: [
+    { min: 0, max: 49_450, rate: 0.0 },
+    { min: 49_450, max: 545_500, rate: 0.15 },
+    { min: 545_500, max: null, rate: 0.2 },
+  ],
+  marriedFilingJointly: [
+    { min: 0, max: 98_900, rate: 0.0 },
+    { min: 98_900, max: 613_700, rate: 0.15 },
+    { min: 613_700, max: null, rate: 0.2 },
+  ],
+};

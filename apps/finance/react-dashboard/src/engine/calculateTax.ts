@@ -1,5 +1,6 @@
 import type { FederalTaxTable, FilingStatus, StateOrProvincialTaxTable, TaxBracket, TaxConfig } from './schema';
 import type { AuditStep } from './types';
+import { US_LONG_TERM_CAPITAL_GAINS_2026 } from './taxBrackets';
 
 /**
  * The same tax config with every DOLLAR threshold scaled by `indexationFactor`
@@ -284,36 +285,116 @@ export function taxableSocialSecurity(benefit: number, otherIncome: number, fili
  * not either one alone. Any surtax is excluded from it, since a surtax steps
  * on the tax rather than on income.
  */
-export function calculateTotalTax(grossIncome: number, taxConfig: TaxConfig, socialSecurityBenefit = 0): TotalTaxResult {
+/**
+ * Federal tax on US long-term capital gains, which are NOT ordinary income.
+ *
+ * A long-term gain is taxed at 0/15/20% of the whole gain on its own schedule,
+ * and it is STACKED on top of ordinary taxable income - so the band it lands in
+ * depends on everything else earned that year. That stacking is the whole
+ * reason this cannot be folded into an inclusion rate: the same gain is free to
+ * a retiree living on 20k and costs 15% to one living on 80k.
+ *
+ * The standard deduction offsets ordinary income FIRST, and only what is left
+ * of it reaches the gain. Without that, a retiree whose ordinary income is
+ * below the deduction would be taxed on a gain the deduction actually covers.
+ */
+function usLongTermGainsTax(
+  ordinaryGrossIncome: number,
+  preferentialGains: number,
+  table: FederalTaxTable,
+  filingStatus: FilingStatus,
+): { tax: number; marginalRatePct: number; steps: AuditStep[] } {
+  if (preferentialGains <= 0) return { tax: 0, marginalRatePct: 0, steps: [] };
+
+  const deduction = table.standardDeductionOrBPA;
+  const ordinaryTaxable = Math.max(0, ordinaryGrossIncome - deduction);
+  const totalTaxable = Math.max(0, ordinaryGrossIncome + preferentialGains - deduction);
+  // Whatever survives the deduction after ordinary income has used its share.
+  const gainsTaxable = Math.max(0, totalTaxable - ordinaryTaxable);
+
+  const brackets = US_LONG_TERM_CAPITAL_GAINS_2026[filingStatus];
+  const bottom = ordinaryTaxable;
+  const top = ordinaryTaxable + gainsTaxable;
+
+  let tax = 0;
+  let marginalRatePct = 0;
+  for (const bracket of brackets) {
+    const bandTop = bracket.max === null ? top : Math.min(top, bracket.max);
+    const overlap = Math.max(0, bandTop - Math.max(bottom, bracket.min));
+    if (overlap <= 0) continue;
+    tax += overlap * bracket.rate;
+    marginalRatePct = bracket.rate * 100;
+  }
+
+  return {
+    tax,
+    marginalRatePct,
+    steps: [
+      {
+        label: 'Federal tax on long-term capital gains',
+        formula: 'the gain stacked on top of ordinary taxable income, taxed on the 0/15/20% schedule',
+        inputs: { preferentialGains, gainsTaxable, ordinaryTaxableIncome: ordinaryTaxable },
+        result: tax,
+        relatedFields: ['taxesPaid.federal'],
+      },
+    ],
+  };
+}
+
+export function calculateTotalTax(
+  grossIncome: number,
+  taxConfig: TaxConfig,
+  socialSecurityBenefit = 0,
+  /**
+   * US long-term capital gains, which are taxed federally on their own
+   * preferential schedule and so are NOT part of `grossIncome`. Canadian gains
+   * are not passed here: they are ordinary income with half of them included,
+   * and the included half is already inside `grossIncome`.
+   */
+  preferentialGains = 0,
+): TotalTaxResult {
+  const gains = taxConfig.country === 'US' ? Math.max(0, preferentialGains) : 0;
+
   if (socialSecurityBenefit <= 0 || taxConfig.country !== 'US') {
     const { tax: federal, marginalRatePct: federalMarginal, steps: federalSteps } = calculateFederalTax(grossIncome, taxConfig.federalTable);
-    const provincial = calculateStateOrProvincialTax(grossIncome, taxConfig.stateOrProvincialTable);
+    const gainsTax = usLongTermGainsTax(grossIncome, gains, taxConfig.federalTable, taxConfig.filingStatus);
+    // States that tax income almost universally treat a capital gain as
+    // ordinary income, so the state side sees the WHOLE gain at ordinary rates.
+    // The preferential treatment is federal only.
+    const provincial = calculateStateOrProvincialTax(grossIncome + gains, taxConfig.stateOrProvincialTable);
     return {
-      federal,
+      federal: federal + gainsTax.tax,
       stateOrProvincial: provincial.tax,
-      total: federal + provincial.tax,
+      total: federal + gainsTax.tax + provincial.tax,
       marginalRatePct: federalMarginal + provincial.marginalRatePct,
-      steps: [...federalSteps, ...provincial.steps],
+      steps: [...federalSteps, ...gainsTax.steps, ...provincial.steps],
     };
   }
 
-  const otherIncome = Math.max(0, grossIncome - socialSecurityBenefit);
+  // Capital gains count toward the provisional income that decides how much of
+  // a Social Security benefit is taxable, even though they are taxed on their
+  // own schedule afterwards. Leaving them out would understate the taxable
+  // share of the benefit for anyone realising gains.
+  const otherIncome = Math.max(0, grossIncome - socialSecurityBenefit) + gains;
   const { taxableAmount: ssTaxable, steps: ssSteps } = taxableSocialSecurity(socialSecurityBenefit, otherIncome, taxConfig.filingStatus);
 
-  const federalGrossIncome = otherIncome + ssTaxable;
+  // ...but they come back out of the ORDINARY base here, since the gains
+  // schedule below charges them.
+  const federalOrdinaryIncome = Math.max(0, otherIncome - gains) + ssTaxable;
   // Most states that tax Social Security at all start from the federally
   // taxable amount rather than the gross benefit - using it here rather than
   // a separate state-specific inclusion rate.
-  const stateGrossIncome = otherIncome + (taxConfig.stateOrProvincialTable.taxesSocialSecurity ? ssTaxable : 0);
+  const stateGrossIncome = Math.max(0, otherIncome - gains) + gains + (taxConfig.stateOrProvincialTable.taxesSocialSecurity ? ssTaxable : 0);
 
-  const { tax: federal, marginalRatePct: federalMarginal, steps: federalSteps } = calculateFederalTax(federalGrossIncome, taxConfig.federalTable);
+  const { tax: federal, marginalRatePct: federalMarginal, steps: federalSteps } = calculateFederalTax(federalOrdinaryIncome, taxConfig.federalTable);
+  const gainsTax = usLongTermGainsTax(federalOrdinaryIncome, gains, taxConfig.federalTable, taxConfig.filingStatus);
   const provincial = calculateStateOrProvincialTax(stateGrossIncome, taxConfig.stateOrProvincialTable);
 
   return {
-    federal,
+    federal: federal + gainsTax.tax,
     stateOrProvincial: provincial.tax,
-    total: federal + provincial.tax,
+    total: federal + gainsTax.tax + provincial.tax,
     marginalRatePct: federalMarginal + provincial.marginalRatePct,
-    steps: [...ssSteps, ...federalSteps, ...provincial.steps],
+    steps: [...ssSteps, ...federalSteps, ...gainsTax.steps, ...provincial.steps],
   };
 }
