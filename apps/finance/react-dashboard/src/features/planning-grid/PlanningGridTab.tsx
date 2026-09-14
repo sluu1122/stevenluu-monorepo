@@ -182,18 +182,6 @@ export function PlanningGridTab() {
           </div>
 
           {/*
-            Says out loud what the grid's most useful feature is. Every figure
-            in a row is derived, and the breakdown panel shows the derivation -
-            but it opened on a bare cursor change, so most people never found
-            it. The calculator mark on each row is the other half of this.
-          */}
-          {!isMobile && rows.length > 0 && (
-            <p className="text-[12px] text-dim -mt-1">
-              Click any row to see how its numbers were calculated, figure by figure.
-            </p>
-          )}
-
-          {/*
             Grid and breakdown share the row at lg+, where the panel sits beside
             the grid so both scroll independently. Below lg the fill-the-viewport
             sizing is dropped entirely: the card list scrolls with <main>, whose
