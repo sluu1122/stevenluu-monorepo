@@ -14,6 +14,8 @@ export const WARNING_CODE_EXPLANATION: Record<EngineWarningCode, string> = {
     "A contribution can only be funded from cash or from a taxable account other than the one receiving it. This usually means a scheduled contribution points at the same account that already receives your surplus - the same money asked for twice. Clear that account's Annual contribution, or point the surplus somewhere else.",
   'contribution.sharedCashShort':
     "The shared cash account didn't hold enough to cover a shared account's scheduled contribution. Lower that contribution, raise the household cash buffer's target, or fund it from a personal account instead.",
+  'contribution.overStatutoryLimit':
+    'More is going into a 401(k)/IRA than the law allows for that age, counting both the traditional and Roth accounts against the same limits. The projection still makes the contribution, so the balances are optimistic - lower the annual contribution on those accounts. Canadian accounts are not checked this way because RRSP and TFSA room carries forward, so exceeding one year’s limit there is often correct.',
 };
 
 export interface PartitionedWarnings {

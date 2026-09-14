@@ -32,6 +32,14 @@ export const CA_OAS_2026 = {
 export const OAS_CLAWBACK_THRESHOLD_2025 = 93_454;
 export const OAS_CLAWBACK_RATE = 0.15;
 
+/**
+ * Statutory contribution limits.
+ *
+ * The US figures are enforced as an engine warning - see contributionLimits.ts,
+ * which also explains why the Canadian ones are not: RRSP and TFSA room carries
+ * forward indefinitely, so a single year's contribution legally exceeding a
+ * single year's limit is ordinary rather than a mistake.
+ */
 export const US_CONTRIBUTION_LIMITS_2026 = {
   the401kEmployeeLimit: 24_500,
   the401kCatchUp50Plus: 8_000,
@@ -41,7 +49,8 @@ export const US_CONTRIBUTION_LIMITS_2026 = {
 };
 
 export const CA_CONTRIBUTION_LIMITS_2026 = {
-  rrspDollarLimit: 32_490,
+  // 2026 figure. This read 32,490 - the 2025 limit - while claiming to be 2026.
+  rrspDollarLimit: 33_810,
   rrspPercentOfPriorYearEarnedIncome: 18,
   tfsaAnnualLimit: 7_000,
 };

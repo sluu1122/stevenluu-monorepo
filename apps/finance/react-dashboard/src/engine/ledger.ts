@@ -4,6 +4,7 @@ import { getInflationRateForYear } from './inflation';
 import { applyOasClawback, calculateBenefitForYear } from './benefits';
 import { OAS_CLAWBACK_THRESHOLD_2025 } from './benefitDefaults';
 import { indexedContributionAmount, isBucketAvailableAtAge } from './accountKindMeta';
+import { usContributionExcess } from './contributionLimits';
 import { calculateTotalTax, indexTaxConfig } from './calculateTax';
 import { checkAndReplenish, grossUpForNet, type ReplenishResult } from './cashBuffer';
 import { applyGrowth } from './growth';
@@ -1691,6 +1692,21 @@ export function buildScenarioLedger(scenario: Scenario, overrides: GridOverride[
         creditedThisYear[bucket.id] = (creditedThisYear[bucket.id] ?? 0) + funded;
         draft.contributions[bucket.id] = (draft.contributions[bucket.id] ?? 0) + funded;
       }
+      // Contributing more than the law allows. Checked against the SCHEDULED
+      // amount rather than what Phase 4 funded, for the same reason the
+      // deduction is: the limit governs what you are allowed to put in, not
+      // what this plan managed to find the cash for.
+      const { excess, contributed, ceiling } = usContributionExcess(person, draft.age, draft.isRetired, indexationFactor);
+      if (excess > 0.01) {
+        warningsByPerson.get(person.id)!.push({
+          year,
+          kind: 'contributionUnfunded',
+          code: 'contribution.overStatutoryLimit',
+          amount: excess,
+          message: `US registered contributions of ${Math.round(contributed).toLocaleString('en-US')} exceed the ${Math.round(ceiling).toLocaleString('en-US')} a ${draft.age}-year-old may contribute across a 401(k) and an IRA combined. The projection still makes them, so the balances shown are higher than the law would allow.`,
+        });
+      }
+
       if (unfunded > 0.01) {
         // Deliberately does NOT say the household is out of money - it usually
         // isn't. The target account can hold plenty and still be unable to fund
