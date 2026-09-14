@@ -11,6 +11,7 @@ import { useActiveScenario } from '../../hooks/useActiveScenario';
 import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 import { useScenarios, useSaveScenario } from '../../hooks/useScenarios';
 import { ScenarioSchema, type Country, type Scenario } from '../../engine/schema';
+import { countFieldErrors, householdHasErrors, personIndexesWithErrors } from '../../lib/formErrors';
 import { createDefaultPersonPlan, createDefaultScenario } from '../../engine/defaults';
 import { GlobalParametersForm } from './GlobalParametersForm';
 import { HouseholdSpendingForm } from './HouseholdSpendingForm';
@@ -29,6 +30,11 @@ import { SharedCashBufferForm } from './SharedCashBufferForm';
 import { TaxableAccountTaxationForm } from './TaxableAccountTaxationForm';
 
 const SCENARIO_TAB = 'scenario';
+
+/** Marks a tab holding an invalid field. Carries its own label, so it isn't colour alone. */
+function InvalidTabDot({ label }: { label: string }) {
+  return <span className="ml-1.5 size-1.5 rounded-full bg-loss shrink-0" role="img" aria-label={label} />;
+}
 
 export function ScenarioSetupTab() {
   const { data: scenarios = [], isLoading } = useScenarios();
@@ -126,7 +132,13 @@ export function ScenarioSetupTab() {
     await saveScenario.mutateAsync({ ...values, updatedAt: new Date().toISOString() });
   });
 
-  const invalidFieldCount = Object.keys(form.formState.errors).length;
+  // Every leaf, not just the top-level keys - see countFieldErrors. The old
+  // count reported "1 field needs attention" for a dozen problems spread
+  // across two people, which is the one direction a count must not be wrong in.
+  const formErrors = form.formState.errors;
+  const invalidFieldCount = countFieldErrors(formErrors);
+  const personsWithErrors = personIndexesWithErrors(formErrors);
+  const householdInvalid = householdHasErrors(formErrors);
   const persons = watchedValues.persons ?? [];
 
   // Resolved fresh every render, so it can never name a tab that isn't there.
@@ -184,12 +196,20 @@ export function ScenarioSetupTab() {
                 overflowing scrollbar was rendering inside that 40px and
                 clipping the trigger text. h-auto lets a second row exist. */}
             <TabsList className="justify-start flex-wrap h-auto">
+              {/*
+                A dot on the tabs that hold a problem. The form spans several
+                tabs, so most of it is off screen at any moment - the count
+                alone said something was wrong without saying where, and
+                nothing marked the field itself either.
+              */}
               <TabsTrigger value={SCENARIO_TAB} className="cursor-pointer">
                 Household
+                {householdInvalid && <InvalidTabDot label="Household has fields that need attention" />}
               </TabsTrigger>
-              {persons.map((person) => (
+              {persons.map((person, index) => (
                 <TabsTrigger key={person.id} value={person.id} className="cursor-pointer">
                   {person.label || 'Unnamed'}
+                  {personsWithErrors.has(index) && <InvalidTabDot label={`${person.label || 'This person'} has fields that need attention`} />}
                 </TabsTrigger>
               ))}
             </TabsList>

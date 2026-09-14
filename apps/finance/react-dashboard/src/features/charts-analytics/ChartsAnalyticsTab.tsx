@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DashCard } from '../../components/DashCard';
 import { ScenarioErrorBanner } from '../../components/ScenarioErrorBanner';
+import { EmptyScenarioState } from '../../components/EmptyScenarioState';
 import { useActiveScenario } from '../../hooks/useActiveScenario';
 import { useScenarios } from '../../hooks/useScenarios';
 import { useGridOverrides } from '../../hooks/useGridOverrides';
@@ -13,6 +14,7 @@ import { NOMINAL, buildDeflate } from '../../lib/realTerms';
 import { NetWorthOverTimeChart } from './NetWorthOverTimeChart';
 import { BalanceByBucketStackedChart } from './BalanceByBucketStackedChart';
 import { ScenarioComparisonToggle } from './ScenarioComparisonToggle';
+import { describeAssumptions } from '../../lib/assumptionsSummary';
 
 export function ChartsAnalyticsTab() {
   const { data: scenarios = [] } = useScenarios();
@@ -25,7 +27,7 @@ export function ChartsAnalyticsTab() {
   const [basis, setBasis] = useState<ValueBasis>('nominal');
 
   if (!activeScenario) {
-    return <DashCard>Create a scenario in Scenario Setup to see charts.</DashCard>;
+    return <EmptyScenarioState what="charts" />;
   }
 
   // Nothing below this point is worth drawing on a failed calculation: `rows`
@@ -43,7 +45,13 @@ export function ChartsAnalyticsTab() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <PersonViewSelector persons={activeScenario.persons} selectedPerson={person} />
+        <div className="min-w-0">
+          <PersonViewSelector persons={activeScenario.persons} selectedPerson={person} />
+          {/* Under the charts' own controls: a curve ending at four million
+              means something different at 7% than at 4%, and the rates live a
+              tab away where nobody is looking while reading the output. */}
+          <p className="text-[12px] text-dim mt-1.5">{describeAssumptions(activeScenario)}</p>
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <ValueBasisToggle value={basis} onChange={setBasis} />
           <DisplayCurrencyToggle scenarioCurrency={activeScenario.currency} />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AlertTriangle, FileText, Info } from 'lucide-react';
 import { DashCard } from '../../components/DashCard';
 import { ScenarioErrorBanner } from '../../components/ScenarioErrorBanner';
+import { EmptyScenarioState } from '../../components/EmptyScenarioState';
 import { Button } from '@repo/ui/components/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { Sheet, SheetContent, SheetTitle } from '@repo/ui/components/sheet';
@@ -45,7 +46,7 @@ export function PlanningGridTab() {
   const [warningsOpen, setWarningsOpen] = useState(false);
 
   if (!activeScenario) {
-    return <DashCard>Create a scenario in Scenario Setup to see the planning grid.</DashCard>;
+    return <EmptyScenarioState what="the planning grid" />;
   }
 
   const existingOverride =
@@ -179,6 +180,18 @@ export function PlanningGridTab() {
               </Button>
             </div>
           </div>
+
+          {/*
+            Says out loud what the grid's most useful feature is. Every figure
+            in a row is derived, and the breakdown panel shows the derivation -
+            but it opened on a bare cursor change, so most people never found
+            it. The calculator mark on each row is the other half of this.
+          */}
+          {!isMobile && rows.length > 0 && (
+            <p className="text-[12px] text-dim -mt-1">
+              Click any row to see how its numbers were calculated, figure by figure.
+            </p>
+          )}
 
           {/*
             Grid and breakdown share the row at lg+, where the panel sits beside
