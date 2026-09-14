@@ -1,6 +1,7 @@
 import { Controller, useFormContext } from 'react-hook-form';
 import { DashCard } from '../../components/DashCard';
 import { Input } from '@repo/ui/components/input';
+import { Badge } from '@repo/ui/components/badge';
 import { Label } from '@repo/ui/components/label';
 import { Switch } from '@repo/ui/components/switch';
 import type { Scenario } from '../../engine/schema';
@@ -37,7 +38,16 @@ export function TaxableAccountTaxationForm() {
               <Input type="number" step="0.1" {...register('taxableAccountTaxation.annualDistributionYieldPct', { valueAsNumber: true })} />
             </div>
             <div className="space-y-1.5">
-              <Label>Capital gains inclusion %</Label>
+              {/* Genuinely Canada-only now that US gains have their own
+                  schedule. It deliberately carried no badge while this one
+                  number still drove US tax too, where telling a US reader to
+                  ignore it would have been wrong. */}
+              <Label className="flex items-center gap-1.5">
+                Capital gains inclusion %
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                  CA
+                </Badge>
+              </Label>
               <Input type="number" step="1" {...register('taxableAccountTaxation.capitalGainsInclusionRatePct', { valueAsNumber: true })} />
             </div>
           </div>
