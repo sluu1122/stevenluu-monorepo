@@ -78,9 +78,9 @@ function setLabels(person: PersonPlan, byKind: Partial<Record<AccountKind, strin
  *     income - spending - tax  >=  contributions
  *
  * Break it and the plan starts emitting "contributions couldn't be funded"
- * every projected year. `SEED_AMOUNTS_BY_KIND` in defaults.ts is deliberately
- * left alone - it seeds user-created scenarios, whose surplus lands in cash
- * and so funds contributions without this constraint biting.
+ * every projected year. A user-created scenario cannot break it, because
+ * `createDefaultScenario` now seeds no amounts at all - these demos are the
+ * only place the app ships figures that have to satisfy it.
  *
  * They deliberately differ in shape rather than just in size. Three take
  * different positions on the replacement ratio - one spends less in retirement

@@ -1,50 +1,36 @@
 import { generateId } from './id';
 import { getDefaultFederalTable } from './taxBrackets';
 import { US_SOCIAL_SECURITY_2026, CA_CPP_2026, CA_OAS_2026 } from './benefitDefaults';
-import { ACCOUNT_KIND_META, US_ACCOUNT_KINDS, CA_ACCOUNT_KINDS, DEFAULT_HOUSEHOLD_WITHDRAWAL_ORDER } from './accountKindMeta';
+import { createBlankAccountBucket, US_ACCOUNT_KINDS, CA_ACCOUNT_KINDS, DEFAULT_HOUSEHOLD_WITHDRAWAL_ORDER } from './accountKindMeta';
 import { CURRENT_SCHEMA_VERSION, DEFAULT_REQUIRED_DISTRIBUTION_RULE, DEFAULT_RETURN_RATES, DEFAULT_SHARED_CASH_BUFFER_RULE, DEFAULT_TAXABLE_ACCOUNT_TAXATION } from './schema';
 import { CANADIAN_TAX_TABLES, US_STATE_TAX_TABLES } from './regionalTaxTables';
-import type { AccountBucket, AccountKind, BenefitConfig, PersonPlan, Scenario } from './schema';
+import type { AccountBucket, BenefitConfig, PersonPlan, Scenario } from './schema';
 
-// Growth rates are scenario-level now (see DEFAULT_RETURN_RATES), so a seeded
-// account only carries what's genuinely its own: a balance and a contribution.
-const SEED_AMOUNTS_BY_KIND: Record<AccountKind, { startingBalance: number; annualContributionWhileWorking?: number }> = {
-  US_CASH_HYSA: { startingBalance: 30_000 },
-  US_TAXABLE_BROKERAGE: { startingBalance: 200_000, annualContributionWhileWorking: 10_000 },
-  US_TRADITIONAL_401K_IRA: { startingBalance: 400_000, annualContributionWhileWorking: 24_500 },
-  US_ROTH_401K_IRA: { startingBalance: 100_000, annualContributionWhileWorking: 7_500 },
-  CA_CASH_POOL: { startingBalance: 30_000 },
-  CA_NON_REGISTERED: { startingBalance: 200_000, annualContributionWhileWorking: 10_000 },
-  CA_RRSP_RRIF: { startingBalance: 400_000, annualContributionWhileWorking: 32_490 },
-  CA_TFSA: { startingBalance: 100_000, annualContributionWhileWorking: 7_000 },
-};
-
-function createSeededAccountBucket(kind: AccountKind): AccountBucket {
-  const meta = ACCOUNT_KIND_META[kind];
-  const seed = SEED_AMOUNTS_BY_KIND[kind];
-  return {
-    id: generateId('bucket'),
-    label: meta.label,
-    country: meta.country,
-    kind,
-    taxTreatment: meta.taxTreatment,
-    isCashBuffer: meta.isCashBuffer,
-    ...seed,
-  };
-}
-
+/**
+ * A new scenario gets the account STRUCTURE but none of the amounts.
+ *
+ * These used to arrive pre-filled - 30k cash, 200k taxable, 400k tax-deferred,
+ * 100k tax-free and ~45k/yr of contributions - which made a fresh scenario draw
+ * a real-looking projection immediately. Two problems with that. It described
+ * someone saving forty-five thousand a year out of `annualIncomeNominal: 0`, so
+ * the projection was confident and meaningless; and nothing distinguished a
+ * seeded 400k from a typed one, so the real risk was never "I had to clear
+ * these" but "I cleared six of the eight and planned on two numbers I never
+ * chose". The demo scenarios cover the "show me what this does" job, and cover
+ * it better, because their figures are internally consistent.
+ */
 function createUSAccountBuckets(): AccountBucket[] {
-  return US_ACCOUNT_KINDS.map(createSeededAccountBucket);
+  return US_ACCOUNT_KINDS.map(createBlankAccountBucket);
 }
 
 function createCAAccountBuckets(): AccountBucket[] {
-  return CA_ACCOUNT_KINDS.map(createSeededAccountBucket);
+  return CA_ACCOUNT_KINDS.map(createBlankAccountBucket);
 }
 
 /**
  * The order a person's cash buffer replenishes from: taxable first, then
  * tax-deferred, then tax-free. Exported so a scenario that adds accounts
- * on top of `createDefaultPersonPlan`'s seeded set (e.g. a cross-border
+ * on top of `createDefaultPersonPlan`'s default set (e.g. a cross-border
  * household with both US and CA buckets) can recompute it rather than
  * leaving the new accounts unreachable by replenishment.
  */

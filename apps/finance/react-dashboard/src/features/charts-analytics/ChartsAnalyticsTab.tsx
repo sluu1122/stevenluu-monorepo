@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DashCard } from '../../components/DashCard';
+import { ScenarioErrorBanner } from '../../components/ScenarioErrorBanner';
 import { useActiveScenario } from '../../hooks/useActiveScenario';
 import { useScenarios } from '../../hooks/useScenarios';
 import { useGridOverrides } from '../../hooks/useGridOverrides';
@@ -19,12 +20,19 @@ export function ChartsAnalyticsTab() {
   const activeScenario = scenarios.find((s) => s.id === activeScenarioId) ?? null;
 
   const { data: overrides = [] } = useGridOverrides(activeScenario?.id);
-  const { rows, person, buckets, bucketOwnerLabels, combined, label } = usePersonView(activeScenario, overrides);
+  const { rows, error, person, buckets, bucketOwnerLabels, combined, label } = usePersonView(activeScenario, overrides);
   const money = useMoney(activeScenario);
   const [basis, setBasis] = useState<ValueBasis>('nominal');
 
   if (!activeScenario) {
     return <DashCard>Create a scenario in Scenario Setup to see charts.</DashCard>;
+  }
+
+  // Nothing below this point is worth drawing on a failed calculation: `rows`
+  // is empty, so every chart renders as blank axes that read like a plan with
+  // no money in it rather than like an error.
+  if (error) {
+    return <ScenarioErrorBanner error={error} />;
   }
 
   const suffix = activeScenario.persons.length > 1 ? ` - ${label}` : '';

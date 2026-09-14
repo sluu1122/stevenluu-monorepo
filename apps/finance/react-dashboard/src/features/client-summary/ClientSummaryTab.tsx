@@ -1,5 +1,6 @@
 import { FileText, Printer } from 'lucide-react';
 import { DashCard } from '../../components/DashCard';
+import { ScenarioErrorBanner } from '../../components/ScenarioErrorBanner';
 import { Button } from '@repo/ui/components/button';
 import { useActiveScenario } from '../../hooks/useActiveScenario';
 import { useScenarios } from '../../hooks/useScenarios';
@@ -19,12 +20,20 @@ export function ClientSummaryTab() {
   const activeScenario = scenarios.find((s) => s.id === activeScenarioId) ?? null;
 
   const { data: overrides = [] } = useGridOverrides(activeScenario?.id);
-  const { rows, warnings, person, buckets, combined, label } = usePersonView(activeScenario, overrides);
+  const { rows, warnings, error, person, buckets, combined, label } = usePersonView(activeScenario, overrides);
   const { shortfalls, contributions } = partitionWarnings(warnings);
   const money = useMoney(activeScenario);
 
   if (!activeScenario) {
     return <DashCard>Create a scenario in Scenario Setup to see the client summary.</DashCard>;
+  }
+
+  // This tab is the one that must never render on a failed calculation. Every
+  // key metric is derived from `rows`, so an empty ledger reports a plan worth
+  // $0 - a confident, precise, catastrophic answer to a question the engine
+  // never actually managed to answer. It is also the tab people export from.
+  if (error) {
+    return <ScenarioErrorBanner error={error} />;
   }
 
   const showsMultiplePersons = activeScenario.persons.length > 1;

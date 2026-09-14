@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, FileText, Info } from 'lucide-react';
 import { DashCard } from '../../components/DashCard';
+import { ScenarioErrorBanner } from '../../components/ScenarioErrorBanner';
 import { Button } from '@repo/ui/components/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@repo/ui/components/dialog';
 import { Sheet, SheetContent, SheetTitle } from '@repo/ui/components/sheet';
@@ -63,22 +64,7 @@ export function PlanningGridTab() {
 
   return (
     <div className="flex flex-col gap-4 lg:flex-1 lg:min-h-0">
-      {error && (
-        <DashCard className="border-loss/30 bg-loss-bg flex items-start gap-2.5 py-3">
-          <AlertTriangle className="size-4 text-loss shrink-0 mt-0.5" />
-          <div className="text-[12.5px] text-loss-dark w-full">
-            <p className="font-semibold mb-1">This scenario failed to calculate.</p>
-            <p className="mb-1.5">Something in the scenario's data is causing the engine to throw - check for a waterfall step or override pointing at a removed account.</p>
-            <details>
-              <summary className="cursor-pointer font-medium">Show details</summary>
-              <pre className="mt-1.5 whitespace-pre-wrap break-words text-[11.5px] bg-surface border border-loss/20 rounded-md p-2">
-                {error.message}
-                {error.stack ? `\n\n${error.stack}` : ''}
-              </pre>
-            </details>
-          </div>
-        </DashCard>
-      )}
+      {error && <ScenarioErrorBanner error={error} />}
 
       {/*
         Shortfalls and contribution notices are deliberately two separate

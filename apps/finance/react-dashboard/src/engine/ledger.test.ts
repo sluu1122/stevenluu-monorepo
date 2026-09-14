@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildScenarioLedger } from './ledger';
 import { combineLedgers } from './combineLedgers';
-import { createDefaultPersonPlan, createDefaultScenario } from './defaults';
+import { createFundedPersonPlan, createFundedScenario } from './testFixtures';
 import { calculateFederalTax, calculateTotalTax } from './calculateTax';
 import { grossUpForNet } from './cashBuffer';
 import { availableFromAgeFor } from './accountKindMeta';
@@ -80,7 +80,7 @@ function withoutContributions(scenario: Scenario): void {
 
 describe('buildScenarioLedger', () => {
   it('produces one row per year from now through planningEndAge', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     const { rows } = build(scenario);
     const expectedYears = person1.planningEndAge - (new Date().getFullYear() - person1.birthYear) + 1;
@@ -89,7 +89,7 @@ describe('buildScenarioLedger', () => {
   });
 
   it('has zero spending and zero withdrawals before retirement starts and before any benefit is claimable', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     setSpending(scenario, { atRetirement: [60_000] });
     // Default SS claim age is 67; cap the projection well before that so
@@ -107,7 +107,7 @@ describe('buildScenarioLedger', () => {
   });
 
   it('still taxes a claimed benefit even if no retirement year has been set', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     const ssBenefit = person1.benefits.find((b) => b.type === 'US_SOCIAL_SECURITY')!;
     const currentAge = new Date().getFullYear() - person1.birthYear;
@@ -137,7 +137,7 @@ describe('buildScenarioLedger', () => {
   });
 
   it('starts spending and drawing down once a retirement year is set, growing net worth pre-retirement', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     const startYear = new Date().getFullYear();
     person1.retirementStartYear = startYear + 5;
@@ -156,9 +156,9 @@ describe('buildScenarioLedger', () => {
   });
 
   it("resolves each person's benefit claim age against their own birth year", () => {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const person1 = scenario.persons[0];
-    const person2 = createDefaultPersonPlan('CA', 'Person 2');
+    const person2 = createFundedPersonPlan('CA', 'Person 2');
     person2.birthYear = person1.birthYear - 5; // person 2 is 5 years older
     scenario.persons.push(person2);
 
@@ -179,7 +179,7 @@ describe('buildScenarioLedger', () => {
   });
 
   it("claws back OAS using the PRIOR year's taxable income, not the current year's", () => {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const person1 = scenario.persons[0];
     const currentAge = new Date().getFullYear() - person1.birthYear;
     const oas = person1.benefits.find((b) => b.type === 'CA_OAS')!;
@@ -205,7 +205,7 @@ describe('buildScenarioLedger', () => {
   });
 
   it("stops a person's income exactly at their own retirement start year", () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     const startYear = new Date().getFullYear();
     person1.annualIncomeNominal = 100_000;
@@ -222,10 +222,10 @@ describe('buildScenarioLedger', () => {
   });
 
   it('extends the projection horizon to cover whichever person has the latest birthYear + planningEndAge', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     person1.planningEndAge = 70; // shorter than the younger person below
-    const youngerPerson = createDefaultPersonPlan('US', 'Person 2');
+    const youngerPerson = createFundedPersonPlan('US', 'Person 2');
     youngerPerson.birthYear = person1.birthYear + 20; // 20 years younger
     youngerPerson.planningEndAge = 90;
     scenario.persons.push(youngerPerson);
@@ -239,7 +239,7 @@ describe('buildScenarioLedger', () => {
   });
 
   it('withdraws to fund spending before retirement when annualSpendingRealBeforeRetirement is set', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     person1.planningEndAge = new Date().getFullYear() - person1.birthYear + 2;
     setSpending(scenario, { before: [20_000] });
@@ -252,7 +252,7 @@ describe('buildScenarioLedger', () => {
   });
 
   it('funds taxes from income surplus before withdrawing from buckets, and banks any leftover surplus in the cash buffer', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     const cashBucket = person1.accountBuckets.find((b) => b.isCashBuffer)!;
     person1.annualIncomeNominal = 80_000;
@@ -272,7 +272,7 @@ describe('buildScenarioLedger', () => {
   });
 
   it('does not bank a surplus or reduce bucket withdrawals when income falls short of spending', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     const cashBucket = person1.accountBuckets.find((b) => b.isCashBuffer)!;
     person1.annualIncomeNominal = 10_000;
@@ -288,7 +288,7 @@ describe('buildScenarioLedger', () => {
   });
 
   it("converts an account bucket's balance into the scenario's selected currency using the bucket's own country as its native currency", () => {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const person1 = scenario.persons[0];
     person1.planningEndAge = new Date().getFullYear() - person1.birthYear + 1;
     scenario.exchangeRateUsdToCad = 1.4;
@@ -305,13 +305,13 @@ describe('buildScenarioLedger', () => {
 
     const { rows } = build(scenario);
 
-    // Scenario currency is CAD (from createDefaultScenario('CA')) - the US
+    // Scenario currency is CAD (from createFundedScenario('CA')) - the US
     // bucket's native USD balance must be converted, not summed raw.
     expect(rows[0].accountStart[usBucket.id]).toBeCloseTo(1_000 * 1.4, 5);
   });
 
   it('applies a GridOverride for spendingNominal without disturbing other years', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     const startYear = new Date().getFullYear();
     person1.retirementStartYear = startYear;
@@ -349,9 +349,9 @@ describe('buildScenarioLedger', () => {
   });
 
   it("ignores another person's GridOverride", () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
-    const person2 = createDefaultPersonPlan('US', 'Person 2');
+    const person2 = createFundedPersonPlan('US', 'Person 2');
     scenario.persons.push(person2);
     const startYear = new Date().getFullYear();
     person1.retirementStartYear = startYear;
@@ -377,7 +377,7 @@ describe('buildScenarioLedger', () => {
 describe('per-person tax isolation', () => {
   /** The bug this refactor exists to fix: one person's salary consuming another's meltdown headroom. */
   it("leaves a zero-income person's full meltdown ceiling available even when another person earns a large salary", () => {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const startYear = new Date().getFullYear();
 
     const retiree = scenario.persons[0];
@@ -393,7 +393,7 @@ describe('per-person tax isolation', () => {
       { accountBucketId: rrsp.id, enabled: true, targetTaxableIncomeCeiling: 60_000, startYear, endYear: null, destinationAccountBucketId: tfsa.id },
     ];
 
-    const earner = createDefaultPersonPlan('CA', 'Person 2');
+    const earner = createFundedPersonPlan('CA', 'Person 2');
     earner.annualIncomeNominal = 90_000;
     earner.incomeGrowthRatePct = 0;
     scenario.persons.push(earner);
@@ -407,9 +407,9 @@ describe('per-person tax isolation', () => {
   });
 
   it("does not leak one person's spending, benefits or accounts into another's ledger", () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
-    const person2 = createDefaultPersonPlan('US', 'Person 2');
+    const person2 = createFundedPersonPlan('US', 'Person 2');
     person1.planningEndAge = new Date().getFullYear() - person1.birthYear + 1;
     person2.benefits = [];
     scenario.persons.push(person2);
@@ -437,7 +437,7 @@ describe('married-filing-jointly tax combination', () => {
    * walk over their combined income, not two.
    */
   it('combines both spouses onto one bracket walk and one standard deduction instead of taxing each on their own income', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     scenario.taxConfig.filingStatus = 'marriedFilingJointly';
     scenario.taxConfig.federalTable = getDefaultFederalTable('US', 'marriedFilingJointly');
     scenario.taxConfig.stateOrProvincialTable = flatRateTable(0); // isolate federal
@@ -448,7 +448,7 @@ describe('married-filing-jointly tax combination', () => {
     person1.incomeGrowthRatePct = 0;
     person1.benefits = [];
 
-    const person2 = createDefaultPersonPlan('US', 'Person 2');
+    const person2 = createFundedPersonPlan('US', 'Person 2');
     person2.annualIncomeNominal = 85_000;
     person2.incomeGrowthRatePct = 0;
     person2.benefits = [];
@@ -470,7 +470,7 @@ describe('married-filing-jointly tax combination', () => {
   });
 
   it('leaves a single-filer household taxed exactly as before (each person on their own return)', () => {
-    const scenario = createDefaultScenario('US'); // filingStatus defaults to 'single'
+    const scenario = createFundedScenario('US'); // filingStatus defaults to 'single'
     withoutTaxableAccountTax(scenario);
 
     const person1 = scenario.persons[0];
@@ -478,7 +478,7 @@ describe('married-filing-jointly tax combination', () => {
     person1.incomeGrowthRatePct = 0;
     person1.benefits = [];
 
-    const person2 = createDefaultPersonPlan('US', 'Person 2');
+    const person2 = createFundedPersonPlan('US', 'Person 2');
     person2.annualIncomeNominal = 85_000;
     person2.incomeGrowthRatePct = 0;
     person2.benefits = [];
@@ -493,7 +493,7 @@ describe('married-filing-jointly tax combination', () => {
   });
 
   it("combines both spouses' Social Security for the provisional-income test under a joint return", () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     scenario.taxConfig.filingStatus = 'marriedFilingJointly';
     scenario.taxConfig.federalTable = getDefaultFederalTable('US', 'marriedFilingJointly');
     scenario.taxConfig.stateOrProvincialTable = flatRateTable(0);
@@ -508,7 +508,7 @@ describe('married-filing-jointly tax combination', () => {
     ss1.claimAge = 0; // claimed immediately, to isolate this from age timing
     ss1.monthlyBenefitAtClaimAge = 1_500;
 
-    const person2 = createDefaultPersonPlan('US', 'Person 2');
+    const person2 = createFundedPersonPlan('US', 'Person 2');
     person2.retirementStartYear = startYear;
     person2.annualIncomeNominal = 0;
     const ss2 = person2.benefits.find((b) => b.type === 'US_SOCIAL_SECURITY')!;
@@ -527,7 +527,7 @@ describe('married-filing-jointly tax combination', () => {
 
 describe('meltdown rules', () => {
   function meltdownScenario(): { scenario: Scenario; person: PersonPlan } {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     scenario.returnRates = { ...NO_GROWTH };
     withoutTaxableAccountTax(scenario);
     const person = scenario.persons[0];
@@ -625,12 +625,12 @@ describe('meltdown rules', () => {
 
 describe('combineLedgers', () => {
   function twoPersonScenario() {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person1 = scenario.persons[0];
     person1.planningEndAge = new Date().getFullYear() - person1.birthYear + 2;
     setSpending(scenario, { before: [30_000, 20_000] });
 
-    const person2 = createDefaultPersonPlan('US', 'Person 2');
+    const person2 = createFundedPersonPlan('US', 'Person 2');
     person2.birthYear = person1.birthYear - 10; // ten years older
     person2.planningEndAge = person1.planningEndAge + 10;
     scenario.persons.push(person2);
@@ -678,7 +678,7 @@ describe('combineLedgers', () => {
 describe('shared (joint) accounts', () => {
   /** A CA scenario with a joint non-registered account both persons can reach. */
   function sharedScenario(sharedBalance = 200_000) {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     scenario.returnRates = { ...NO_GROWTH };
     const startYear = new Date().getFullYear();
 
@@ -686,7 +686,7 @@ describe('shared (joint) accounts', () => {
     person1.planningEndAge = startYear - person1.birthYear + 2;
     person1.benefits = [];
 
-    const person2 = createDefaultPersonPlan('CA', 'Person 2');
+    const person2 = createFundedPersonPlan('CA', 'Person 2');
     person2.planningEndAge = person1.planningEndAge;
     person2.benefits = [];
     scenario.persons.push(person2);
@@ -820,7 +820,7 @@ describe('shared (joint) accounts', () => {
     // money and any person earlier in the run order has already drawn, so a
     // snapshot taken there reports a mid-year figure - and the grid shows a
     // Start that doesn't tie to the End above it.
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const startYear = new Date().getFullYear();
 
     const jointCash: AccountBucket = {
@@ -837,7 +837,7 @@ describe('shared (joint) accounts', () => {
     scenario.householdWithdrawalOrder = ['CA_CASH_POOL', 'CA_RRSP_RRIF', 'CA_NON_REGISTERED', 'CA_TFSA'];
 
     const person1 = scenario.persons[0];
-    const person2 = createDefaultPersonPlan('CA', 'Person 2');
+    const person2 = createFundedPersonPlan('CA', 'Person 2');
     scenario.persons.push(person2);
 
     for (const p of scenario.persons) {
@@ -878,7 +878,7 @@ describe('shared (joint) accounts', () => {
 describe('household cash buffer', () => {
   /** Two persons, a joint cash account, and a shared buffer rule pointed at it. */
   function bufferScenario() {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     scenario.returnRates = { ...NO_GROWTH };
     const startYear = new Date().getFullYear();
 
@@ -895,7 +895,7 @@ describe('household cash buffer', () => {
     scenario.sharedCashBufferRule = { enabled: true, targetAccountBucketId: jointCash.id, targetMonthsOfSpending: 12 };
 
     const person1 = scenario.persons[0];
-    const person2 = createDefaultPersonPlan('CA', 'Person 2');
+    const person2 = createFundedPersonPlan('CA', 'Person 2');
     scenario.persons.push(person2);
 
     // Both retired, drawing only from their own non-registered account, so the
@@ -960,7 +960,7 @@ describe('household cash buffer', () => {
     // drain a shared buffer before the person who runs second even got a
     // turn - even though the household has plenty of money to keep the
     // buffer topped up all along.
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const startYear = new Date().getFullYear();
 
     const jointCash: AccountBucket = {
@@ -979,7 +979,7 @@ describe('household cash buffer', () => {
     scenario.sharedCashBufferRule = { enabled: true, targetAccountBucketId: jointCash.id, targetMonthsOfSpending: 12 };
 
     const person1 = scenario.persons[0];
-    const person2 = createDefaultPersonPlan('CA', 'Person 2');
+    const person2 = createFundedPersonPlan('CA', 'Person 2');
     scenario.persons.push(person2);
 
     for (const p of scenario.persons) {
@@ -1124,7 +1124,7 @@ describe('household cash buffer', () => {
     // person's own tax-deferred spending withdrawal is taxed at - not be
     // taxed as if it were a second, independent $0-to-X bracket walk (which
     // would under-charge tax by reusing the lowest brackets twice).
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     const startYear = new Date().getFullYear();
     const person = scenario.persons[0];
     person.retirementStartYear = startYear;
@@ -1202,7 +1202,7 @@ describe('household-wide cash buffer replenishment', () => {
    * TFSA sold TFSA - while the household plainly had taxable assets to sell.
    */
   function splitHousehold(options: { taxableBalance?: number; taxFreeBalance?: number } = {}) {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     scenario.returnRates = { ...NO_GROWTH };
     const startYear = new Date().getFullYear();
 
@@ -1219,7 +1219,7 @@ describe('household-wide cash buffer replenishment', () => {
     scenario.sharedCashBufferRule = { enabled: true, targetAccountBucketId: jointCash.id, targetMonthsOfSpending: 12 };
 
     const person1 = scenario.persons[0];
-    const person2 = createDefaultPersonPlan('CA', 'Person 2');
+    const person2 = createFundedPersonPlan('CA', 'Person 2');
     scenario.persons.push(person2);
 
     const taxable: AccountBucket = {
@@ -1361,7 +1361,7 @@ describe('cross-border accounts (US account reported in a CAD scenario)', () => 
    * those comparisons are never mixing units.
    */
   function crossBorderScenario(ceiling: number) {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     scenario.returnRates = { ...NO_GROWTH };
     const startYear = new Date().getFullYear();
     const person = scenario.persons[0];
@@ -1426,7 +1426,7 @@ describe('cross-border accounts (US account reported in a CAD scenario)', () => 
 describe('required minimum distributions', () => {
   /** A person past their RRIF start age with an empty cash buffer and a large RRSP. */
   function rmdScenario(options: { age?: number; spending?: number; cashStart?: number; enabled?: boolean } = {}) {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     scenario.returnRates = { ...NO_GROWTH };
     const startYear = new Date().getFullYear();
     const person = scenario.persons[0];
@@ -1567,7 +1567,7 @@ describe('meltdown and cash buffer in the same year', () => {
    * the wrong account quietly liquidates investments.
    */
   function meltdownScenario(options: { ceiling?: number; destination?: 'tfsa' | 'unset' } = {}) {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     scenario.returnRates = { ...NO_GROWTH };
     const startYear = new Date().getFullYear();
     const person = scenario.persons[0];
@@ -1659,7 +1659,7 @@ describe('funded contributions', () => {
 
   /** One earner, one person with no income at all, and a joint cash account between them. */
   function householdScenario() {
-    const scenario = createDefaultScenario('CA');
+    const scenario = createFundedScenario('CA');
     scenario.returnRates = { ...NO_GROWTH };
 
     const jointCash: AccountBucket = {
@@ -1675,7 +1675,7 @@ describe('funded contributions', () => {
     scenario.sharedCashBufferRule = { enabled: false, targetAccountBucketId: jointCash.id, targetMonthsOfSpending: 12 };
 
     const earner = scenario.persons[0];
-    const dependent = createDefaultPersonPlan('CA', 'Person 2');
+    const dependent = createFundedPersonPlan('CA', 'Person 2');
     scenario.persons.push(dependent);
 
     for (const p of scenario.persons) {
@@ -1925,7 +1925,7 @@ describe('funded contributions', () => {
 
 describe('age-gated accounts', () => {
   it('skips an account below its available age and uses it once old enough', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person = scenario.persons[0];
     const startYear = new Date().getFullYear();
     const currentAge = startYear - person.birthYear;
@@ -1956,7 +1956,7 @@ describe('age-gated accounts', () => {
   });
 
   it('blocks a meltdown from an account the person is too young to reach', () => {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     const person = scenario.persons[0];
     const startYear = new Date().getFullYear();
     person.retirementStartYear = startYear;
@@ -1984,7 +1984,7 @@ describe('tax-deferred contributions reduce taxable income', () => {
    * TFSA, which inverts the tradeoff those account types exist to offer.
    */
   function earner(contribution: number, treatment: 'taxDeferred' | 'taxFree', income = 100_000) {
-    const scenario = createDefaultScenario('US');
+    const scenario = createFundedScenario('US');
     scenario.taxConfig.stateOrProvincialTable = flatRateTable(0); // isolate federal
     withoutTaxableAccountTax(scenario);
     withoutContributions(scenario);
