@@ -127,7 +127,7 @@ export function SortableAccountBucketRow({
             </div>
           )}
           <div className="space-y-1.5">
-            <Label>Annual contribution</Label>
+            <Label>Annual contribution ({bucket.country === 'US' ? 'USD' : 'CAD'})</Label>
             <MoneyInput value={bucket.annualContributionWhileWorking} onChange={(value) => onUpdate({ annualContributionWhileWorking: value })} />
           </div>
           {/* Both contribution qualifiers stacked in one cell: two 16px rows

@@ -11,10 +11,13 @@ export function TaxableAccountTaxationForm() {
 
   return (
     <DashCard>
-      <h3 className="text-[15px] font-semibold text-ink mb-1">Non-Registered Account Tax</h3>
+      {/* "Non-Registered" is the Canadian name for this account, but the rules
+          here govern a US Taxable Brokerage too - a US household reasonably
+          read the old title as being about someone else's accounts. */}
+      <h3 className="text-[15px] font-semibold text-ink mb-1">Taxable Account Tax</h3>
       <p className="text-[12.5px] text-dim mb-4">
-        What a taxable account owes as it earns and as it is sold. Turned off, these accounts compound entirely tax-free, which flatters any plan
-        that runs for decades.
+        What a taxable account owes as it earns and as it is sold - a US Taxable Brokerage and a Canadian Non-Registered account alike. Turned off,
+        these accounts compound entirely tax-free, which flatters any plan that runs for decades.
       </p>
 
       <div className="flex items-center gap-3 mb-4">
@@ -41,8 +44,13 @@ export function TaxableAccountTaxationForm() {
           <p className="text-[12px] text-dim mt-3 leading-relaxed">
             The yield is the part of the return paid out each year as interest and dividends, taxed as ordinary income. Everything else is
             appreciation, taxed only when sold and only on the included portion of the gain. A cash account is treated as distributing its whole
-            return, since all of it is interest. The dividend gross-up and dividend tax credit are not modelled, so eligible Canadian dividends come
-            out slightly over-taxed.
+            return, since all of it is interest.
+          </p>
+          <p className="text-[12px] text-dim mt-2 leading-relaxed">
+            <span className="font-medium text-ink">A note on the inclusion rate.</span> Including half the gain is a Canadian rule, and it is applied
+            here to every taxable account in the scenario, US ones included - preferential US long-term capital gains rates are not modelled
+            separately, so a US account's gains are instead taxed at ordinary rates on the included share. The dividend gross-up and dividend tax
+            credit are not modelled either, so eligible Canadian dividends come out slightly over-taxed.
           </p>
         </>
       )}

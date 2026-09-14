@@ -36,14 +36,26 @@ export function NewScenarioDialog({ open, onOpenChange, onChoose }: NewScenarioD
             add accounts from either country whichever you pick.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-          <Button type="button" variant="outline" className="cursor-pointer h-auto py-3 flex-col items-start gap-0.5" onClick={() => onChoose('US')}>
+        {/* Stacked and wrapping: Button ships `whitespace-nowrap`, so the
+            second line has to be allowed to wrap or it is simply clipped. */}
+        <div className="flex flex-col gap-2 pt-1">
+          <Button
+            type="button"
+            variant="outline"
+            className="cursor-pointer h-auto py-3 flex-col items-start gap-0.5 whitespace-normal text-left"
+            onClick={() => onChoose('US')}
+          >
             <span className="text-[13px] font-semibold">United States</span>
-            <span className="text-[11.5px] font-normal text-dim">401(k)/IRA, Roth, brokerage · USD</span>
+            <span className="text-[11.5px] font-normal text-dim">401(k)/IRA, Roth, brokerage · Social Security · USD</span>
           </Button>
-          <Button type="button" variant="outline" className="cursor-pointer h-auto py-3 flex-col items-start gap-0.5" onClick={() => onChoose('CA')}>
+          <Button
+            type="button"
+            variant="outline"
+            className="cursor-pointer h-auto py-3 flex-col items-start gap-0.5 whitespace-normal text-left"
+            onClick={() => onChoose('CA')}
+          >
             <span className="text-[13px] font-semibold">Canada</span>
-            <span className="text-[11.5px] font-normal text-dim">RRSP/RRIF, TFSA, non-registered · CAD</span>
+            <span className="text-[11.5px] font-normal text-dim">RRSP/RRIF, TFSA, non-registered · CPP and OAS · CAD</span>
           </Button>
         </div>
       </DialogContent>

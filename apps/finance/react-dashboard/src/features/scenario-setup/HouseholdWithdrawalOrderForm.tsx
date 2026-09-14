@@ -7,6 +7,7 @@ import { DashCard } from '../../components/DashCard';
 import { Badge } from '@repo/ui/components/badge';
 import { Checkbox } from '@repo/ui/components/checkbox';
 import { ACCOUNT_KIND_META, US_ACCOUNT_KINDS, CA_ACCOUNT_KINDS } from '../../engine/accountKindMeta';
+import { mergeVisibleOrder } from '../../lib/mergeVisibleOrder';
 import { cn } from '../../lib/utils';
 import type { AccountBucket, AccountKind, Scenario } from '../../engine/schema';
 
@@ -146,8 +147,24 @@ export function HouseholdWithdrawalOrderForm() {
     return groups;
   }
 
-  const included = order.filter((kind) => ALL_KINDS.includes(kind));
-  const excluded = ALL_KINDS.filter((kind) => !included.includes(kind));
+  // Only kinds the household actually holds. A row for a kind nobody owns says
+  // "No accounts of this kind in the household" and can do nothing else - for a
+  // household working entirely in one country that was half the list.
+  //
+  // Render-time only: the stored `householdWithdrawalOrder` keeps every kind,
+  // including the ones filtered out here. A kind with no accounts still owns a
+  // position in the ordering, and has to keep it for when an account of that
+  // kind is added back - dropping it from the array would silently re-sort the
+  // household's drawdown the next time they open a TFSA.
+  const heldKinds = new Set<AccountKind>([
+    ...sharedBuckets.map((b: AccountBucket) => b.kind),
+    ...persons.flatMap((p) => p.accountBuckets.map((b) => b.kind)),
+  ]);
+
+  /** The real drawdown order, hidden kinds and all. Every write goes through this, never through `included`. */
+  const storedOrder = order.filter((kind) => ALL_KINDS.includes(kind));
+  const included = storedOrder.filter((kind) => heldKinds.has(kind));
+  const excluded = ALL_KINDS.filter((kind) => heldKinds.has(kind) && !storedOrder.includes(kind));
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -156,11 +173,12 @@ export function HouseholdWithdrawalOrderForm() {
     const newIndex = included.indexOf(over.id as AccountKind);
     // Only the included list is orderable - dragging an excluded row is a no-op.
     if (oldIndex === -1 || newIndex === -1) return;
-    setValue('householdWithdrawalOrder', arrayMove(included, oldIndex, newIndex), { shouldDirty: true });
+    const merged = mergeVisibleOrder(storedOrder, arrayMove(included, oldIndex, newIndex), (kind) => heldKinds.has(kind));
+    setValue('householdWithdrawalOrder', merged, { shouldDirty: true });
   }
 
   function toggle(kind: AccountKind, include: boolean) {
-    setValue('householdWithdrawalOrder', include ? [...included, kind] : included.filter((k) => k !== kind), { shouldDirty: true });
+    setValue('householdWithdrawalOrder', include ? [...storedOrder, kind] : storedOrder.filter((k) => k !== kind), { shouldDirty: true });
   }
 
   return (
