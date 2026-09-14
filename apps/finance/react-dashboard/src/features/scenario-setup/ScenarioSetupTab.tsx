@@ -34,7 +34,25 @@ export function ScenarioSetupTab() {
   const { data: scenarios = [], isLoading } = useScenarios();
   const { activeScenarioId, setActiveScenarioId } = useActiveScenario();
   const saveScenario = useSaveScenario();
-  const [activeSubTab, setActiveSubTab] = useState<string>(SCENARIO_TAB);
+  /**
+   * Which person tab is open, held as a POSITION rather than an id.
+   *
+   * An id belongs to one scenario. Holding one here meant that switching
+   * scenarios left this pointing at a person who doesn't exist in the new one,
+   * so Radix found no matching trigger OR content and rendered a blank page
+   * with no tab selected - the form was still there, just entirely invisible.
+   *
+   * A position can't go stale the same way: it is resolved against the current
+   * scenario's persons on every render (below), exactly as usePersonView
+   * already resolves the output tabs' selected person. Out of range falls back
+   * to Household, which also covers deleting a person and importing over a
+   * scenario whose people changed.
+   *
+   * Keeping the position rather than resetting to Household means flipping
+   * between two scenarios to compare the same person doesn't need the tab
+   * re-clicked every time, which is most of what having scenarios is for.
+   */
+  const [openPersonIndex, setOpenPersonIndex] = useState<number | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
   const activeScenario = scenarios.find((s) => s.id === activeScenarioId) ?? null;
@@ -111,16 +129,25 @@ export function ScenarioSetupTab() {
   const invalidFieldCount = Object.keys(form.formState.errors).length;
   const persons = watchedValues.persons ?? [];
 
+  // Resolved fresh every render, so it can never name a tab that isn't there.
+  const openPerson = openPersonIndex === null ? undefined : persons[openPersonIndex];
+  const activeSubTab = openPerson?.id ?? SCENARIO_TAB;
+
+  function selectSubTab(value: string) {
+    const index = persons.findIndex((p) => p.id === value);
+    setOpenPersonIndex(index === -1 ? null : index);
+  }
+
   function addPerson() {
     const person = createDefaultPersonPlan(activeScenario!.country, `Person ${persons.length + 1}`);
     form.setValue('persons', [...persons, person], { shouldDirty: true });
-    setActiveSubTab(person.id);
+    setOpenPersonIndex(persons.length);
   }
 
   function removePerson(personId: string) {
     const next = persons.filter((p) => p.id !== personId);
     form.setValue('persons', next, { shouldDirty: true });
-    setActiveSubTab(next[0]?.id ?? SCENARIO_TAB);
+    setOpenPersonIndex(next.length > 0 ? 0 : null);
   }
 
   return (
@@ -151,7 +178,7 @@ export function ScenarioSetupTab() {
           </Button>
         </div>
 
-        <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="flex flex-col gap-5">
+        <Tabs value={activeSubTab} onValueChange={selectSubTab} className="flex flex-col gap-5">
           <div className="flex items-center gap-2 flex-wrap">
             {/* Wrap rather than scroll: TabsList is a fixed h-10, so an
                 overflowing scrollbar was rendering inside that 40px and
