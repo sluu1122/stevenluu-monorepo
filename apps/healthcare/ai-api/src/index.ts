@@ -1,12 +1,45 @@
 import { spawn } from 'child_process';
 import { config } from './config';
-import { isRunning, hasModel, pullModel } from './ollama';
+import { isRunning, probe, hasModel, pullModel } from './ollama';
 import { createServer } from './server';
 
 const POLL_MS   = 1500;
 const MAX_POLLS = 20;
 
+// A remote Ollama (the `ollama` container in Docker) can be slow to start or
+// briefly unreachable while containers are recreated, so wait for it instead
+// of trying to spawn a binary the ai-api image doesn't have.
+const REMOTE_MAX_POLLS = 80; // ~2 minutes
+
+function isLocalOllama(): boolean {
+  const host = new URL(config.ollamaUrl).hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]';
+}
+
+async function waitForRemoteOllama(): Promise<void> {
+  let reason = await probe();
+  if (reason === null) {
+    console.log('[ai-api] Ollama already running.');
+    return;
+  }
+
+  console.log(`[ai-api] Waiting for Ollama at ${config.ollamaUrl} (${reason})...`);
+  for (let i = 1; i <= REMOTE_MAX_POLLS; i++) {
+    await new Promise(r => setTimeout(r, POLL_MS));
+    reason = await probe();
+    if (reason === null) {
+      console.log('[ai-api] Ollama is ready.');
+      return;
+    }
+    if (i % 10 === 0) console.log(`[ai-api] Still waiting for Ollama (${reason})...`);
+  }
+
+  throw new Error(`Ollama at ${config.ollamaUrl} did not become reachable: ${reason}`);
+}
+
 async function ensureOllama(): Promise<void> {
+  if (!isLocalOllama()) return waitForRemoteOllama();
+
   if (await isRunning()) {
     console.log('[ai-api] Ollama already running.');
     return;

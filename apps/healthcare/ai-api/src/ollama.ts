@@ -20,15 +20,22 @@ interface OllamaChatEvent {
   done: boolean;
 }
 
-export async function isRunning(): Promise<boolean> {
+// Returns null when Ollama answers, otherwise a short reason (e.g. ENOTFOUND,
+// ECONNREFUSED, HTTP 503) so startup logs say why it couldn't be reached.
+export async function probe(): Promise<string | null> {
   try {
     const res = await fetch(`${config.ollamaUrl}/api/tags`, {
       signal: AbortSignal.timeout(3000),
     });
-    return res.ok;
-  } catch {
-    return false;
+    return res.ok ? null : `HTTP ${res.status}`;
+  } catch (err) {
+    const cause = (err as { cause?: { code?: string; message?: string } }).cause;
+    return cause?.code ?? cause?.message ?? (err instanceof Error ? err.message : String(err));
   }
+}
+
+export async function isRunning(): Promise<boolean> {
+  return (await probe()) === null;
 }
 
 export async function hasModel(model: string): Promise<boolean> {
