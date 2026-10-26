@@ -30,6 +30,10 @@ services:
   # ports need to be open. Shares appnet, so it routes to each app by its Docker
   # service name — see the public-hostname table in cloudflare-tunnel.md.
   # The token is a secret; it lives in .env on the NAS, never committed.
+  # :latest is only what was last pulled, so Build/restart never upgrades it.
+  # Upgrade via the image's "Update available" link (steps in
+  # cloudflare-tunnel.md). Must be 2026.10.2+ per Cloudflare's 2026-10-20
+  # eMudhra certificate advisory.
   cloudflared:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped

@@ -60,7 +60,7 @@ nameservers back to Squarespace to undo everything.
 
 ## Step 3 — Add the token to the NAS and redeploy
 
-1. Edit the NAS env file at `/volume1/docker/stevenluu-monorepo/.env` (File Station
+1. Edit the NAS env file at `/volume2/docker/stevenluu-monorepo/.env` (File Station
    → download, edit, re-upload, or edit in place). Add:
    ```
    CLOUDFLARE_TUNNEL_TOKEN=eyJ...paste the full token...
@@ -190,6 +190,34 @@ address to keep working.
 4. **Verify**: `curl -I https://old.stevenluu.com/` should return `301` with
    `location: https://new.stevenluu.com/`, and the new hostname should load
    and function identically to how the old one did.
+
+## Upgrading cloudflared
+
+The image is `cloudflare/cloudflared:latest`, and Watchtower deliberately leaves
+it alone, so upgrades are manual. `:latest` means "whatever was last pulled":
+Build, Start and Restart all reuse the cached image and **never** upgrade it.
+
+1. Container Manager → **Image** → `cloudflare/cloudflared` → click
+   **Update available** next to the tag. This pulls the new image and recreates
+   the container on it.
+2. If the project isn't running afterwards: **Project** → the project →
+   **Action → Build**.
+3. Confirm the connector shows **Healthy** and reports the new version under
+   **Networks → Tunnels** in the dashboard.
+
+There is only one connector, so the restart drops the site for the ~30s it
+takes to reconnect, and any in-flight `ai-api` stream is cut. That's acceptable
+here. For zero downtime, first start a second `cloudflared` container with the
+same token (the dashboard counts it as a replica), wait until it's connected,
+upgrade the main one, then remove the extra container.
+
+All origins are plain `http://` on `appnet`, so the upgraded cloudflared's
+stricter certificate checks never touch origin traffic. If an HTTPS origin is
+ever added, never work around a certificate error with `noTLSVerify`.
+
+**2026-10 security upgrade:** versions before 2026.10.2 trust eight compromised
+eMudhra (emSign) intermediate certificates (Cloudflare blog, 2026-10-20).
+Updated via the steps above on 2026-10-26.
 
 ## Rollback
 
